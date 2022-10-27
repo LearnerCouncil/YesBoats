@@ -1,0 +1,12 @@
+name: Yesboats
+version: '${project.version}'
+main: rocks.learnercouncil.yesboats.YesBoats
+api-version: 1.17
+authors: [ h2ofiremaster ]
+description: A simple iceboat racing plugin
+commands:
+  yesboats:
+    permission:
+      yesboats.commands.yesboats.use
+    aliases:
+      - yb
