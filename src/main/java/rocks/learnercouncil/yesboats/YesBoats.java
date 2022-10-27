@@ -1,7 +1,9 @@
 package rocks.learnercouncil.yesboats;
 
+import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import rocks.learnercouncil.yesboats.commands.YesBoatsCmd;
+import rocks.learnercouncil.yesboats.events.VehicleExit;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,11 +39,21 @@ public final class YesBoats extends JavaPlugin {
 
         //noinspection ConstantConditions
         getCommand("yesboats").setExecutor(new YesBoatsCmd(this));
+
+        registerEvents(
+                new VehicleExit()
+        );
     }
 
     @Override
     public void onDisable() {
         // Plugin shutdown logic
         arenaCfg.getConfig().set("arenas", Arena.arenas);
+    }
+
+    public void registerEvents(Listener... listeners) {
+        for(Listener listener : listeners) {
+            getServer().getPluginManager().registerEvents(listener, this);
+        }
     }
 }

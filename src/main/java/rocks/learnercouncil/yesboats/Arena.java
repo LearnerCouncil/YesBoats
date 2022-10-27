@@ -16,8 +16,20 @@ public class Arena implements ConfigurationSerializable {
     private static final YesBoats plugin = YesBoats.getInstance();
 
     public static int queueTime;
+
+    public static Optional<Arena> get(String name) {
+        return arenas.stream().filter(a -> a.name.equals(name)).findFirst();
+    }
+
+    public static boolean inGame(Player player) {
+            return arenas.stream().anyMatch(a -> a.players.containsKey(player));
+    }
+
+
+
+
+
     Map<Player, Boat> players = new HashMap<>();
-    Map<Player, Integer> times = new HashMap<>();
 
 
     //serialized feilds
@@ -31,18 +43,19 @@ public class Arena implements ConfigurationSerializable {
         this.name = name;
     }
 
-
-
-
-
     public void setGameStatus(Player player, boolean join) {
         if(join) {
             if(players.size() == maxPlayers) return;
             player.teleport(startLocations.get(players.size()));
-            players.put(player, (Boat) startWorld.spawnEntity(startLocations.get(players.size()), EntityType.BOAT));
+            Boat boat = (Boat) startWorld.spawnEntity(startLocations.get(players.size()), EntityType.BOAT);
+            boat.setInvulnerable(true);
+            players.put(player, boat);
+            boat.addPassenger(player);
+            PlayerManager.set(player);
         } else {
             players.get(player).remove();
             player.teleport(lobbyLocation);
+            PlayerManager.restore(player);
         }
     }
 
