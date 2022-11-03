@@ -6,6 +6,8 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.*;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.BoundingBox;
 
 import java.util.*;
 
@@ -46,6 +48,7 @@ public class Arena implements ConfigurationSerializable {
     private final Map<Player, Boat> players = new HashMap<>();
     private final Set<ArmorStand> queueStands = new HashSet<>();
     private int state = 0;
+    private BukkitTask mainLoop;
 
 
     //serialized feilds
@@ -56,6 +59,9 @@ public class Arena implements ConfigurationSerializable {
     public List<Location> startLocations = new ArrayList<>();
     public Location lightLocation;
     public BlockFace lightDirection;
+    public List<BoundingBox> deathBarriers = new ArrayList<>();
+    public List<BoundingBox> checkpointBoxes = new ArrayList<>();
+    public List<Location> checkpointSpawns = new ArrayList<>();
 
     public Arena(String name) {
         this.name = name;
@@ -113,16 +119,23 @@ public class Arena implements ConfigurationSerializable {
 
     public void startGame() {
         state = 2;
+
         //TODO game logic
+        mainLoop = new BukkitRunnable() {
+            @Override
+            public void run() {
+
+            }
+        }.runTaskTimer(plugin, 0, 1);
+
+    }
+
+    private void respawn(Player player) {
+
     }
 
 
-
-
-
-
-
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "unchecked"})
     public Arena(Map<String, Object> m) {
         name = (String) m.get("name");
 
@@ -132,11 +145,15 @@ public class Arena implements ConfigurationSerializable {
         lobbyLocation = stringToLoc((String) m.get("lobbyLocation"));
 
         startWorld = plugin.getServer().getWorld((String) m.get("startWorld"));
-        //noinspection unchecked
         startLocations = vectorStringToLocList((List<String>) m.get("startLocations"), startWorld);
 
         lightLocation = vectorStringToLoc((String) m.get("lightLocation"), startWorld);
         lightDirection = BlockFace.valueOf((String) m.get("lightDirection"));
+
+        deathBarriers = stringToBoxList((List<String>) m.get("deathBarriers"));
+
+        checkpointBoxes = stringToBoxList((List<String>) m.get("checkpointBoxes"));
+        checkpointSpawns = stringToLocList((List<String>) m.get("checkpointSpawns"));
     }
 
     //Methods to change locations to and from their string representations
@@ -163,7 +180,6 @@ public class Arena implements ConfigurationSerializable {
                 loc.getYaw() + ',' +
                 loc.getPitch();
     }
-
     /**
      * Turns a string representation of a {@link Location} into a Location object.
      * @param str The String representing the location.
@@ -182,6 +198,52 @@ public class Arena implements ConfigurationSerializable {
         );
     }
 
+    /**
+     * Fuctionally identical to {@link Arena#locToString(Location)} except it works on a List of Locations.
+     * @see Arena#stringToLocList(List)
+     * @param locs The list of Locations
+     * @return The list of strings
+     */
+    private static List<String> locToStringList(List<Location> locs) {
+        List<String> result = new ArrayList<>();
+        locs.forEach(l -> {
+            String world;
+            if(l.getWorld() == null) {
+                plugin.getLogger().severe("World is not loaded. Defaulting to the first loaded world found.");
+                world = plugin.getServer().getWorlds().stream().findFirst().orElseThrow(() -> new NullPointerException("Could not find any loaded worlds.")).getName();
+            } else {
+                world = l.getWorld().getName();
+            }
+            String str = world + "," +
+                    l.getX() + "," +
+                    l.getY() + "," +
+                    l.getZ() + "," +
+                    l.getYaw() + "," +
+                    l.getPitch();
+            result.add(str);
+        });
+        return result;
+    }
+    /**
+     * Fuctionally identical to {@link Arena#stringToLoc(String)} except it works on a List of Strings.
+     * @see Arena#locToStringList(List)
+     * @param strs The list of strings
+     * @return The list of Locations
+     */
+    private static List<Location> stringToLocList(List<String> strs) {
+        List<Location> result = new ArrayList<>();
+        strs.forEach(s -> {
+            String[] segments = s.split(",");
+            Location loc = new Location(plugin.getServer().getWorld(segments[0]),
+                    Double.parseDouble(segments[1]),
+                    Double.parseDouble(segments[2]),
+                    Double.parseDouble(segments[3]),
+                    Float.parseFloat(segments[4]),
+                    Float.parseFloat(segments[5]));
+            result.add(loc);
+        });
+        return result;
+    }
 
     /**
      * Turns a {@link Location} into a string representing only it's x, y and z coordinates.
@@ -192,7 +254,6 @@ public class Arena implements ConfigurationSerializable {
     private static String locToVectorString(Location loc) {
         return loc.getX() + "," + loc.getY() + "," + loc.getZ();
     }
-
     /**
      * Turns a string reperesenting x, y, and z coordinates into a {@link Location} object, given you provide a world.
      * @param str The string representing the x, y, and z coordinates
@@ -207,7 +268,6 @@ public class Arena implements ConfigurationSerializable {
                 Double.parseDouble(segments[1]),
                 Double.parseDouble(segments[2]));
     }
-
 
     /**
      * Fuctionally identical to {@link Arena#locToVectorString(Location)} except it works on a List of Locations.
@@ -225,7 +285,6 @@ public class Arena implements ConfigurationSerializable {
         });
         return result;
     }
-
     /**
      * Fuctionally identical to {@link Arena#vectorStringToLoc(String, World)} except it works on a List of Strings.
      * @see Arena#locToVectorStringList(List)
@@ -246,6 +305,42 @@ public class Arena implements ConfigurationSerializable {
         return result;
     }
 
+    /**
+     * Turns a list of {@link BoundingBox}es into their string representations.
+     * @see Arena#stringToBoxList(List)
+     * @param boxes The list of bounding boxes
+     * @return The string representation
+     */
+    private static List<String> boxToStringList(List<BoundingBox> boxes) {
+        List<String> result = new ArrayList<>();
+        boxes.forEach(b -> {
+            String str = b.getMinX() + "," + b.getMinY() + "," + b.getMinZ() + "," + b.getMaxX() + "," + b.getMaxY() + "," + b.getMaxZ();
+            result.add(str);
+        });
+        return result;
+    }
+    /**
+     * Turns a list of strings representing bounding boxes into the {@link BoundingBox} objects.
+     * @see Arena#boxToStringList(List)
+     * @param strs The list of strings
+     * @return The list of bounding boxes
+     */
+    private static List<BoundingBox> stringToBoxList(List<String> strs) {
+        List<BoundingBox> result = new ArrayList<>();
+        strs.forEach(s -> {
+            String[] segments = s.split(",");
+            BoundingBox box = new BoundingBox(
+                    Double.parseDouble(segments[0]),
+                    Double.parseDouble(segments[1]),
+                    Double.parseDouble(segments[2]),
+                    Double.parseDouble(segments[3]),
+                    Double.parseDouble(segments[4]),
+                    Double.parseDouble(segments[5])
+            );
+            result.add(box);
+        });
+        return result;
+    }
 
     @Override
     public Map<String, Object> serialize() {
@@ -263,6 +358,12 @@ public class Arena implements ConfigurationSerializable {
         m.put("startLocations", locToVectorStringList(startLocations));
 
         m.put("lightLocation", locToVectorString(lightLocation));
+        m.put("lightDirection", lightDirection.toString());
+
+        m.put("deathBarriers", boxToStringList(deathBarriers));
+
+        m.put("checkpointBoxes", boxToStringList(checkpointBoxes));
+        m.put("checkpointSpawns", locToStringList(checkpointSpawns));
 
         return m;
     }
