@@ -2,25 +2,39 @@ package rocks.learnercouncil.yesboats;
 
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
-import org.bukkit.entity.Boat;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 
+/**
+ * Represents an arena
+ */
 public class Arena implements ConfigurationSerializable {
 
+    /**
+     * A list of all arenas, gets instantiated by 'arenas.yml' if it exists
+     */
     public static final List<Arena> arenas = new ArrayList<>();
     private static final YesBoats plugin = YesBoats.getInstance();
 
     public static int queueTime;
 
+    /**
+     * Gets an {@link Arena} object based on its name
+     * @param name the name of the arena
+     * @return An optional that contains the arena with the given name, if it exists
+     */
     public static Optional<Arena> get(String name) {
         return arenas.stream().filter(a -> a.name.equals(name)).findFirst();
     }
 
+    /**
+     * @param player a player
+     * @return true if the given player in in a game, false otherwise
+     */
     public static boolean inGame(Player player) {
             return arenas.stream().anyMatch(a -> a.players.containsKey(player));
     }
@@ -29,7 +43,9 @@ public class Arena implements ConfigurationSerializable {
 
 
 
-    Map<Player, Boat> players = new HashMap<>();
+    private final Map<Player, Boat> players = new HashMap<>();
+    private final Set<ArmorStand> queueStands = new HashSet<>();
+    private int state = 0;
 
 
     //serialized feilds
@@ -38,6 +54,8 @@ public class Arena implements ConfigurationSerializable {
     public Location lobbyLocation;
     private World startWorld;
     public List<Location> startLocations = new ArrayList<>();
+    public Location lightLocation;
+    public BlockFace lightDirection;
 
     public Arena(String name) {
         this.name = name;
@@ -46,20 +64,39 @@ public class Arena implements ConfigurationSerializable {
     public void setGameStatus(Player player, boolean join) {
         if(join) {
             if(players.size() == maxPlayers) return;
-            player.teleport(startLocations.get(players.size()));
-            Boat boat = (Boat) startWorld.spawnEntity(startLocations.get(players.size()), EntityType.BOAT);
+            Location loc = startLocations.get(players.size());
+            player.teleport(loc);
+            Boat boat = (Boat) startWorld.spawnEntity(loc, EntityType.BOAT);
             boat.setInvulnerable(true);
             players.put(player, boat);
             boat.addPassenger(player);
+            spawnQueueStand(loc).addPassenger(boat);
             PlayerManager.set(player);
         } else {
+            if(players.get(player).getVehicle() != null)
+                //noinspection ConstantConditions
+                players.get(player).getVehicle().remove();
             players.get(player).remove();
             player.teleport(lobbyLocation);
             PlayerManager.restore(player);
         }
     }
 
+    private ArmorStand spawnQueueStand(Location loc) {
+        if(loc.getWorld() == null) throw new NullPointerException("queueStand world is null.");
+        ArmorStand qs = (ArmorStand) loc.getWorld().spawnEntity(loc, EntityType.ARMOR_STAND);
+        qs.setInvulnerable(true);
+        qs.setInvisible(true);
+        qs.setSmall(true);
+        qs.setMarker(true);
+        queueStands.add(qs);
+        return qs;
+    }
+
     public void startQueueTimer() {
+        state = 1;
+        queueStands.forEach(Entity::remove);
+        queueStands.clear();
         new BukkitRunnable() {
             int timeleft = queueTime;
             @Override
@@ -75,6 +112,7 @@ public class Arena implements ConfigurationSerializable {
     }
 
     public void startGame() {
+        state = 2;
         //TODO game logic
     }
 
@@ -84,6 +122,7 @@ public class Arena implements ConfigurationSerializable {
 
 
 
+    @SuppressWarnings("unused")
     public Arena(Map<String, Object> m) {
         name = (String) m.get("name");
 
@@ -94,10 +133,20 @@ public class Arena implements ConfigurationSerializable {
 
         startWorld = plugin.getServer().getWorld((String) m.get("startWorld"));
         //noinspection unchecked
-        startLocations = vStringsToLocs((List<String>) m.get("startLocations"), startWorld);
+        startLocations = vectorStringToLocList((List<String>) m.get("startLocations"), startWorld);
+
+        lightLocation = vectorStringToLoc((String) m.get("lightLocation"), startWorld);
+        lightDirection = BlockFace.valueOf((String) m.get("lightDirection"));
     }
 
     //Methods to change locations to and from their string representations
+
+    /**
+     * Turns a {@link Location} into a String representing it.
+     * @param loc The location
+     * @return The string representaion of that location
+     * @see Arena#stringToLoc(String)
+     */
     private static String locToString(Location loc) {
         String world;
         if(loc.getWorld() == null) {
@@ -114,6 +163,13 @@ public class Arena implements ConfigurationSerializable {
                 loc.getYaw() + ',' +
                 loc.getPitch();
     }
+
+    /**
+     * Turns a string representation of a {@link Location} into a Location object.
+     * @param str The String representing the location.
+     * @return  the location object
+     * @see Arena#locToString(Location)
+     */
     private static Location stringToLoc(String str) {
         String[] segments = str.split(",");
         return new Location(
@@ -126,7 +182,40 @@ public class Arena implements ConfigurationSerializable {
         );
     }
 
-    private static List<String> locsToVStrings(List<Location> locs) {
+
+    /**
+     * Turns a {@link Location} into a string representing only it's x, y and z coordinates.
+     * @param loc The location
+     * @return The string representing it
+     * @see Arena#vectorStringToLoc(String, World)
+     */
+    private static String locToVectorString(Location loc) {
+        return loc.getX() + "," + loc.getY() + "," + loc.getZ();
+    }
+
+    /**
+     * Turns a string reperesenting x, y, and z coordinates into a {@link Location} object, given you provide a world.
+     * @param str The string representing the x, y, and z coordinates
+     * @param world The world the coordinates are supposed to be in
+     * @return The Location object
+     * @see Arena#locToVectorString(Location)
+     */
+    private static Location vectorStringToLoc(String str, World world) {
+        String[] segments = str.split(",");
+        return new Location(world,
+                Double.parseDouble(segments[0]),
+                Double.parseDouble(segments[1]),
+                Double.parseDouble(segments[2]));
+    }
+
+
+    /**
+     * Fuctionally identical to {@link Arena#locToVectorString(Location)} except it works on a List of Locations.
+     * @see Arena#vectorStringToLocList(List, World)
+     * @param locs The list of Locations
+     * @return The list of strings
+     */
+    private static List<String> locToVectorStringList(List<Location> locs) {
         List<String> result = new ArrayList<>();
         locs.forEach(l -> {
             String str = l.getX() + "," +
@@ -136,7 +225,15 @@ public class Arena implements ConfigurationSerializable {
         });
         return result;
     }
-    private static List<Location> vStringsToLocs(List<String> strs, World world) {
+
+    /**
+     * Fuctionally identical to {@link Arena#vectorStringToLoc(String, World)} except it works on a List of Strings.
+     * @see Arena#locToVectorStringList(List)
+     * @param strs The list of strings
+     * @param world The world
+     * @return The list of Locations
+     */
+    private static List<Location> vectorStringToLocList(List<String> strs, World world) {
         List<Location> result = new ArrayList<>();
         strs.forEach(s -> {
             String[] segments = s.split(",");
@@ -148,6 +245,7 @@ public class Arena implements ConfigurationSerializable {
         });
         return result;
     }
+
 
     @Override
     public Map<String, Object> serialize() {
@@ -162,7 +260,9 @@ public class Arena implements ConfigurationSerializable {
 
 
         m.put("startWorld", startWorld.getName());
-        m.put("startLocations", locsToVStrings(startLocations));
+        m.put("startLocations", locToVectorStringList(startLocations));
+
+        m.put("lightLocation", locToVectorString(lightLocation));
 
         return m;
     }

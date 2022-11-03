@@ -1,21 +1,24 @@
 package rocks.learnercouncil.yesboats;
 
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import rocks.learnercouncil.yesboats.commands.YesBoatsCmd;
 import rocks.learnercouncil.yesboats.events.VehicleExit;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 public final class YesBoats extends JavaPlugin {
 
     public static ConfigFile arenaCfg;
     public static ConfigFile config;
 
-    public static YesBoats instance;
+    private static YesBoats instance;
+
+    /**
+     * @return An instance of the main class
+     */
     public static YesBoats getInstance() {
         return instance;
     }
@@ -24,6 +27,8 @@ public final class YesBoats extends JavaPlugin {
     public void onEnable() {
         // Plugin startup logic
         instance = this;
+
+        ConfigurationSerialization.registerClass(Arena.class);
 
         //initialize arena config
         arenaCfg = new ConfigFile(this, "arenas");
