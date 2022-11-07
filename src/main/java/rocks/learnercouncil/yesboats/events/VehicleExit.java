@@ -4,7 +4,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.vehicle.VehicleExitEvent;
-import rocks.learnercouncil.yesboats.Arena;
+import rocks.learnercouncil.yesboats.arena.Arena;
 
 public class VehicleExit implements Listener {
 

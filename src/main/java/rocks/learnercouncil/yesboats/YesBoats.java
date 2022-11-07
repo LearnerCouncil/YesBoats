@@ -4,6 +4,7 @@ import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import rocks.learnercouncil.yesboats.commands.YesBoatsCmd;
+import rocks.learnercouncil.yesboats.arena.Arena;
 import rocks.learnercouncil.yesboats.events.VehicleExit;
 
 import java.util.ArrayList;

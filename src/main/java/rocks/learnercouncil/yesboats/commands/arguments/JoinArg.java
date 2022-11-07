@@ -2,21 +2,25 @@ package rocks.learnercouncil.yesboats.commands.arguments;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import rocks.learnercouncil.yesboats.Arena;
+import org.bukkit.entity.Player;
+import rocks.learnercouncil.yesboats.arena.Arena;
 import rocks.learnercouncil.yesboats.commands.CommandArgument;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class JoinArg implements CommandArgument {
 
     @Override
     public void execute(CommandSender sender, Command cmd, String label, String[] args) {
-        if(!(args.length <= 1)) return;
+        if(!(args.length <= 2)) return;
         if(args[0].equalsIgnoreCase("join")) {
-            //TODO add join logic
+            Optional<Arena> arenaO = Arena.get(args[1]);
+            if(!arenaO.isPresent()) return;
+            arenaO.get().setGameStatus((Player) sender, true);
         }
     }
 

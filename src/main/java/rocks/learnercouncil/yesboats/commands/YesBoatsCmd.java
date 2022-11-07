@@ -6,6 +6,7 @@ import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
 import rocks.learnercouncil.yesboats.YesBoats;
+import rocks.learnercouncil.yesboats.commands.arguments.AddArg;
 import rocks.learnercouncil.yesboats.commands.arguments.JoinArg;
 
 import java.util.ArrayList;
@@ -25,7 +26,7 @@ public class YesBoatsCmd implements TabExecutor {
         List<CommandArgument> result = new ArrayList<>();
 
         result.add(new JoinArg());
-
+        result.add(new AddArg());
 
         return result;
     }
