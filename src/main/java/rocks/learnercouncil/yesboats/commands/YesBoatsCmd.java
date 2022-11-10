@@ -38,8 +38,14 @@ public class YesBoatsCmd implements TabExecutor {
             return true;
         }
         if(cmd.getName().equalsIgnoreCase("yesboats")) {
-            arguments.forEach(a -> a.execute(sender, cmd, label, args));
-            return true;
+            for (CommandArgument a : arguments) {
+                String result = a.execute(sender, cmd, label, args);
+                if(result.isEmpty()) {
+                    sender.sendMessage(result);
+                    return true;
+                } else
+                    return false;
+            }
         }
         return false;
     }

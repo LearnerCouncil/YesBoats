@@ -19,7 +19,7 @@ public class ArenaBuilder {
     private Location lobbyLocation;
     private World startWorld = null;
     private final List<Location> startLocations = new ArrayList<>();
-    private List<Location> lightLocations = new ArrayList<>();
+    private final List<Location> lightLocations = new ArrayList<>();
     private final List<BoundingBox> deathBarriers = new ArrayList<>();
     private final List<BoundingBox> checkpointBoxes = new ArrayList<>();
     private final List<Location> checkpointSpawns = new ArrayList<>();

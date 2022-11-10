@@ -36,12 +36,14 @@ public class Arena implements ConfigurationSerializable {
         return arenas.stream().filter(a -> a.name.equals(name)).findFirst();
     }
 
+    private static final HashMap<Player, Arena> arenasP = new HashMap<>();
     /**
-     * @param player a player
-     * @return true if the given player in in a game, false otherwise
+     * Gets an {@link Arena} object based on a {@link Player}
+     * @param player the player
+     * @return An optional that contains the arena containing the given player, if it exists
      */
-    public static boolean inGame(Player player) {
-            return arenas.stream().anyMatch(a -> a.players.contains(player));
+    public static Optional<Arena> get(Player player) {
+        return Optional.ofNullable(arenasP.get(player));
     }
 
 
@@ -91,6 +93,7 @@ public class Arena implements ConfigurationSerializable {
             Boat boat = (Boat) startWorld.spawnEntity(loc, EntityType.BOAT);
             boat.setInvulnerable(true);
             players.add(player);
+            arenasP.put(player, this);
             boat.addPassenger(player);
             spawnQueueStand(loc).addPassenger(boat);
             PlayerManager.set(player);
@@ -102,6 +105,8 @@ public class Arena implements ConfigurationSerializable {
             }
             player.teleport(lobbyLocation);
             PlayerManager.restore(player);
+            players.remove(player);
+            arenasP.remove(player);
         }
     }
 

@@ -12,7 +12,7 @@ public class VehicleExit implements Listener {
     public void onVehicleExit(VehicleExitEvent e) {
         if(!(e.getExited() instanceof Player)) return;
         Player player = (Player) e.getExited();
-        if(!Arena.inGame(player)) return;
+        if(!Arena.get(player).isPresent()) return;
         e.setCancelled(true);
     }
 }
