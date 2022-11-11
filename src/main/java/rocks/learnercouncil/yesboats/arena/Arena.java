@@ -150,11 +150,12 @@ public class Arena implements ConfigurationSerializable {
                     if(b.contains(p.getLocation().toVector())) respawn(p);
                 }));
                 players.forEach(p -> {
-                    AtomicInteger index = new AtomicInteger(0);
-                    checkpointBoxes.forEach(b -> {
-                        if(b.contains(p.getLocation().toVector()) && gameData.get(p).checkpoint == checkpointBoxes.lastIndexOf(b)) gameData.get(p).checkpoint = index.get();
-                        index.getAndIncrement();
-                    });
+                    int index = 0;
+                    for (BoundingBox b : checkpointBoxes) {
+                        if (b.contains(p.getLocation().toVector()) && gameData.get(p).checkpoint == checkpointBoxes.indexOf(b))
+                            gameData.get(p).checkpoint = index;
+                        index++;
+                    }
                 });
             }
         }.runTaskTimer(plugin, 0, 1);

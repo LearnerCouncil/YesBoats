@@ -3,6 +3,7 @@ package rocks.learnercouncil.yesboats;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
+import rocks.learnercouncil.yesboats.arena.ArenaEditor;
 import rocks.learnercouncil.yesboats.commands.YesBoatsCmd;
 import rocks.learnercouncil.yesboats.arena.Arena;
 import rocks.learnercouncil.yesboats.events.VehicleExit;
@@ -47,7 +48,8 @@ public final class YesBoats extends JavaPlugin {
         getCommand("yesboats").setExecutor(new YesBoatsCmd(this));
 
         registerEvents(
-                new VehicleExit()
+                new VehicleExit(),
+                new ArenaEditor.Events()
         );
     }
 
@@ -57,7 +59,7 @@ public final class YesBoats extends JavaPlugin {
         arenaCfg.getConfig().set("arenas", Arena.arenas);
     }
 
-    public void registerEvents(Listener... listeners) {
+    private void registerEvents(Listener... listeners) {
         for(Listener listener : listeners) {
             getServer().getPluginManager().registerEvents(listener, this);
         }
