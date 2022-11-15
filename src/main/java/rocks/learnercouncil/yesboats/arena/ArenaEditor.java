@@ -1,9 +1,6 @@
 package rocks.learnercouncil.yesboats.arena;
 
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Particle;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -13,14 +10,19 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
+import rocks.learnercouncil.yesboats.YesBoats;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class ArenaEditor {
+
+    private static final YesBoats plugin = YesBoats.getInstance();
 
     public static HashMap<Player, ArenaEditor> editors = new HashMap<>();
 
@@ -28,10 +30,10 @@ public class ArenaEditor {
     private final Player player;
     public final Arena arena;
 
-    private Vector bbCorner1 = null, bbCorner2 = null;
+    private Vector boxCorner1 = null, boxCorner2 = null;
+    private BoundingBox createdBox;
     private BoundingBox selectedBox;
     private BukkitTask displayTask;
-    private boolean boxDisplay;
 
 
     public ArenaEditor(Player player, Arena arena) {
@@ -39,12 +41,12 @@ public class ArenaEditor {
         playerInv = player.getInventory().getContents();
         this.arena = arena;
         initializeInventory();
+        startBoxDisplay();
     }
 
     private void initializeInventory() {
         player.getInventory().clear();
         Inventory inv = player.getInventory();
-        ItemMeta meta;
 
         ItemStack selectionAxe = getItem(Material.IRON_AXE,
                 ChatColor.BOLD.toString() + ChatColor.YELLOW + "Area Selector",
@@ -56,6 +58,11 @@ public class ArenaEditor {
                 ChatColor.BOLD.toString() + ChatColor.RED + "Death Barrier",
                 ChatColor.DARK_RED + "Click to set the selected bouding box to a death barrier");
         inv.setItem(1, deathBarrier);
+
+        ItemStack checkpoint = getItem(Material.RED_BANNER,
+                ChatColor.BOLD.toString() + ChatColor.AQUA + "Chechpoint",
+                ChatColor.DARK_AQUA + "Click to set the selected bouding box to a checkpoint");
+        inv.setItem(2, checkpoint);
     }
 
     /**
@@ -75,20 +82,20 @@ public class ArenaEditor {
         return item;
     }
 
-    private void setBBCorner1(Vector bbCorner1) {
-        this.bbCorner1 = bbCorner1;
-        if(bbCorner2 != null)
-            selectedBox = new BoundingBox(bbCorner1.getX(), bbCorner1.getY(), bbCorner1.getZ(), bbCorner2.getX(), bbCorner2.getY(), bbCorner2.getZ());
+    private void setBoxCorner1(Vector boxCorner1) {
+        this.boxCorner1 = boxCorner1;
+        if(boxCorner2 != null)
+            createdBox = BoundingBox.of(this.boxCorner1, this.boxCorner2);
     }
 
-    private void setBbCorner2(Vector bbCorner2) {
-        this.bbCorner2 = bbCorner2;
-        if(bbCorner1 != null)
-            selectedBox = new BoundingBox(bbCorner1.getX(), bbCorner1.getY(), bbCorner1.getZ(), bbCorner2.getX(), bbCorner2.getY(), bbCorner2.getZ());
+    private void setBoxCorner2(Vector boxCorner2) {
+        this.boxCorner2 = boxCorner2;
+        if(boxCorner1 != null)
+            createdBox = BoundingBox.of(this.boxCorner1, this.boxCorner2);
     }
 
     private void addBoundingBox(BoundingBoxType type) {
-        if(bbCorner1 == null || bbCorner2 == null) return;
+        if(selectedBox == null) return;
         switch (type) {
             case CHECKPOINT:
                 arena.checkpointBoxes.add(selectedBox.clone());
@@ -97,21 +104,55 @@ public class ArenaEditor {
                 arena.deathBarriers.add(selectedBox.clone());
                 break;
         }
-        bbCorner1 = null;
-        bbCorner2 = null;
+        boxCorner1 = null;
+        boxCorner2 = null;
     }
 
 
     private void startBoxDisplay() {
+        displayTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                HashSet<BoundingBox> boxes = new HashSet<>();
+                boxes.add(createdBox);
+                boxes.addAll(arena.deathBarriers);
+                boxes.addAll(arena.checkpointBoxes);
+                for(BoundingBox box : boxes) {
+                    if(boxRaycast(box)) {
+                        selectedBox = box;
+                        break;
+                    }
+                }
 
+                if(createdBox != null)
+                    displayBoundingBox(createdBox, new Particle.DustOptions(Color.WHITE, 1));
+                arena.deathBarriers.forEach(b -> displayBoundingBox(b, new Particle.DustOptions(Color.RED, 1)));
+                arena.checkpointBoxes.forEach(b -> displayBoundingBox(b, new Particle.DustOptions(Color.AQUA, 1)));
+            }
+        }.runTaskTimer(plugin, 0, 10);
     }
+
+    private boolean boxRaycast(BoundingBox box) {
+        for(int i = 0; i < 10; i++) {
+            Vector directionVector = player.getEyeLocation().getDirection().multiply(i);
+            Vector locationVector = player.getEyeLocation().toVector().multiply(directionVector);
+            if(box.contains(locationVector)) return true;
+        }
+        return false;
+    }
+
     private void stopBoxDisplay() {
-        boxDisplay = false;
+        displayTask.cancel();
     }
 
-    private void displayBoundingBox(BoundingBox bb, Particle.DustOptions color) {
-        Vector c1 = bb.getMin();
-        Vector c2 = bb.getMax();
+    /**
+     * Displays the specified {@link BoundingBox} using particles.
+     * @param box the bounding box to display.
+     * @param color the color and size on the particles in the for of a {@link Particle.DustOptions} object.
+     */
+    private void displayBoundingBox(BoundingBox box, Particle.DustOptions color) {
+        Vector c1 = box.getMin();
+        Vector c2 = box.getMax();
         //x axis lines
         for(double x = c1.getX(); x >= c2.getX(); x += 0.2) {
             player.spawnParticle(Particle.REDSTONE, new Location(player.getWorld(), x, c1.getY(), c1.getZ()), 1, color);
@@ -138,6 +179,11 @@ public class ArenaEditor {
 
     public void restore() {
         player.getInventory().setContents(playerInv);
+        stopBoxDisplay();
+        boxCorner1 = null;
+        boxCorner2 = null;
+        selectedBox = null;
+        createdBox = null;
     }
     public static class Events implements Listener {
 
@@ -150,11 +196,38 @@ public class ArenaEditor {
         }
 
         @EventHandler
-        public void onClickBlock(PlayerInteractEvent e) {
-            if(e.getAction() != Action.RIGHT_CLICK_BLOCK && e.getAction() != Action.LEFT_CLICK_BLOCK) return;
-            if(!editors.containsKey(e.getPlayer())) return;
-
-            e.setCancelled(true);
+        public void onClick(PlayerInteractEvent e) {
+            Action action = e.getAction();
+            Player player = e.getPlayer();
+            if(!editors.containsKey(player)) return;
+            ArenaEditor editor = editors.get(player);
+            if(e.getItem() == null) return;
+            switch (e.getItem().getType()) {
+                case IRON_AXE:
+                    if(action == Action.LEFT_CLICK_BLOCK) {
+                        //noinspection ConstantConditions
+                        editor.setBoxCorner1(e.getClickedBlock().getLocation().toVector());
+                        e.setCancelled(true);
+                    }
+                    if(action == Action.RIGHT_CLICK_BLOCK) {
+                        //noinspection ConstantConditions
+                        editor.setBoxCorner2(e.getClickedBlock().getLocation().toVector());
+                        e.setCancelled(true);
+                    }
+                    break;
+                case BARRIER:
+                    if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
+                        editor.addBoundingBox(BoundingBoxType.DEATH_BARRIER);
+                        e.setCancelled(true);
+                    }
+                    break;
+                case RED_BANNER:
+                    if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
+                        editor.addBoundingBox(BoundingBoxType.CHECKPOINT);
+                        e.setCancelled(true);
+                    }
+                    break;
+            }
         }
     }
 
