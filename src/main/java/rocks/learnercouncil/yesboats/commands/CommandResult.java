@@ -13,6 +13,7 @@ public class CommandResult {
             ARENA_NOT_EXIST = prefix + RED + "That arena doesn't exsist.";
     //Results
     public static final String
-            ARENA_CREATED = prefix + AQUA + "Arena successfully created.",
-            JOINED = prefix + AQUA + "Joined the game.";
+            ARENA_CREATED = prefix + AQUA + "Arena successfully created. Now editing.",
+            JOINED = prefix + AQUA + "Joined the game.",
+            EDITING = prefix + AQUA + "Now editing.";
 }

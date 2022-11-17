@@ -25,6 +25,7 @@ public final class YesBoats extends JavaPlugin {
         return instance;
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Override
     public void onEnable() {
         // Plugin startup logic
@@ -33,7 +34,7 @@ public final class YesBoats extends JavaPlugin {
         ConfigurationSerialization.registerClass(Arena.class);
 
         //initialize arena config
-        arenaCfg = new ConfigFile(this, "arenas");
+        arenaCfg = new ConfigFile(this, "arenas.yml");
         List<?> arenas = arenaCfg.getConfig().getList("arenas", new ArrayList<>());
         if(!arenas.isEmpty() && arenas.get(0) instanceof Arena) {
             //noinspection unchecked
@@ -41,11 +42,11 @@ public final class YesBoats extends JavaPlugin {
         }
 
         //initialize regular config
-        config = new ConfigFile(this, "config");
+        config = new ConfigFile(this, "config.yml");
         Arena.queueTime = config.getConfig().getInt("queue-time");
 
-        //noinspection ConstantConditions
         getCommand("yesboats").setExecutor(new YesBoatsCmd(this));
+        getCommand("yesboats").setTabCompleter(new YesBoatsCmd(this));
 
         registerEvents(
                 new VehicleExit(),
@@ -56,7 +57,10 @@ public final class YesBoats extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+        ArenaEditor.editors.values().forEach(ArenaEditor::restore);
+        
         arenaCfg.getConfig().set("arenas", Arena.arenas);
+        arenaCfg.saveConfig();
     }
 
     private void registerEvents(Listener... listeners) {

@@ -1,6 +1,7 @@
 package rocks.learnercouncil.yesboats.arena;
 
 import org.bukkit.*;
+import org.bukkit.block.data.type.Bed;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -19,6 +20,9 @@ import rocks.learnercouncil.yesboats.YesBoats;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.DoubleConsumer;
 
 public class ArenaEditor {
 
@@ -60,7 +64,7 @@ public class ArenaEditor {
         inv.setItem(1, deathBarrier);
 
         ItemStack checkpoint = getItem(Material.RED_BANNER,
-                ChatColor.BOLD.toString() + ChatColor.AQUA + "Chechpoint",
+                ChatColor.BOLD.toString() + ChatColor.AQUA + "Checkpoint",
                 ChatColor.DARK_AQUA + "Click to set the selected bouding box to a checkpoint");
         inv.setItem(2, checkpoint);
     }
@@ -113,6 +117,7 @@ public class ArenaEditor {
         displayTask = new BukkitRunnable() {
             @Override
             public void run() {
+                displayBoxOffset = !displayBoxOffset;
                 HashSet<BoundingBox> boxes = new HashSet<>();
                 boxes.add(createdBox);
                 boxes.addAll(arena.deathBarriers);
@@ -120,6 +125,8 @@ public class ArenaEditor {
                 for(BoundingBox box : boxes) {
                     if(boxRaycast(box)) {
                         selectedBox = box;
+                        plugin.getLogger().info("Bounding box at " + box.getCenter() + " selected.");
+                        displayBoundingBox(selectedBox, new Particle.DustOptions(Color.YELLOW,1));
                         break;
                     }
                 }
@@ -129,13 +136,15 @@ public class ArenaEditor {
                 arena.deathBarriers.forEach(b -> displayBoundingBox(b, new Particle.DustOptions(Color.RED, 1)));
                 arena.checkpointBoxes.forEach(b -> displayBoundingBox(b, new Particle.DustOptions(Color.AQUA, 1)));
             }
-        }.runTaskTimer(plugin, 0, 10);
+        }.runTaskTimer(plugin, 0, 5);
     }
 
     private boolean boxRaycast(BoundingBox box) {
+        if(box == null) return false;
         for(int i = 0; i < 10; i++) {
             Vector directionVector = player.getEyeLocation().getDirection().multiply(i);
             Vector locationVector = player.getEyeLocation().toVector().multiply(directionVector);
+            plugin.getLogger().info("directionVector" + box.getCenter() + ", locationVector: " + locationVector);
             if(box.contains(locationVector)) return true;
         }
         return false;
@@ -145,6 +154,8 @@ public class ArenaEditor {
         displayTask.cancel();
     }
 
+
+    private boolean displayBoxOffset = false;
     /**
      * Displays the specified {@link BoundingBox} using particles.
      * @param box the bounding box to display.
@@ -152,29 +163,38 @@ public class ArenaEditor {
      */
     private void displayBoundingBox(BoundingBox box, Particle.DustOptions color) {
         Vector c1 = box.getMin();
-        Vector c2 = box.getMax();
+        Vector c2 = box.getMax().add(new Vector(1, 1, 1));
+        TriDouble spawnParticle = (x, y, z) -> player.spawnParticle(Particle.REDSTONE, new Location(player.getWorld(), x, y, z), 1, color);
+
+        double offset = displayBoxOffset ? 0.5 : 0;
+
         //x axis lines
-        for(double x = c1.getX(); x >= c2.getX(); x += 0.2) {
-            player.spawnParticle(Particle.REDSTONE, new Location(player.getWorld(), x, c1.getY(), c1.getZ()), 1, color);
-            player.spawnParticle(Particle.REDSTONE, new Location(player.getWorld(), x, c1.getY(), c2.getZ()), 1, color);
-            player.spawnParticle(Particle.REDSTONE, new Location(player.getWorld(), x, c2.getY(), c1.getZ()), 1, color);
-            player.spawnParticle(Particle.REDSTONE, new Location(player.getWorld(), x, c2.getY(), c2.getZ()), 1, color);
+        for(double x = c1.getX() + offset; x <= c2.getX(); x += 1) {
+            spawnParticle.accept(x, c1.getY(), c1.getZ());
+            spawnParticle.accept(x, c1.getY(), c2.getZ());
+            spawnParticle.accept(x, c2.getY(), c1.getZ());
+            spawnParticle.accept(x, c2.getY(), c2.getZ());
         }
         //y axis lines
-        for(double y = c1.getY(); y >= c2.getY(); y += 0.2) {
-            player.spawnParticle(Particle.REDSTONE, new Location(player.getWorld(), c1.getX(), y, c1.getZ()), 1, color);
-            player.spawnParticle(Particle.REDSTONE, new Location(player.getWorld(), c1.getX(), y, c2.getZ()), 1, color);
-            player.spawnParticle(Particle.REDSTONE, new Location(player.getWorld(), c2.getX(), y, c1.getZ()), 1, color);
-            player.spawnParticle(Particle.REDSTONE, new Location(player.getWorld(), c2.getX(), y, c2.getZ()), 1, color);
+        for(double y = c1.getY() + offset; y <= c2.getY(); y += 1) {
+            spawnParticle.accept(c1.getX(), y, c1.getZ());
+            spawnParticle.accept(c1.getX(), y, c2.getZ());
+            spawnParticle.accept(c2.getX(), y, c1.getZ());
+            spawnParticle.accept(c2.getX(), y, c2.getZ());
         }
         //z axis lines
-        for(double z = c1.getZ(); z >= c2.getZ(); z += 0.2) {
-            player.spawnParticle(Particle.REDSTONE, new Location(player.getWorld(), c1.getX(), c1.getY(), z), 1, color);
-            player.spawnParticle(Particle.REDSTONE, new Location(player.getWorld(), c1.getX(), c2.getY(), z), 1, color);
-            player.spawnParticle(Particle.REDSTONE, new Location(player.getWorld(), c2.getX(), c1.getY(), z), 1, color);
-            player.spawnParticle(Particle.REDSTONE, new Location(player.getWorld(), c2.getX(), c2.getY(), z), 1, color);
+        for(double z = c1.getZ() + offset; z <= c2.getZ(); z += 1) {
+            spawnParticle.accept(c1.getX(), c1.getY(), z);
+            spawnParticle.accept(c1.getX(), c2.getY(), z);
+            spawnParticle.accept(c2.getX(), c1.getY(), z);
+            spawnParticle.accept(c2.getX(), c2.getY(), z);
         }
     }
+    @FunctionalInterface
+    private interface TriDouble {
+        void accept(double x, double y, double z);
+    }
+
 
 
     public void restore() {
@@ -207,11 +227,13 @@ public class ArenaEditor {
                     if(action == Action.LEFT_CLICK_BLOCK) {
                         //noinspection ConstantConditions
                         editor.setBoxCorner1(e.getClickedBlock().getLocation().toVector());
+                        player.sendMessage("#1: " + e.getClickedBlock().getLocation().toVector());
                         e.setCancelled(true);
                     }
                     if(action == Action.RIGHT_CLICK_BLOCK) {
                         //noinspection ConstantConditions
                         editor.setBoxCorner2(e.getClickedBlock().getLocation().toVector());
+                        player.sendMessage("#2: " + e.getClickedBlock().getLocation().toVector());
                         e.setCancelled(true);
                     }
                     break;

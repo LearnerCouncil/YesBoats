@@ -13,23 +13,26 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class AddArg implements CommandArgument {
+public class EditArg implements CommandArgument {
+
     @Override
     public String execute(CommandSender sender, Command cmd, String label, String[] args) {
         if(args.length < 2) return CommandResult.TOO_FEW_ARGS;
-        if(args[0].equalsIgnoreCase("add")) {
+        if(args[0].equalsIgnoreCase("edit")) {
             String name = args[1];
-            if(Arena.get(name).isPresent()) return CommandResult.ARENA_EXISTS;
+            if(!Arena.get(name).isPresent()) return CommandResult.ARENA_NOT_EXIST;
             ArenaEditor.editors.put((Player) sender, new ArenaEditor((Player) sender, new Arena(name)));
-            return CommandResult.ARENA_CREATED;
+            return CommandResult.EDITING;
         }
         return "";
     }
 
     @Override
     public List<String> tabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
-        if(args.length == 0) return Collections.singletonList("add");
+        if(args.length == 0) return Collections.singletonList("edit");
+        if(args.length == 1 && args[0].equalsIgnoreCase("edit")) return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
         return new ArrayList<>();
     }
 }

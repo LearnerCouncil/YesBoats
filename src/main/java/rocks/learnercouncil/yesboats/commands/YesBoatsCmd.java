@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
 import rocks.learnercouncil.yesboats.YesBoats;
 import rocks.learnercouncil.yesboats.commands.arguments.AddArg;
+import rocks.learnercouncil.yesboats.commands.arguments.EditArg;
 import rocks.learnercouncil.yesboats.commands.arguments.JoinArg;
 
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ public class YesBoatsCmd implements TabExecutor {
 
         result.add(new JoinArg());
         result.add(new AddArg());
+        result.add(new EditArg());
 
         return result;
     }
@@ -34,17 +36,16 @@ public class YesBoatsCmd implements TabExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if(!(sender instanceof Player)) {
-            plugin.getLogger().info("This command must be executed by a player");
+            sender.sendMessage("This command must be executed by a player");
             return true;
         }
         if(cmd.getName().equalsIgnoreCase("yesboats")) {
             for (CommandArgument a : arguments) {
                 String result = a.execute(sender, cmd, label, args);
-                if(result.isEmpty()) {
+                if(!result.isEmpty()) {
                     sender.sendMessage(result);
                     return true;
-                } else
-                    return false;
+                }
             }
         }
         return false;

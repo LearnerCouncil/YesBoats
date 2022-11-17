@@ -162,6 +162,9 @@ public class Arena implements ConfigurationSerializable {
 
     }
 
+    /**
+     * Stops the game.
+     */
     public void stopGame() {
         mainLoop.cancel();
         //todo game stop logic
