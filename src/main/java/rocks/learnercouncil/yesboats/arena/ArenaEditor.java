@@ -99,7 +99,12 @@ public class ArenaEditor {
     }
 
     private void addBoundingBox(BoundingBoxType type) {
-        if(selectedBox == null) return;
+        if(selectedBox == null) {
+            player.sendMessage(ChatColor.DARK_RED + "[YesBoats] " + ChatColor.RED + "There is no bounding box selected");
+            return;
+        }
+        arena.checkpointBoxes.remove(selectedBox);
+        arena.deathBarriers.remove(selectedBox);
         switch (type) {
             case CHECKPOINT:
                 arena.checkpointBoxes.add(selectedBox.clone());
@@ -110,6 +115,7 @@ public class ArenaEditor {
         }
         boxCorner1 = null;
         boxCorner2 = null;
+        createdBox = null;
     }
 
 
@@ -122,14 +128,17 @@ public class ArenaEditor {
                 boxes.add(createdBox);
                 boxes.addAll(arena.deathBarriers);
                 boxes.addAll(arena.checkpointBoxes);
+
+                boolean clearSelection = true;
                 for(BoundingBox box : boxes) {
                     if(boxRaycast(box)) {
                         selectedBox = box;
-                        plugin.getLogger().info("Bounding box at " + box.getCenter() + " selected.");
                         displayBoundingBox(selectedBox, new Particle.DustOptions(Color.YELLOW,1));
+                        clearSelection = false;
                         break;
                     }
                 }
+                if(clearSelection) selectedBox = null;
 
                 if(createdBox != null)
                     displayBoundingBox(createdBox, new Particle.DustOptions(Color.WHITE, 1));
@@ -141,11 +150,10 @@ public class ArenaEditor {
 
     private boolean boxRaycast(BoundingBox box) {
         if(box == null) return false;
-        for(int i = 0; i < 10; i++) {
-            Vector directionVector = player.getEyeLocation().getDirection().multiply(i);
-            Vector locationVector = player.getEyeLocation().toVector().multiply(directionVector);
-            plugin.getLogger().info("directionVector" + box.getCenter() + ", locationVector: " + locationVector);
-            if(box.contains(locationVector)) return true;
+        for(double i = 0; i < 10; i += 0.5) {
+            Vector directionVector = player.getEyeLocation().getDirection();
+            Vector locationVector = player.getEyeLocation().toVector().add(directionVector.multiply(i));
+            if(box.contains(locationVector.toBlockVector())) return true;
         }
         return false;
     }
