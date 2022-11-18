@@ -2,7 +2,6 @@ package rocks.learnercouncil.yesboats.arena;
 
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.*;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -12,7 +11,6 @@ import rocks.learnercouncil.yesboats.PlayerManager;
 import rocks.learnercouncil.yesboats.YesBoats;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Represents an arena

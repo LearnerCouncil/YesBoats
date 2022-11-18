@@ -29,6 +29,7 @@ public class YesBoatsCmd implements TabExecutor {
         result.add(new JoinArg());
         result.add(new AddArg());
         result.add(new EditArg());
+        //TODO Addd leave, start, and stop arguments
 
         return result;
     }
@@ -55,7 +56,9 @@ public class YesBoatsCmd implements TabExecutor {
     public List<String> onTabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
         List<String> arguments = new ArrayList<>();
         List<String> completions = new ArrayList<>();
-        this.arguments.forEach(a -> arguments.addAll(a.tabComplete(sender, cmd, alias, args)));
+        for(CommandArgument arg : this.arguments) {
+            arguments.addAll(arg.tabComplete(sender, cmd, alias, args));
+        }
         StringUtil.copyPartialMatches(args[args.length - 1], arguments, completions);
         return completions;
 

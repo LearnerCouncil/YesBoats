@@ -1,11 +1,12 @@
 package rocks.learnercouncil.yesboats;
 
+import org.bukkit.command.TabExecutor;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
+import rocks.learnercouncil.yesboats.arena.Arena;
 import rocks.learnercouncil.yesboats.arena.ArenaEditor;
 import rocks.learnercouncil.yesboats.commands.YesBoatsCmd;
-import rocks.learnercouncil.yesboats.arena.Arena;
 import rocks.learnercouncil.yesboats.events.VehicleExit;
 
 import java.util.ArrayList;
@@ -45,8 +46,10 @@ public final class YesBoats extends JavaPlugin {
         config = new ConfigFile(this, "config.yml");
         Arena.queueTime = config.getConfig().getInt("queue-time");
 
-        getCommand("yesboats").setExecutor(new YesBoatsCmd(this));
-        getCommand("yesboats").setTabCompleter(new YesBoatsCmd(this));
+        TabExecutor yb = new YesBoatsCmd(this);
+        getCommand("yesboats").setExecutor(yb);
+        getCommand("yesboats").setTabCompleter(yb);
+
 
         registerEvents(
                 new VehicleExit(),
@@ -68,4 +71,5 @@ public final class YesBoats extends JavaPlugin {
             getServer().getPluginManager().registerEvents(listener, this);
         }
     }
+
 }

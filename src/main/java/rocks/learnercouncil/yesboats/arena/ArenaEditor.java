@@ -1,7 +1,6 @@
 package rocks.learnercouncil.yesboats.arena;
 
 import org.bukkit.*;
-import org.bukkit.block.data.type.Bed;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -20,9 +19,6 @@ import rocks.learnercouncil.yesboats.YesBoats;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.DoubleConsumer;
 
 public class ArenaEditor {
 
@@ -48,25 +44,29 @@ public class ArenaEditor {
         startBoxDisplay();
     }
 
+    /**
+     * Initializes the player's inventory with all the items used for editing.
+     */
     private void initializeInventory() {
         player.getInventory().clear();
         Inventory inv = player.getInventory();
 
-        ItemStack selectionAxe = getItem(Material.IRON_AXE,
+        inv.setItem(0, getItem(Material.IRON_AXE,
                 ChatColor.BOLD.toString() + ChatColor.YELLOW + "Area Selector",
                 ChatColor.GOLD + "Left click a block to select the 1st corner.",
-                ChatColor.GOLD + "Right click a block to select the 2nd corner.");
-        inv.setItem(0, selectionAxe);
+                ChatColor.GOLD + "Right click a block to select the 2nd corner."));
 
-        ItemStack deathBarrier = getItem(Material.BARRIER,
+        inv.setItem(1, getItem(Material.BARRIER,
                 ChatColor.BOLD.toString() + ChatColor.RED + "Death Barrier",
-                ChatColor.DARK_RED + "Click to set the selected bouding box to a death barrier");
-        inv.setItem(1, deathBarrier);
+                ChatColor.DARK_RED + "Click to set the selected",
+                ChatColor.DARK_RED + "bouding box to a death barrier"));
 
-        ItemStack checkpoint = getItem(Material.RED_BANNER,
+        inv.setItem(2, getItem(Material.LIGHT_BLUE_BANNER,
                 ChatColor.BOLD.toString() + ChatColor.AQUA + "Checkpoint",
-                ChatColor.DARK_AQUA + "Click to set the selected bouding box to a checkpoint");
-        inv.setItem(2, checkpoint);
+                ChatColor.DARK_AQUA + "Click to set the selected",
+                ChatColor.DARK_AQUA + "bouding box to a checkpoint"));
+
+        //TODO add items for setting the minPlayers, maxPlayers, lobbyLocation, startWorld, startLocations, and lightLocations
     }
 
     /**
@@ -98,7 +98,12 @@ public class ArenaEditor {
             createdBox = BoundingBox.of(this.boxCorner1, this.boxCorner2);
     }
 
+    /**
+     * Adds a bounding box the the specified type the the {@link Arena}.
+     * @param type The {@link BoundingBoxType}.
+     */
     private void addBoundingBox(BoundingBoxType type) {
+        //TODO add ability to remove a bounding box
         if(selectedBox == null) {
             player.sendMessage(ChatColor.DARK_RED + "[YesBoats] " + ChatColor.RED + "There is no bounding box selected");
             return;
@@ -158,10 +163,6 @@ public class ArenaEditor {
         return false;
     }
 
-    private void stopBoxDisplay() {
-        displayTask.cancel();
-    }
-
 
     private boolean displayBoxOffset = false;
     /**
@@ -178,40 +179,41 @@ public class ArenaEditor {
 
         //x axis lines
         for(double x = c1.getX() + offset; x <= c2.getX(); x += 1) {
-            spawnParticle.accept(x, c1.getY(), c1.getZ());
-            spawnParticle.accept(x, c1.getY(), c2.getZ());
-            spawnParticle.accept(x, c2.getY(), c1.getZ());
-            spawnParticle.accept(x, c2.getY(), c2.getZ());
+            spawnParticle.spawn(x, c1.getY(), c1.getZ());
+            spawnParticle.spawn(x, c1.getY(), c2.getZ());
+            spawnParticle.spawn(x, c2.getY(), c1.getZ());
+            spawnParticle.spawn(x, c2.getY(), c2.getZ());
         }
         //y axis lines
         for(double y = c1.getY() + offset; y <= c2.getY(); y += 1) {
-            spawnParticle.accept(c1.getX(), y, c1.getZ());
-            spawnParticle.accept(c1.getX(), y, c2.getZ());
-            spawnParticle.accept(c2.getX(), y, c1.getZ());
-            spawnParticle.accept(c2.getX(), y, c2.getZ());
+            spawnParticle.spawn(c1.getX(), y, c1.getZ());
+            spawnParticle.spawn(c1.getX(), y, c2.getZ());
+            spawnParticle.spawn(c2.getX(), y, c1.getZ());
+            spawnParticle.spawn(c2.getX(), y, c2.getZ());
         }
         //z axis lines
         for(double z = c1.getZ() + offset; z <= c2.getZ(); z += 1) {
-            spawnParticle.accept(c1.getX(), c1.getY(), z);
-            spawnParticle.accept(c1.getX(), c2.getY(), z);
-            spawnParticle.accept(c2.getX(), c1.getY(), z);
-            spawnParticle.accept(c2.getX(), c2.getY(), z);
+            spawnParticle.spawn(c1.getX(), c1.getY(), z);
+            spawnParticle.spawn(c1.getX(), c2.getY(), z);
+            spawnParticle.spawn(c2.getX(), c1.getY(), z);
+            spawnParticle.spawn(c2.getX(), c2.getY(), z);
         }
     }
     @FunctionalInterface
     private interface TriDouble {
-        void accept(double x, double y, double z);
+        void spawn(double x, double y, double z);
     }
 
 
 
     public void restore() {
         player.getInventory().setContents(playerInv);
-        stopBoxDisplay();
+        displayTask.cancel();
         boxCorner1 = null;
         boxCorner2 = null;
         selectedBox = null;
         createdBox = null;
+        if(!Arena.arenas.contains(arena)) Arena.arenas.add(arena);
     }
     public static class Events implements Listener {
 
@@ -235,13 +237,11 @@ public class ArenaEditor {
                     if(action == Action.LEFT_CLICK_BLOCK) {
                         //noinspection ConstantConditions
                         editor.setBoxCorner1(e.getClickedBlock().getLocation().toVector());
-                        player.sendMessage("#1: " + e.getClickedBlock().getLocation().toVector());
                         e.setCancelled(true);
                     }
                     if(action == Action.RIGHT_CLICK_BLOCK) {
                         //noinspection ConstantConditions
                         editor.setBoxCorner2(e.getClickedBlock().getLocation().toVector());
-                        player.sendMessage("#2: " + e.getClickedBlock().getLocation().toVector());
                         e.setCancelled(true);
                     }
                     break;
@@ -251,17 +251,19 @@ public class ArenaEditor {
                         e.setCancelled(true);
                     }
                     break;
-                case RED_BANNER:
+                case LIGHT_BLUE_BANNER:
                     if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
                         editor.addBoundingBox(BoundingBoxType.CHECKPOINT);
+                        //TODO logic for setting the chickpoint spawn location
                         e.setCancelled(true);
                     }
                     break;
+                    //TODO add logic for the minPlayers, maxPlayers, lobbyLocation, startWorld, startLocations, and lightLocations items when added
             }
         }
     }
 
-    enum BoundingBoxType {
+    private enum BoundingBoxType {
         DEATH_BARRIER, CHECKPOINT
     }
 }
