@@ -57,9 +57,9 @@ public class Arena implements ConfigurationSerializable {
 
     //serialized feilds
     public final String name;
-    protected int minPlayers, maxPlayers;
+    protected int minPlayers;
     protected Location lobbyLocation;
-    private World startWorld;
+    protected World startWorld;
     protected List<Location> startLocations = new ArrayList<>();
     protected List<Location> lightLocations = new ArrayList<>();
     protected List<BoundingBox> deathBarriers = new ArrayList<>();
@@ -68,12 +68,12 @@ public class Arena implements ConfigurationSerializable {
 
     public Arena(String name) {
         this.name = name;
+        this.minPlayers = 1;
     }
 
-    public Arena(String name, int minPlayers, int maxPlayers, Location lobbyLocation, World startWorld, List<Location> startLocations, List<Location> lightLocations, List<BoundingBox> deathBarriers, List<BoundingBox> checkpointBoxes, List<Location> checkpointSpawns) {
+    public Arena(String name, int minPlayers, Location lobbyLocation, World startWorld, List<Location> startLocations, List<Location> lightLocations, List<BoundingBox> deathBarriers, List<BoundingBox> checkpointBoxes, List<Location> checkpointSpawns) {
         this.name = name;
         this.minPlayers = minPlayers;
-        this.maxPlayers = maxPlayers;
         this.lobbyLocation = lobbyLocation;
         this.startWorld = startWorld;
         this.startLocations = startLocations;
@@ -85,7 +85,7 @@ public class Arena implements ConfigurationSerializable {
 
     public void setGameStatus(Player player, boolean join) {
         if(join) {
-            if(players.size() == maxPlayers) return;
+            if(players.size() == startLocations.size()) return;
             Location loc = startLocations.get(players.size());
             player.teleport(loc);
             Boat boat = (Boat) startWorld.spawnEntity(loc, EntityType.BOAT);
@@ -183,7 +183,6 @@ public class Arena implements ConfigurationSerializable {
         name = (String) m.get("name");
 
         minPlayers = (int) m.get("minPlayers");
-        maxPlayers = (int) m.get("maxPlayers");
 
         lobbyLocation = stringToLoc((String) m.get("lobbyLocation"));
 
@@ -207,6 +206,7 @@ public class Arena implements ConfigurationSerializable {
      * @see Arena#stringToLoc(String)
      */
     private static String locToString(Location loc) {
+        if(loc == null) return "";
         String world;
         if(loc.getWorld() == null) {
             plugin.getLogger().severe("World is not loaded. Defaulting to the first loaded world found.");
@@ -229,6 +229,7 @@ public class Arena implements ConfigurationSerializable {
      * @see Arena#locToString(Location)
      */
     private static Location stringToLoc(String str) {
+        if(str.isEmpty()) return null;
         String[] segments = str.split(",");
         return new Location(
                 plugin.getServer().getWorld(segments[0]),
@@ -391,7 +392,6 @@ public class Arena implements ConfigurationSerializable {
         m.put("name", name);
 
         m.put("minPlayers", minPlayers);
-        m.put("maxplayers", maxPlayers);
 
         m.put("lobbyLocaion", locToString(lobbyLocation));
 
@@ -410,7 +410,6 @@ public class Arena implements ConfigurationSerializable {
     }
 
     private static class GameData {
-
         int checkpoint;
         int lap;
     }
