@@ -6,12 +6,15 @@ import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
-import org.bukkit.entity.Player;
+import org.bukkit.block.BlockFace;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.vehicle.VehicleDestroyEvent;
+import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -21,9 +24,8 @@ import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import rocks.learnercouncil.yesboats.YesBoats;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.bukkit.ChatColor.*;
 
@@ -33,6 +35,8 @@ public class ArenaEditor {
 
     public static HashMap<Player, ArenaEditor> editors = new HashMap<>();
 
+    private final HashSet<ItemStack> editorItems = new HashSet<>();
+    private final List<Boat> startBoats = new LinkedList<>();
     private final ItemStack[] playerInv;
     private final Player player;
     public final Arena arena;
@@ -49,19 +53,29 @@ public class ArenaEditor {
         this.arena = arena;
         initializeInventory();
         startBoxDisplay();
+        arena.startLocations.forEach(l -> {
+            ArmorStand stand = (ArmorStand) arena.startWorld.spawnEntity(l, EntityType.ARMOR_STAND);
+            stand.setInvisible(true);
+            stand.setMarker(true);
+            Boat boat = (Boat) arena.startWorld.spawnEntity(l, EntityType.BOAT);
+            stand.addPassenger(boat);
+            startBoats.add(boat);
+        });
     }
 
     /**
      * Initializes the player's inventory with all the items used for editing.
      */
+    @SuppressWarnings("ConstantConditions")
     private void initializeInventory() {
         player.getInventory().clear();
+        editorItems.clear();
         Inventory inv = player.getInventory();
 
         inv.setItem(0, getItem(Material.IRON_AXE,
                 BOLD.toString() + YELLOW + "Area Selector",
-                GOLD + "Left click a block to select the 1st corner.",
-                GOLD + "Right click a block to select the 2nd corner."));
+                GOLD + "Left click a block to select the 1st corner",
+                GOLD + "Right click a block to select the 2nd corner"));
 
         inv.setItem(1, getItem(Material.TNT,
                 BOLD.toString() + RED + "Remove Bounding Box",
@@ -78,9 +92,17 @@ public class ArenaEditor {
                 DARK_AQUA + "Click to set the selected",
                 DARK_AQUA + "bouding box to a checkpoint"));
 
+        inv.setItem(4, getItem(Material.RED_CARPET,
+                BOLD.toString() + RED + "Minimum Players",
+                YELLOW + "Left click to increase",
+                YELLOW + "Right click to decrease"));
+        inv.getItem(4).setAmount(arena.minPlayers);
 
+        inv.setItem(5, getItem(Material.OAK_BOAT,
+                BOLD.toString() + YELLOW + "Add start location",
+                GOLD + "Place to add a start location"));
 
-        //TODO add items for setting the minPlayers, maxPlayers, lobbyLocation, startWorld, startLocations, and lightLocations
+        //TODO add items for setting the lobbyLocation, startWorld, and lightLocations
     }
 
     /**
@@ -97,6 +119,7 @@ public class ArenaEditor {
         meta.setDisplayName(name);
         meta.setLore(Arrays.asList(lore));
         item.setItemMeta(meta);
+        editorItems.add(item);
         return item;
     }
 
@@ -112,12 +135,14 @@ public class ArenaEditor {
             createdBox = BoundingBox.of(this.boxCorner1, this.boxCorner2);
     }
 
+    private enum BoundingBoxType {
+        DEATH_BARRIER, CHECKPOINT, REMOVE
+    }
     /**
      * Adds a bounding box the the specified type the the {@link Arena}.
      * @param type The {@link BoundingBoxType}.
      */
     private void addBoundingBox(BoundingBoxType type) {
-        //TODO add ability to remove a bounding box
         if(selectedBox == null) {
             player.sendMessage(DARK_RED + "[YesBoats] " + RED + "There is no bounding box selected");
             return;
@@ -237,7 +262,26 @@ public class ArenaEditor {
     }
     public static class Events implements Listener {
         
-        private final HashMap<Player, Boolean> isSettingCheckpoint = new HashMap<>();
+        private final HashMap<Player, Boolean> settingCheckpoint = new HashMap<>();
+
+        @EventHandler
+        public void onVehicleDestroy(VehicleDestroyEvent e) {
+            if(!(e.getAttacker() instanceof Player)) return;
+            if(!(e.getVehicle() instanceof Boat)) return;
+            if(!editors.containsKey((Player) e.getAttacker())) return;
+            if(editors.get((Player) e.getAttacker()).startBoats.contains((Boat) e.getVehicle())) {
+                Boat boat = (Boat) e.getVehicle();
+                if(boat.isInsideVehicle())
+                    Objects.requireNonNull(boat.getVehicle()).remove();
+            }
+        }
+
+        @EventHandler
+        public void onVehicleEnter(VehicleEnterEvent e) {
+            if(!(e.getEntered() instanceof Player)) return;
+            if(editors.containsKey((Player) e.getEntered()))
+                e.setCancelled(true);
+        }
 
         @EventHandler
         public void onInventoryClick(InventoryClickEvent e) {
@@ -253,8 +297,10 @@ public class ArenaEditor {
             Player player = e.getPlayer();
             if(!editors.containsKey(player)) return;
             ArenaEditor editor = editors.get(player);
+            if(!editor.editorItems.contains(e.getItem())) return;
             if(e.getItem() == null) return;
             switch (e.getItem().getType()) {
+                //Selection
                 case IRON_AXE:
                     if(action == Action.LEFT_CLICK_BLOCK) {
                         //noinspection ConstantConditions
@@ -279,11 +325,13 @@ public class ArenaEditor {
                         e.setCancelled(true);
                     }
                     break;
+                //Remove
                 case TNT:
                     if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
                         editor.addBoundingBox(BoundingBoxType.REMOVE);
                         e.setCancelled(true);
                     }
+                //Death Barrier
                 case BARRIER:
                     if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
                         editor.addBoundingBox(BoundingBoxType.DEATH_BARRIER);
@@ -291,12 +339,13 @@ public class ArenaEditor {
                         e.setCancelled(true);
                     }
                     break;
+                //Checkpoint
                 case LIGHT_BLUE_BANNER:
                     if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
-                        if(!isSettingCheckpoint.get(player)) {
+                        if(!settingCheckpoint.get(player)) {
                             editor.addBoundingBox(BoundingBoxType.CHECKPOINT);
                             player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +"Bounding box for chectpoint #" + editor.arena.checkpointBoxes.size() + " set. Click again to set the spawnpoint.");
-                            isSettingCheckpoint.put(player, true);
+                            settingCheckpoint.put(player, true);
                         } else {
                             Location playerLocation = player.getLocation();
                             float yaw = (float) (Math.floor(playerLocation.getYaw() / 22.5) * 22.5);
@@ -305,12 +354,47 @@ public class ArenaEditor {
                         e.setCancelled(true);
                     }
                     break;
-                    //TODO add logic for the minPlayers, maxPlayers, lobbyLocation, startWorld, startLocations, and lightLocations items when added
+                //Minimum Players
+                case RED_CARPET:
+                    plugin.getLogger().info("Items: " + editor.editorItems.stream().map(ItemStack::getType).collect(Collectors.toList()));
+                    Optional<ItemStack> minPlayersOptional = editor.editorItems.stream().filter(i -> i.getType() == Material.RED_CARPET).findAny();
+                    if(!minPlayersOptional.isPresent()) break;
+                    plugin.getLogger().info("Item is Present, Action: " + action);
+                    ItemStack minPlayers = minPlayersOptional.get();
+                    if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
+                        if(editor.arena.minPlayers > 1) {
+                            editor.arena.minPlayers--;
+                            minPlayers.setAmount(minPlayers.getAmount() - 1);
+                            plugin.getLogger().info("MinPlayers: " + editor.arena.minPlayers);
+                        }
+                        e.setCancelled(true);
+                    } else if(action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
+                        if(editor.arena.minPlayers == editor.arena.startLocations.size()) {
+                            editor.arena.minPlayers++;
+                            minPlayers.setAmount(minPlayers.getAmount() + 1);
+                            plugin.getLogger().info("MinPlayers: " + editor.arena.minPlayers);
+                        }
+                        e.setCancelled(true);
+                    }
+                    break;
+                //Start Locations
+                case OAK_BOAT:
+                    if(action == Action.RIGHT_CLICK_BLOCK) {
+                        if(e.getBlockFace() != BlockFace.UP) break;
+                        if(e.getClickedBlock() == null) break;
+                        Location boatLocation = e.getClickedBlock().getLocation().add(0.5, 1, 0.5);
+                        ArmorStand stand = (ArmorStand) player.getWorld().spawnEntity(boatLocation, EntityType.ARMOR_STAND);
+                        Entity boat = player.getWorld().spawnEntity(e.getClickedBlock().getLocation().add(0.5, 1, 0.5), EntityType.BOAT);
+                        stand.setInvisible(true);
+                        stand.setMarker(true);
+                        boat.setRotation((float) ((Math.floor(player.getLocation().getYaw() / 45)) * 45), 0);
+                        editor.startBoats.add((Boat) boat);
+                        editor.arena.startLocations.add(boat.getLocation());
+                        e.setCancelled(true);
+                    }
+                    break;
+                    //TODO add logic for the lobbyLocation, startWorld, and lightLocations items when added
             }
         }
-    }
-
-    private enum BoundingBoxType {
-        DEATH_BARRIER, CHECKPOINT, REMOVE
     }
 }
