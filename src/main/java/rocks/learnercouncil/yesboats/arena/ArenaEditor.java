@@ -262,7 +262,7 @@ public class ArenaEditor {
     }
     public static class Events implements Listener {
         
-        private final HashMap<Player, Boolean> settingCheckpoint = new HashMap<>();
+        private final List<Player> settingCheckpoint = new ArrayList<>();
 
         @EventHandler
         public void onVehicleDestroy(VehicleDestroyEvent e) {
@@ -342,14 +342,15 @@ public class ArenaEditor {
                 //Checkpoint
                 case LIGHT_BLUE_BANNER:
                     if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
-                        if(!settingCheckpoint.get(player)) {
+                        if(!settingCheckpoint.contains(player)) {
                             editor.addBoundingBox(BoundingBoxType.CHECKPOINT);
                             player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +"Bounding box for chectpoint #" + editor.arena.checkpointBoxes.size() + " set. Click again to set the spawnpoint.");
-                            settingCheckpoint.put(player, true);
+                            settingCheckpoint.add(player);
                         } else {
                             Location playerLocation = player.getLocation();
                             float yaw = (float) (Math.floor(playerLocation.getYaw() / 22.5) * 22.5);
                             editor.arena.checkpointSpawns.add(new Location(player.getWorld(), playerLocation.getBlockX(), playerLocation.getBlockY(), playerLocation.getBlockZ(), yaw, 0));
+                            settingCheckpoint.remove(player);
                         }
                         e.setCancelled(true);
                     }
@@ -390,6 +391,7 @@ public class ArenaEditor {
                         boat.setRotation((float) ((Math.floor(player.getLocation().getYaw() / 45)) * 45), 0);
                         editor.startBoats.add((Boat) boat);
                         editor.arena.startLocations.add(boat.getLocation());
+                        stand.addPassenger(boat);
                         e.setCancelled(true);
                     }
                     break;
