@@ -300,8 +300,7 @@ public class ArenaEditor {
         public void onInventoryClick(InventoryClickEvent e) {
             if(e.getInventory() != e.getWhoClicked().getInventory()) return;
             if(!editors.containsKey((Player) e.getWhoClicked())) return;
-
-            e.setCancelled(true);
+            if(editors.get((Player) e.getWhoClicked()).editorItems.contains(e.getCurrentItem())) e.setCancelled(true);
         }
 
         @EventHandler
