@@ -25,6 +25,7 @@ import org.bukkit.util.Vector;
 import rocks.learnercouncil.yesboats.YesBoats;
 
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.bukkit.ChatColor.*;
@@ -147,23 +148,28 @@ public class ArenaEditor {
             player.sendMessage(DARK_RED + "[YesBoats] " + RED + "There is no bounding box selected");
             return;
         }
-        switch (type) {
-            case CHECKPOINT:
-                arena.checkpointBoxes.add(selectedBox.clone());
-                break;
-            case DEATH_BARRIER:
-                arena.deathBarriers.add(selectedBox.clone());
-                break;
-            case REMOVE:
-                //Do nothing. The code below will already remove the bounding box.
-                break;
-            default:
-                boxCorner1 = boxCorner2 = null;
-                createdBox = null;
-                return;
+        BoundingBoxType selectedType = ((Supplier<BoundingBoxType>) () -> {
+            if(arena.checkpointBoxes.contains(selectedBox)) return BoundingBoxType.CHECKPOINT;
+            if(arena.deathBarriers.contains(selectedBox)) return BoundingBoxType.DEATH_BARRIER;
+            return BoundingBoxType.REMOVE;
+        }).get();
+
+        if(selectedType != type) {
+            switch (type) {
+                case CHECKPOINT:
+                    if(selectedType == BoundingBoxType.DEATH_BARRIER) arena.deathBarriers.remove(selectedBox);
+                    arena.checkpointBoxes.add(selectedBox.clone());
+                    break;
+                case DEATH_BARRIER:
+                    if(selectedType == BoundingBoxType.CHECKPOINT) arena.checkpointBoxes.remove(selectedBox);
+                    arena.deathBarriers.add(selectedBox.clone());
+                    break;
+                case REMOVE:
+                    if(selectedType == BoundingBoxType.CHECKPOINT) arena.checkpointBoxes.remove(selectedBox);
+                    if(selectedType == BoundingBoxType.DEATH_BARRIER) arena.deathBarriers.remove(selectedBox);
+                    break;
+            }
         }
-        arena.checkpointBoxes.remove(selectedBox);
-        arena.deathBarriers.remove(selectedBox);
         boxCorner1 = boxCorner2 = null;
         createdBox = null;
     }
@@ -192,7 +198,7 @@ public class ArenaEditor {
 
                 if(createdBox != null)
                     displayBoundingBox(createdBox, new Particle.DustOptions(Color.WHITE, 1));
-                plugin.getLogger().info("Displaying Boudning boxes: " + arena.deathBarriers + ", " + arena.checkpointBoxes);
+                plugin.getLogger().info("Displaying Bounding boxes: " + arena.deathBarriers + ", " + arena.checkpointBoxes);
                 arena.deathBarriers.forEach(b -> displayBoundingBox(b, new Particle.DustOptions(Color.RED, 1)));
                 arena.checkpointBoxes.forEach(b -> displayBoundingBox(b, new Particle.DustOptions(Color.AQUA, 1)));
             }
@@ -306,6 +312,7 @@ public class ArenaEditor {
             ArenaEditor editor = editors.get(player);
             if(!editor.editorItems.contains(e.getItem())) return;
             if(e.getItem() == null) return;
+            Arena arena = editor.arena;
             switch (e.getItem().getType()) {
                 //Selection
                 case IRON_AXE:
@@ -351,12 +358,12 @@ public class ArenaEditor {
                     if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
                         if(!settingCheckpoint.contains(player)) {
                             editor.addBoundingBox(BoundingBoxType.CHECKPOINT);
-                            player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +" Bounding box for chectpoint #" + editor.arena.checkpointBoxes.size() + " set. Click again to set the spawnpoint.");
+                            player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +" Bounding box for chectpoint #" + arena.checkpointBoxes.size() + " set. Click again to set the spawnpoint.");
                             settingCheckpoint.add(player);
                         } else {
                             Location playerLocation = player.getLocation();
                             float yaw = (float) (Math.round(playerLocation.getYaw() / 22.5) * 22.5);
-                            editor.arena.checkpointSpawns.add(new Location(player.getWorld(), playerLocation.getBlockX(), playerLocation.getBlockY(), playerLocation.getBlockZ(), yaw, 0));
+                            arena.checkpointSpawns.add(new Location(player.getWorld(), playerLocation.getBlockX(), playerLocation.getBlockY(), playerLocation.getBlockZ(), yaw, 0));
                             settingCheckpoint.remove(player);
                         }
                         e.setCancelled(true);
@@ -370,17 +377,17 @@ public class ArenaEditor {
                     plugin.getLogger().info("Item is Present, Action: " + action);
                     ItemStack minPlayers = minPlayersOptional.get();
                     if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
-                        if(editor.arena.minPlayers > 1) {
-                            editor.arena.minPlayers--;
-                            minPlayers.setAmount(minPlayers.getAmount() - 1);
-                            plugin.getLogger().info("MinPlayers: " + editor.arena.minPlayers);
+                        if(arena.minPlayers > 1) {
+                            arena.minPlayers--;
+                            minPlayers.setAmount(arena.minPlayers);
+                            plugin.getLogger().info("MinPlayers: " + arena.minPlayers);
                         }
                         e.setCancelled(true);
                     } else if(action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
-                        if(editor.arena.minPlayers == editor.arena.startLocations.size()) {
-                            editor.arena.minPlayers++;
+                        if(arena.minPlayers == arena.startLocations.size()) {
+                            arena.minPlayers++;
                             minPlayers.setAmount(minPlayers.getAmount() + 1);
-                            plugin.getLogger().info("MinPlayers: " + editor.arena.minPlayers);
+                            plugin.getLogger().info("MinPlayers: " + arena.minPlayers);
                         }
                         e.setCancelled(true);
                     }
@@ -397,8 +404,8 @@ public class ArenaEditor {
                         stand.setMarker(true);
                         boat.setRotation((float) ((Math.floor(player.getLocation().getYaw() / 45)) * 45), 0);
                         editor.startBoats.add((Boat) boat);
-                        editor.arena.startLocations.add(boat.getLocation());
-                        editor.arena.startWorld = boat.getWorld();
+                        arena.startLocations.add(boat.getLocation());
+                        arena.startWorld = boat.getWorld();
                         stand.addPassenger(boat);
                         e.setCancelled(true);
                     }
