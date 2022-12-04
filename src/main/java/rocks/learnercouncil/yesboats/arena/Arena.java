@@ -50,6 +50,9 @@ public class Arena implements ConfigurationSerializable {
 
     private final List<Player> players = new ArrayList<>();
     private final Set<ArmorStand> queueStands = new HashSet<>();
+    /**
+     * The state the game is in: 0 = idle, 1 = in queue, 2 = running.
+     */
     private int state = 0;
     private BukkitTask mainLoop;
     private Map<Player, GameData> gameData = new HashMap<>();
@@ -83,6 +86,8 @@ public class Arena implements ConfigurationSerializable {
         this.checkpointSpawns = checkpointSpawns;
     }
 
+
+    @SuppressWarnings("ConstantConditions")
     public void setGameStatus(Player player, boolean join) {
         if(join) {
             if(players.size() == startLocations.size()) return;
@@ -96,8 +101,8 @@ public class Arena implements ConfigurationSerializable {
             spawnQueueStand(loc).addPassenger(boat);
             PlayerManager.set(player);
         } else {
-            if(player.getVehicle() != null) {
-                if (player.getVehicle().getVehicle() != null)
+            if(player.isInsideVehicle()) {
+                if (player.getVehicle().isInsideVehicle())
                     player.getVehicle().getVehicle().remove();
                 player.getVehicle().remove();
             }

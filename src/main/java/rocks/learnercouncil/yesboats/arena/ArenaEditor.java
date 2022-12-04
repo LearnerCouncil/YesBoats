@@ -192,6 +192,7 @@ public class ArenaEditor {
 
                 if(createdBox != null)
                     displayBoundingBox(createdBox, new Particle.DustOptions(Color.WHITE, 1));
+                plugin.getLogger().info("Displaying Boudning boxes: " + arena.deathBarriers + ", " + arena.checkpointBoxes);
                 arena.deathBarriers.forEach(b -> displayBoundingBox(b, new Particle.DustOptions(Color.RED, 1)));
                 arena.checkpointBoxes.forEach(b -> displayBoundingBox(b, new Particle.DustOptions(Color.AQUA, 1)));
             }
@@ -259,6 +260,12 @@ public class ArenaEditor {
         selectedBox = null;
         createdBox = null;
         if(!Arena.arenas.contains(arena)) Arena.arenas.add(arena);
+        startBoats.forEach(b -> {
+            if(b.isInsideVehicle())
+                //noinspection ConstantConditions
+                b.getVehicle().remove();
+            b.remove();
+        });
     }
     public static class Events implements Listener {
         
@@ -344,11 +351,11 @@ public class ArenaEditor {
                     if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
                         if(!settingCheckpoint.contains(player)) {
                             editor.addBoundingBox(BoundingBoxType.CHECKPOINT);
-                            player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +"Bounding box for chectpoint #" + editor.arena.checkpointBoxes.size() + " set. Click again to set the spawnpoint.");
+                            player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +" Bounding box for chectpoint #" + editor.arena.checkpointBoxes.size() + " set. Click again to set the spawnpoint.");
                             settingCheckpoint.add(player);
                         } else {
                             Location playerLocation = player.getLocation();
-                            float yaw = (float) (Math.floor(playerLocation.getYaw() / 22.5) * 22.5);
+                            float yaw = (float) (Math.round(playerLocation.getYaw() / 22.5) * 22.5);
                             editor.arena.checkpointSpawns.add(new Location(player.getWorld(), playerLocation.getBlockX(), playerLocation.getBlockY(), playerLocation.getBlockZ(), yaw, 0));
                             settingCheckpoint.remove(player);
                         }
@@ -391,6 +398,7 @@ public class ArenaEditor {
                         boat.setRotation((float) ((Math.floor(player.getLocation().getYaw() / 45)) * 45), 0);
                         editor.startBoats.add((Boat) boat);
                         editor.arena.startLocations.add(boat.getLocation());
+                        editor.arena.startWorld = boat.getWorld();
                         stand.addPassenger(boat);
                         e.setCancelled(true);
                     }
