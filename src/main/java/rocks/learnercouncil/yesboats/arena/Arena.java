@@ -1,7 +1,10 @@
 package rocks.learnercouncil.yesboats.arena;
 
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.data.Lightable;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.*;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -51,6 +54,7 @@ public class Arena implements ConfigurationSerializable {
      * The state the game is in: 0 = idle, 1 = in queue, 2 = running.
      */
     private int state = 0;
+    private BukkitTask queueTimer;
     private BukkitTask mainLoop;
     private final Map<Player, GameData> gameData = new HashMap<>();
 
@@ -59,6 +63,7 @@ public class Arena implements ConfigurationSerializable {
     public final String name;
     protected int minPlayers;
     protected Location lobbyLocation;
+    protected Location startLineActivator;
     protected World startWorld;
     protected List<Location> startLocations = new ArrayList<>();
     protected List<Location> lightLocations = new ArrayList<>();
@@ -71,10 +76,11 @@ public class Arena implements ConfigurationSerializable {
         this.minPlayers = 1;
     }
 
-    public Arena(String name, int minPlayers, Location lobbyLocation, World startWorld, List<Location> startLocations, List<Location> lightLocations, List<BoundingBox> deathBarriers, List<BoundingBox> checkpointBoxes, List<Location> checkpointSpawns) {
+    public Arena(String name, int minPlayers, Location lobbyLocation, Location startLineActivator, World startWorld, List<Location> startLocations, List<Location> lightLocations, List<BoundingBox> deathBarriers, List<BoundingBox> checkpointBoxes, List<Location> checkpointSpawns) {
         this.name = name;
         this.minPlayers = minPlayers;
         this.lobbyLocation = lobbyLocation;
+        this.startLineActivator = startLineActivator;
         this.startWorld = startWorld;
         this.startLocations = startLocations;
         this.lightLocations = lightLocations;
@@ -102,6 +108,8 @@ public class Arena implements ConfigurationSerializable {
             boat.addPassenger(player);
             spawnQueueStand(loc).addPassenger(boat);
             PlayerManager.set(player);
+
+            if(players.size() <= minPlayers) startQueueTimer();
         } else {
             //failsafe
             if(!Arena.get(player).isPresent()) return;
@@ -118,6 +126,11 @@ public class Arena implements ConfigurationSerializable {
             players.remove(player);
             arenasP.remove(player);
             gameData.remove(player);
+
+            if(state == 1)
+                if(players.size() < minPlayers) queueTimer.cancel();
+            if(state == 2)
+                if(players.size() == 0) stopGame();
         }
     }
 
@@ -134,9 +147,7 @@ public class Arena implements ConfigurationSerializable {
 
     public void startQueueTimer() {
         state = 1;
-        queueStands.forEach(Entity::remove);
-        queueStands.clear();
-        new BukkitRunnable() {
+        queueTimer = new BukkitRunnable() {
             int timeleft = queueTime;
             @Override
             public void run() {
@@ -144,7 +155,6 @@ public class Arena implements ConfigurationSerializable {
                     startGame();
                     cancel();
                 }
-
                 timeleft--;
             }
         }.runTaskTimer(plugin, 0, 20);
@@ -152,22 +162,39 @@ public class Arena implements ConfigurationSerializable {
 
     public void startGame() {
         state = 2;
+        queueStands.forEach(Entity::remove);
+        queueStands.clear();
         players.forEach(p -> p.getInventory().clear());
+        final Iterator<Location> lightsIterator = lightLocations.iterator();
         //TODO game logic
         mainLoop = new BukkitRunnable() {
+            int prestartTimer = 0;
             @Override
             public void run() {
-                players.forEach(p -> deathBarriers.forEach(b -> {
-                    if(b.contains(p.getLocation().toVector())) respawn(p);
-                }));
-                players.forEach(p -> {
-                    int index = 0;
-                    for (BoundingBox b : checkpointBoxes) {
-                        if (b.contains(p.getLocation().toVector()) && gameData.get(p).checkpoint == checkpointBoxes.indexOf(b))
-                            gameData.get(p).checkpoint = index;
-                        index++;
+                if(prestartTimer != -1) {
+                    prestartTimer++;
+                    if(prestartTimer % 20 == 0) {
+                        Block block = lightsIterator.next().getBlock();
+                        block.setType(Material.REDSTONE_LAMP);
+                        ((Lightable) block.getBlockData()).setLit(true);
+                        if(!lightsIterator.hasNext()) {
+                            lightLocations.forEach(l -> ((Lightable) l.getBlock().getBlockData()).setLit(false));
+
+                        }
                     }
-                });
+                } else {
+                    players.forEach(p -> deathBarriers.forEach(b -> {
+                        if (b.contains(p.getLocation().toVector())) respawn(p);
+                    }));
+                    players.forEach(p -> {
+                        int index = 0;
+                        for (BoundingBox b : checkpointBoxes) {
+                            if (b.contains(p.getLocation().toVector()) && gameData.get(p).checkpoint == checkpointBoxes.indexOf(b))
+                                gameData.get(p).checkpoint = index;
+                            index++;
+                        }
+                    });
+                }
             }
         }.runTaskTimer(plugin, 0, 1);
 
@@ -178,6 +205,14 @@ public class Arena implements ConfigurationSerializable {
      */
     public void stopGame() {
         mainLoop.cancel();
+        players.forEach(p -> {
+            p.teleport(lobbyLocation);
+            PlayerManager.restore(p);
+        });
+        players.clear();
+        arenasP.clear();
+        gameData.clear();
+
         //todo game stop logic
     }
 
@@ -195,13 +230,14 @@ public class Arena implements ConfigurationSerializable {
     public Arena(Map<String, Object> m) {
         name = (String) m.get("name");
 
+        startWorld = plugin.getServer().getWorld((String) m.get("startWorld"));
+
         minPlayers = (int) m.get("minPlayers");
 
         lobbyLocation = stringToLoc((String) m.get("lobbyLocation"));
+        startLineActivator = vectorStringToLoc((String) m.get("startLineActivator"), startWorld);
 
-        startWorld = plugin.getServer().getWorld((String) m.get("startWorld"));
         startLocations = vectorStringToLocList((List<String>) m.get("startLocations"), startWorld);
-
         lightLocations = vectorStringToLocList((List<String>) m.get("lightLocations"), startWorld);
 
         deathBarriers = stringToBoxList((List<String>) m.get("deathBarriers"));
@@ -407,7 +443,7 @@ public class Arena implements ConfigurationSerializable {
         m.put("minPlayers", minPlayers);
 
         m.put("lobbyLocaion", locToString(lobbyLocation));
-
+        m.put("startLineActivator", locToVectorString(startLineActivator));
 
         m.put("startWorld", startWorld.getName());
         m.put("startLocations", locToVectorStringList(startLocations));

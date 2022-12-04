@@ -102,6 +102,10 @@ public class ArenaEditor {
                 BOLD.toString() + YELLOW + "Add start location",
                 GOLD + "Place to add a start location"));
 
+        inv.setItem(6, getItem(Material.ENDER_PEARL,
+                BOLD.toString() + YELLOW + "Set lobby Location",
+                GOLD + "Click to set the Lobby Location"));
+
         //TODO add items for setting the lobbyLocation, startWorld, and lightLocations
     }
 
@@ -368,7 +372,7 @@ public class ArenaEditor {
                             Location playerLocation = player.getLocation();
                             float yaw = (float) (Math.round(playerLocation.getYaw() / 22.5) * 22.5);
                             arena.checkpointSpawns.add(new Location(player.getWorld(), playerLocation.getBlockX(), playerLocation.getBlockY(), playerLocation.getBlockZ(), yaw, 0));
-                            player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +" Spawnpoint for chectpoint #" + arena.checkpointBoxes.size() + " set. (" + playerLocation.getBlockX() + "," + playerLocation.getBlockY() + "," + playerLocation.getBlockZ() + ")");
+                            player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +" Spawnpoint for chectpoint #" + arena.checkpointBoxes.size() + " set. (" + playerLocation.getBlockX() + ", " + playerLocation.getBlockY() + ", " + playerLocation.getBlockZ() + ")");
                             settingCheckpoint.remove(player);
                         }
                         e.setCancelled(true);
@@ -380,24 +384,17 @@ public class ArenaEditor {
                     int index = editor.editorItems.indexOf(minPlayers);
                     if(index == -1) break;
                     if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
-                        plugin.getLogger().info("1a: MinPlayers: " + arena.minPlayers);
                         if(arena.minPlayers > 1) {
                             arena.minPlayers--;
                             minPlayers.setAmount(arena.minPlayers);
-                            plugin.getLogger().info("MinPlayers: " + arena.minPlayers);
-                            plugin.getLogger().info("Contains: " + editor.editorItems.contains(minPlayers));
                         }
                         e.setCancelled(true);
                     } else if(action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
-                        plugin.getLogger().info("1b: MinPlayers: " + arena.minPlayers);
                         if(arena.minPlayers < arena.startLocations.size()) {
                             arena.minPlayers++;
                             minPlayers.setAmount(arena.minPlayers);
-                            plugin.getLogger().info("MinPlayers: " + arena.minPlayers);
-                            plugin.getLogger().info("Contains: " + editor.editorItems.contains(minPlayers));
                         }
                         editor.editorItems.set(index, minPlayers);
-                        plugin.getLogger().info("2: Contains: " + editor.editorItems.contains(minPlayers));
                         e.setCancelled(true);
                     }
                     break;
@@ -418,6 +415,10 @@ public class ArenaEditor {
                         stand.addPassenger(boat);
                         e.setCancelled(true);
                     }
+                    break;
+                case ENDER_PEARL:
+                    editor.arena.lobbyLocation = player.getLocation();
+                    player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + " Set lobby location. (" + player.getLocation().getBlockX() + ", " + player.getLocation().getBlockY() + ", " + player.getLocation().getBlockZ() + ")");
                     break;
                     //TODO add logic for the lobbyLocation, startWorld, and lightLocations items when added
             }
