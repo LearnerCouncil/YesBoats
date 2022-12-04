@@ -26,7 +26,6 @@ import rocks.learnercouncil.yesboats.YesBoats;
 
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static org.bukkit.ChatColor.*;
 
@@ -36,7 +35,7 @@ public class ArenaEditor {
 
     public static HashMap<Player, ArenaEditor> editors = new HashMap<>();
 
-    private final HashSet<ItemStack> editorItems = new HashSet<>();
+    private final LinkedList<ItemStack> editorItems = new LinkedList<>();
     private final List<Boat> startBoats = new LinkedList<>();
     private final ItemStack[] playerInv;
     private final Player player;
@@ -198,7 +197,6 @@ public class ArenaEditor {
 
                 if(createdBox != null)
                     displayBoundingBox(createdBox, new Particle.DustOptions(Color.WHITE, 1));
-                plugin.getLogger().info("Displaying Bounding boxes: " + arena.deathBarriers + ", " + arena.checkpointBoxes);
                 arena.deathBarriers.forEach(b -> displayBoundingBox(b, new Particle.DustOptions(Color.RED, 1)));
                 arena.checkpointBoxes.forEach(b -> displayBoundingBox(b, new Particle.DustOptions(Color.AQUA, 1)));
             }
@@ -258,20 +256,23 @@ public class ArenaEditor {
 
 
 
-    public void restore() {
+    public void restore(boolean save) {
         player.getInventory().setContents(playerInv);
         displayTask.cancel();
         boxCorner1 = null;
         boxCorner2 = null;
         selectedBox = null;
         createdBox = null;
-        if(!Arena.arenas.contains(arena)) Arena.arenas.add(arena);
         startBoats.forEach(b -> {
             if(b.isInsideVehicle())
                 //noinspection ConstantConditions
                 b.getVehicle().remove();
             b.remove();
         });
+        if(save) {
+            //TODO validation
+            if(!Arena.arenas.contains(arena)) Arena.arenas.add(arena);
+        }
     }
     public static class Events implements Listener {
         
@@ -282,10 +283,12 @@ public class ArenaEditor {
             if(!(e.getAttacker() instanceof Player)) return;
             if(!(e.getVehicle() instanceof Boat)) return;
             if(!editors.containsKey((Player) e.getAttacker())) return;
-            if(editors.get((Player) e.getAttacker()).startBoats.contains((Boat) e.getVehicle())) {
+            ArenaEditor editor = editors.get((Player) e.getAttacker());
+            if(editor.startBoats.contains((Boat) e.getVehicle())) {
                 Boat boat = (Boat) e.getVehicle();
                 if(boat.isInsideVehicle())
                     Objects.requireNonNull(boat.getVehicle()).remove();
+                editor.arena.startLocations.remove(boat.getLocation());
             }
         }
 
@@ -300,7 +303,8 @@ public class ArenaEditor {
         public void onInventoryClick(InventoryClickEvent e) {
             if(e.getInventory() != e.getWhoClicked().getInventory()) return;
             if(!editors.containsKey((Player) e.getWhoClicked())) return;
-            if(editors.get((Player) e.getWhoClicked()).editorItems.contains(e.getCurrentItem())) e.setCancelled(true);
+            ArenaEditor editor = editors.get((Player) e.getWhoClicked());
+            if(editor.editorItems.contains(e.getCurrentItem())) e.setCancelled(true);
         }
 
         @EventHandler
@@ -344,6 +348,7 @@ public class ArenaEditor {
                         editor.addBoundingBox(BoundingBoxType.REMOVE);
                         e.setCancelled(true);
                     }
+                    break;
                 //Death Barrier
                 case BARRIER:
                     if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
@@ -363,6 +368,7 @@ public class ArenaEditor {
                             Location playerLocation = player.getLocation();
                             float yaw = (float) (Math.round(playerLocation.getYaw() / 22.5) * 22.5);
                             arena.checkpointSpawns.add(new Location(player.getWorld(), playerLocation.getBlockX(), playerLocation.getBlockY(), playerLocation.getBlockZ(), yaw, 0));
+                            player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +" Spawnpoint for chectpoint #" + arena.checkpointBoxes.size() + " set. (" + playerLocation.getBlockX() + "," + playerLocation.getBlockY() + "," + playerLocation.getBlockZ() + ")");
                             settingCheckpoint.remove(player);
                         }
                         e.setCancelled(true);
@@ -370,24 +376,28 @@ public class ArenaEditor {
                     break;
                 //Minimum Players
                 case RED_CARPET:
-                    plugin.getLogger().info("Items: " + editor.editorItems.stream().map(ItemStack::getType).collect(Collectors.toList()));
-                    Optional<ItemStack> minPlayersOptional = editor.editorItems.stream().filter(i -> i.getType() == Material.RED_CARPET).findAny();
-                    if(!minPlayersOptional.isPresent()) break;
-                    plugin.getLogger().info("Item is Present, Action: " + action);
-                    ItemStack minPlayers = minPlayersOptional.get();
+                    ItemStack minPlayers = e.getItem();
+                    int index = editor.editorItems.indexOf(minPlayers);
+                    if(index == -1) break;
                     if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
+                        plugin.getLogger().info("1a: MinPlayers: " + arena.minPlayers);
                         if(arena.minPlayers > 1) {
                             arena.minPlayers--;
                             minPlayers.setAmount(arena.minPlayers);
                             plugin.getLogger().info("MinPlayers: " + arena.minPlayers);
+                            plugin.getLogger().info("Contains: " + editor.editorItems.contains(minPlayers));
                         }
                         e.setCancelled(true);
                     } else if(action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
-                        if(arena.minPlayers == arena.startLocations.size()) {
+                        plugin.getLogger().info("1b: MinPlayers: " + arena.minPlayers);
+                        if(arena.minPlayers < arena.startLocations.size()) {
                             arena.minPlayers++;
-                            minPlayers.setAmount(minPlayers.getAmount() + 1);
+                            minPlayers.setAmount(arena.minPlayers);
                             plugin.getLogger().info("MinPlayers: " + arena.minPlayers);
+                            plugin.getLogger().info("Contains: " + editor.editorItems.contains(minPlayers));
                         }
+                        editor.editorItems.set(index, minPlayers);
+                        plugin.getLogger().info("2: Contains: " + editor.editorItems.contains(minPlayers));
                         e.setCancelled(true);
                     }
                     break;
@@ -401,7 +411,7 @@ public class ArenaEditor {
                         Entity boat = player.getWorld().spawnEntity(e.getClickedBlock().getLocation().add(0.5, 1, 0.5), EntityType.BOAT);
                         stand.setInvisible(true);
                         stand.setMarker(true);
-                        boat.setRotation((float) ((Math.floor(player.getLocation().getYaw() / 45)) * 45), 0);
+                        boat.setRotation((float) ((Math.round(player.getLocation().getYaw() / 45)) * 45), 0);
                         editor.startBoats.add((Boat) boat);
                         arena.startLocations.add(boat.getLocation());
                         arena.startWorld = boat.getWorld();
