@@ -44,10 +44,7 @@ public class Arena implements ConfigurationSerializable {
         return Optional.ofNullable(arenasP.get(player));
     }
 
-
-
-
-
+    //unserialized feilds
     private final List<Player> players = new ArrayList<>();
     private final Set<ArmorStand> queueStands = new HashSet<>();
     /**
@@ -55,7 +52,7 @@ public class Arena implements ConfigurationSerializable {
      */
     private int state = 0;
     private BukkitTask mainLoop;
-    private Map<Player, GameData> gameData = new HashMap<>();
+    private final Map<Player, GameData> gameData = new HashMap<>();
 
 
     //serialized feilds
@@ -90,26 +87,37 @@ public class Arena implements ConfigurationSerializable {
     @SuppressWarnings("ConstantConditions")
     public void setGameStatus(Player player, boolean join) {
         if(join) {
+            //failsafe
             if(players.size() == startLocations.size()) return;
+
             Location loc = startLocations.get(players.size());
             player.teleport(loc);
             Boat boat = (Boat) startWorld.spawnEntity(loc, EntityType.BOAT);
             boat.setInvulnerable(true);
+
             players.add(player);
             arenasP.put(player, this);
+            gameData.put(player, new GameData());
+
             boat.addPassenger(player);
             spawnQueueStand(loc).addPassenger(boat);
             PlayerManager.set(player);
         } else {
+            //failsafe
+            if(!Arena.get(player).isPresent()) return;
+
             if(player.isInsideVehicle()) {
                 if (player.getVehicle().isInsideVehicle())
                     player.getVehicle().getVehicle().remove();
                 player.getVehicle().remove();
             }
+
             player.teleport(lobbyLocation);
             PlayerManager.restore(player);
+
             players.remove(player);
             arenasP.remove(player);
+            gameData.remove(player);
         }
     }
 
@@ -415,7 +423,7 @@ public class Arena implements ConfigurationSerializable {
     }
 
     private static class GameData {
-        int checkpoint;
-        int lap;
+        int checkpoint = 0;
+        int lap = 0;
     }
 }

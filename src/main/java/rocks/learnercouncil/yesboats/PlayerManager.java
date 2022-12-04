@@ -2,21 +2,15 @@ package rocks.learnercouncil.yesboats;
 
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
 
 import java.util.HashMap;
 
 public class PlayerManager {
     public static HashMap<Player, PlayerData> playerData = new HashMap<>();
 
-    public static void addPlayer(Player p) {
-        if(!playerData.containsKey(p)) playerData.put(p, new PlayerData());
-    }
-
     public static void set(Player p) {
-        addPlayer(p);
+        if(!playerData.containsKey(p)) playerData.put(p, new PlayerData());
         PlayerData playerData = PlayerManager.playerData.get(p);
         playerData.inventory = p.getInventory().getContents();
         p.getInventory().clear();
