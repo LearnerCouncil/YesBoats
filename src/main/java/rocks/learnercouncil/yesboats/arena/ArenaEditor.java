@@ -106,6 +106,9 @@ public class ArenaEditor {
                 BOLD.toString() + YELLOW + "Set lobby Location",
                 GOLD + "Click to set the Lobby Location"));
 
+        inv.setItem(7, getItem(Material.REDSTONE_BLOCK,
+                BOLD.toString() + RED + "Start Line Activator."));
+
         //TODO add items for setting the lobbyLocation, startWorld, and lightLocations
     }
 
