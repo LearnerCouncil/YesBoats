@@ -76,19 +76,6 @@ public class Arena implements ConfigurationSerializable {
         this.minPlayers = 1;
     }
 
-    public Arena(String name, int minPlayers, Location lobbyLocation, Location startLineActivator, World startWorld, List<Location> startLocations, List<Location> lightLocations, List<BoundingBox> deathBarriers, List<BoundingBox> checkpointBoxes, List<Location> checkpointSpawns) {
-        this.name = name;
-        this.minPlayers = minPlayers;
-        this.lobbyLocation = lobbyLocation;
-        this.startWorld = startWorld;
-        this.startLineActivator = startLineActivator;
-        this.startLocations = startLocations;
-        this.lightLocations = lightLocations;
-        this.deathBarriers = deathBarriers;
-        this.checkpointBoxes = checkpointBoxes;
-        this.checkpointSpawns = checkpointSpawns;
-    }
-
 
     /**
      * Adds/removes a player from the arena.

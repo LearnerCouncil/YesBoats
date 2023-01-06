@@ -246,42 +246,43 @@ public class ArenaEditor {
     private void displayBoundingBox(BoundingBox box, Particle.DustOptions color) {
         Vector c1 = box.getMin();
         Vector c2 = box.getMax().add(new Vector(1, 1, 1));
-        TriDouble spawnParticle = (x, y, z) -> player.spawnParticle(Particle.REDSTONE, new Location(player.getWorld(), x, y, z), 1, color);
 
         double offset = offsetDisplayBox ? 0.5 : 0;
 
         //x axis lines
         for(double x = c1.getX() + offset; x <= c2.getX(); x += 1) {
-            spawnParticle.spawn(x, c1.getY(), c1.getZ());
-            spawnParticle.spawn(x, c1.getY(), c2.getZ());
-            spawnParticle.spawn(x, c2.getY(), c1.getZ());
-            spawnParticle.spawn(x, c2.getY(), c2.getZ());
+            spawnParticle(x, c1.getY(), c1.getZ(), color);
+            spawnParticle(x, c1.getY(), c2.getZ(), color);
+            spawnParticle(x, c2.getY(), c1.getZ(), color);
+            spawnParticle(x, c2.getY(), c2.getZ(), color);
         }
         //y axis lines
         for(double y = c1.getY() + offset; y <= c2.getY(); y += 1) {
-            spawnParticle.spawn(c1.getX(), y, c1.getZ());
-            spawnParticle.spawn(c1.getX(), y, c2.getZ());
-            spawnParticle.spawn(c2.getX(), y, c1.getZ());
-            spawnParticle.spawn(c2.getX(), y, c2.getZ());
+            spawnParticle(c1.getX(), y, c1.getZ(), color);
+            spawnParticle(c1.getX(), y, c2.getZ(), color);
+            spawnParticle(c2.getX(), y, c1.getZ(), color);
+            spawnParticle(c2.getX(), y, c2.getZ(), color);
         }
         //z axis lines
         for(double z = c1.getZ() + offset; z <= c2.getZ(); z += 1) {
-            spawnParticle.spawn(c1.getX(), c1.getY(), z);
-            spawnParticle.spawn(c1.getX(), c2.getY(), z);
-            spawnParticle.spawn(c2.getX(), c1.getY(), z);
-            spawnParticle.spawn(c2.getX(), c2.getY(), z);
+            spawnParticle(c1.getX(), c1.getY(), z, color);
+            spawnParticle(c1.getX(), c2.getY(), z, color);
+            spawnParticle(c2.getX(), c1.getY(), z, color);
+            spawnParticle(c2.getX(), c2.getY(), z, color);
         }
     }
-    @FunctionalInterface
-    private interface TriDouble {
-        void spawn(double x, double y, double z);
+    private void spawnParticle(double x, double y, double z, Particle.DustOptions color) {
+        player.spawnParticle(Particle.REDSTONE, new Location(player.getWorld(), x, y, z), 1, color);
     }
 
 
 
     public void restore(boolean save) {
         if(save) {
-            //TODO validation
+            if(!validate().isEmpty()) {
+                player.sendMessage(DARK_AQUA + "[YesBoats] " + RED + "Arena validation failed. Validator found problems with the following feilds: " + validate());
+                return;
+            }
             if(!Arena.arenas.contains(arena)) Arena.arenas.add(arena);
         } else
             oldLightMaterials.forEach((k, v) -> k.getBlock().setType(v));
@@ -297,7 +298,20 @@ public class ArenaEditor {
                 b.getVehicle().remove();
             b.remove();
         });
+    }
 
+    private String validate() {
+        StringBuilder result = new StringBuilder();
+        if(arena.minPlayers < 1) result.append("minPlayers, ");
+        if(arena.lobbyLocation == null) result.append("lobbyLoation, ");
+        if(arena.startWorld == null) result.append("startWorld, ");
+        if(arena.startLineActivator == null) result.append("startLineActivator, ");
+        if(arena.startLocations == null || arena.startLocations.isEmpty()) result.append("startLocations, ");
+        if(arena.lightLocations == null ||arena.lightLocations.isEmpty()) result.append("lightLocations, ");
+        if(arena.deathBarriers == null || arena.deathBarriers.isEmpty()) result.append("deathBarriers, ");
+        if(arena.checkpointBoxes == null || arena.checkpointBoxes.isEmpty()) result.append("checkpointBoxes, ");
+        if(arena.checkpointSpawns == null || (arena.checkpointBoxes != null && arena.checkpointSpawns.size() != arena.checkpointBoxes.size())) result.append("checkpointSpawns, ");
+        return result.substring(0, result.length() - 2);
     }
 
     public static class Events implements Listener {
