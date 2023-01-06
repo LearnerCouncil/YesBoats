@@ -6,7 +6,9 @@ import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
+import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.Lightable;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -37,6 +39,7 @@ public class ArenaEditor {
 
     private final LinkedList<ItemStack> editorItems = new LinkedList<>();
     private final List<Boat> startBoats = new LinkedList<>();
+    private final HashMap<Location, Material> oldLightMaterials = new HashMap<>();
     private final ItemStack[] playerInv;
     private final Player player;
     public final Arena arena;
@@ -107,9 +110,23 @@ public class ArenaEditor {
                 GOLD + "Click to set the Lobby Location"));
 
         inv.setItem(7, getItem(Material.REDSTONE_BLOCK,
-                BOLD.toString() + RED + "Start Line Activator."));
+                BOLD.toString() + RED + "Start Line Activator.",
+                YELLOW + "Click a block to set that block as the start line activator"));
 
-        //TODO add items for setting the lobbyLocation, startWorld, and lightLocations
+        inv.setItem(8, getItem(Material.REDSTONE_LAMP,
+                BOLD.toString() + YELLOW + "Add Light Location",
+                GOLD + "Click a block to add a light there,",
+                GOLD + "Lights are turned on in the order they were placed"));
+
+        inv.setItem(21, getItem(Material.RED_CONCRETE,
+                BOLD.toString() + DARK_RED + "Cancel",
+                RED + "Stops editing without saving. ",
+                RED + "(Cannot be undone)"));
+
+        inv.setItem(25, getItem(Material.LIME_CONCRETE,
+                BOLD.toString() + GREEN + "Save",
+                DARK_GREEN + "Stops editing, saving changes.",
+                DARK_GREEN + "(Arena must be valid)"));
     }
 
     /**
@@ -179,7 +196,6 @@ public class ArenaEditor {
         boxCorner1 = boxCorner2 = null;
         createdBox = null;
     }
-
 
     private void startBoxDisplay() {
         displayTask = new BukkitRunnable() {
@@ -264,6 +280,11 @@ public class ArenaEditor {
 
 
     public void restore(boolean save) {
+        if(save) {
+            //TODO validation
+            if(!Arena.arenas.contains(arena)) Arena.arenas.add(arena);
+        } else
+            oldLightMaterials.forEach((k, v) -> k.getBlock().setType(v));
         player.getInventory().setContents(playerInv);
         displayTask.cancel();
         boxCorner1 = null;
@@ -276,11 +297,9 @@ public class ArenaEditor {
                 b.getVehicle().remove();
             b.remove();
         });
-        if(save) {
-            //TODO validation
-            if(!Arena.arenas.contains(arena)) Arena.arenas.add(arena);
-        }
+
     }
+
     public static class Events implements Listener {
         
         private final List<Player> settingCheckpoint = new ArrayList<>();
@@ -311,7 +330,11 @@ public class ArenaEditor {
             if(e.getInventory() != e.getWhoClicked().getInventory()) return;
             if(!editors.containsKey((Player) e.getWhoClicked())) return;
             ArenaEditor editor = editors.get((Player) e.getWhoClicked());
-            if(editor.editorItems.contains(e.getCurrentItem())) e.setCancelled(true);
+            if(e.getCurrentItem() == null) return;
+            if(!editor.editorItems.contains(e.getCurrentItem())) return;
+            e.setCancelled(true);
+            if(e.getCurrentItem().getType() == Material.RED_CONCRETE) editor.restore(false);
+            if(e.getCurrentItem().getType() == Material.LIME_CONCRETE) editor.restore(true);
         }
 
         @EventHandler
@@ -343,9 +366,13 @@ public class ArenaEditor {
                     handleStartLocations(e, action, player, editor, arena);
                     break;
                 case ENDER_PEARL:
-                    handleLobbyLocation(e, player, editor);
+                    handleLobbyLocation(e, player, arena);
                     break;
-                    //TODO add logic for the lobbyLocation, startWorld, and lightLocations items when added
+                case REDSTONE_BLOCK:
+                    handleStartLineActivator(e, action, player, arena);
+                    break;
+                case REDSTONE_LAMP:
+                    handleLightLocations(e, action, editor, arena);
             }
         }
         //Handler methods
@@ -397,19 +424,19 @@ public class ArenaEditor {
                     Location playerLocation = player.getLocation();
                     float yaw = (float) (Math.round(playerLocation.getYaw() / 22.5) * 22.5);
                     arena.checkpointSpawns.add(new Location(player.getWorld(), playerLocation.getBlockX(), playerLocation.getBlockY(), playerLocation.getBlockZ(), yaw, 0));
-                    player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +" Spawnpoint for chectpoint #" + arena.checkpointBoxes.size() +
-                            " set. (" + playerLocation.getBlockX() +
-                            ", " + playerLocation.getBlockY() +
-                            ", " + playerLocation.getBlockZ() + ")");
+                    player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +" Spawnpoint for chectpoint #" + arena.checkpointBoxes.size() + " set. (" +
+                            playerLocation.getBlockX() + ", " +
+                            playerLocation.getBlockY() + ", " +
+                            playerLocation.getBlockZ() + ")");
                     settingCheckpoint.remove(player);
                 }
                 e.setCancelled(true);
             }
         }
 
-        @SuppressWarnings("ConstantConditions")
         private void handleMinPlayers(PlayerInteractEvent e, Action action, ArenaEditor editor, Arena arena) {
             ItemStack minPlayers = e.getItem();
+            if(minPlayers == null) return;
             int index = editor.editorItems.indexOf(minPlayers);
             if(index == -1) return;
             if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
@@ -434,7 +461,7 @@ public class ArenaEditor {
                 if(e.getClickedBlock() == null) return;
                 Location boatLocation = e.getClickedBlock().getLocation().add(0.5, 1, 0.5);
                 ArmorStand stand = (ArmorStand) player.getWorld().spawnEntity(boatLocation, EntityType.ARMOR_STAND);
-                Entity boat = player.getWorld().spawnEntity(e.getClickedBlock().getLocation().add(0.5, 1, 0.5), EntityType.BOAT);
+                Entity boat = player.getWorld().spawnEntity(boatLocation, EntityType.BOAT);
                 stand.setInvisible(true);
                 stand.setMarker(true);
                 boat.setRotation((float) ((Math.round(player.getLocation().getYaw() / 45)) * 45), 0);
@@ -446,11 +473,37 @@ public class ArenaEditor {
             }
         }
 
-        private void handleLobbyLocation(PlayerInteractEvent e, Player player, ArenaEditor editor) {
-            editor.arena.lobbyLocation = player.getLocation();
-            player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + " Set lobby location. (" + player.getLocation().getBlockX() + ", " + player.getLocation().getBlockY() + ", " + player.getLocation().getBlockZ() + ")");
+        private void handleLobbyLocation(PlayerInteractEvent e, Player player, Arena arena) {
+            arena.lobbyLocation = player.getLocation();
+            player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + " Set lobby location. (" +
+                    player.getLocation().getBlockX() + ", " +
+                    player.getLocation().getBlockY() + ", " +
+                    player.getLocation().getBlockZ() + ")");
             e.setCancelled(true);
         }
 
+        private void handleStartLineActivator(PlayerInteractEvent e, Action action, Player player, Arena arena) {
+            if(action == Action.RIGHT_CLICK_BLOCK || action == Action.LEFT_CLICK_BLOCK) {
+                if(e.getClickedBlock() == null) return;
+                Location blockLocation = e.getClickedBlock().getLocation();
+                arena.startLineActivator = blockLocation;
+                player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + " Set start line activator. (" +
+                        blockLocation.getBlockX() + ", " +
+                        blockLocation.getBlockY() + ", " +
+                        blockLocation.getBlockZ() + ")");
+                e.setCancelled(true);
+            }
+        }
+
+        private void handleLightLocations(PlayerInteractEvent e, Action action, ArenaEditor editor, Arena arena) {
+            if(action == Action.RIGHT_CLICK_BLOCK || action == Action.LEFT_CLICK_BLOCK) {
+                if(e.getClickedBlock() == null) return;
+                Block block = e.getClickedBlock();
+                editor.oldLightMaterials.put(block.getLocation(), block.getType());
+                block.setType(Material.REDSTONE_LAMP);
+                ((Lightable) block.getBlockData()).setLit(true);
+                arena.lightLocations.add(block.getLocation());
+            }
+        }
     }
 }

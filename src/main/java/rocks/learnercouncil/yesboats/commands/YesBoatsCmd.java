@@ -12,6 +12,7 @@ import rocks.learnercouncil.yesboats.commands.arguments.JoinArg;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class YesBoatsCmd implements TabExecutor {
 
@@ -54,11 +55,9 @@ public class YesBoatsCmd implements TabExecutor {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
-        List<String> arguments = new ArrayList<>();
+        List<String> arguments;
         List<String> completions = new ArrayList<>();
-        for(CommandArgument arg : this.arguments) {
-            arguments.addAll(arg.tabComplete(sender, cmd, alias, args));
-        }
+        arguments = this.arguments.stream().flatMap(arg -> arg.tabComplete(sender, cmd, alias, args).stream()).collect(Collectors.toList());
         StringUtil.copyPartialMatches(args[args.length - 1], arguments, completions);
         return completions;
 

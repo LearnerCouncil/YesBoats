@@ -196,7 +196,7 @@ public class Arena implements ConfigurationSerializable {
                     ((Lightable) block.getBlockData()).setLit(true);
                     if(!lightsIterator.hasNext()) {
                         lightLocations.forEach(l -> ((Lightable) l.getBlock().getBlockData()).setLit(false));
-                        startLineActivator.getBlock().setType(Material.STONE);
+                        startLineActivator.getBlock().setType(Material.RED_CONCRETE);
                     }
                 }
                 players.forEach(p -> deathBarriers.forEach(b -> {
