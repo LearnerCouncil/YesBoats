@@ -10,7 +10,6 @@ import org.bukkit.entity.*;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.BoundingBox;
-import org.bukkit.util.Vector;
 import rocks.learnercouncil.yesboats.PlayerManager;
 import rocks.learnercouncil.yesboats.YesBoats;
 
@@ -67,7 +66,7 @@ public class Arena implements ConfigurationSerializable {
     public final String name;
     protected int minPlayers;
     protected Location lobbyLocation;
-    protected Location startLine1, startLine2;
+    protected Location startLineActivator;
     protected World startWorld;
     protected List<Location> startLocations = new ArrayList<>();
     protected List<Location> lightLocations = new ArrayList<>();
@@ -80,13 +79,12 @@ public class Arena implements ConfigurationSerializable {
         this.minPlayers = 1;
     }
 
-    public Arena(String name, int minPlayers, Location lobbyLocation, Location startLine1, Location startLine2, World startWorld, List<Location> startLocations, List<Location> lightLocations, List<BoundingBox> deathBarriers, List<BoundingBox> checkpointBoxes, List<Location> checkpointSpawns) {
+    public Arena(String name, int minPlayers, Location lobbyLocation, Location startLineActivator, Location startLine2, World startWorld, List<Location> startLocations, List<Location> lightLocations, List<BoundingBox> deathBarriers, List<BoundingBox> checkpointBoxes, List<Location> checkpointSpawns) {
         this.name = name;
         this.minPlayers = minPlayers;
         this.lobbyLocation = lobbyLocation;
         this.startWorld = startWorld;
-        this.startLine1 = startLine1;
-        this.startLine2 = startLine2;
+        this.startLineActivator = startLineActivator;
         this.startLocations = startLocations;
         this.lightLocations = lightLocations;
         this.deathBarriers = deathBarriers;
@@ -95,7 +93,7 @@ public class Arena implements ConfigurationSerializable {
     }
 
 
-    @SuppressWarnings("ConstantConditions")
+
     public void setGameStatus(Player player, boolean join) {
         if(join) {
             //failsafe
@@ -119,11 +117,7 @@ public class Arena implements ConfigurationSerializable {
             //failsafe
             if(!Arena.get(player).isPresent()) return;
 
-            if(player.isInsideVehicle()) {
-                if (player.getVehicle().isInsideVehicle())
-                    player.getVehicle().getVehicle().remove();
-                player.getVehicle().remove();
-            }
+            removeVehicle(player);
 
             player.teleport(lobbyLocation);
             PlayerManager.restore(player);
@@ -137,6 +131,18 @@ public class Arena implements ConfigurationSerializable {
             if(state == 2)
                 if(players.size() == 0) stopGame();
         }
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    private void removeVehicle(Player player) {
+        if (!player.isInsideVehicle()) return;
+        Entity vehicle = player.getVehicle();
+        if (vehicle.isInsideVehicle())
+            vehicle.getVehicle().remove();
+        vehicle.getPassengers().forEach(p -> {
+            if(p.getType() != EntityType.PLAYER) p.remove();
+        });
+        vehicle.remove();
     }
 
     private ArmorStand spawnQueueStand(Location loc) {
@@ -166,38 +172,7 @@ public class Arena implements ConfigurationSerializable {
     }
 
     private void dropStartLine(boolean down) {
-        if(startLine2 == null)
-            startLine1.getBlock().setType(down ? Material.REDSTONE_BLOCK : Material.STONE);
-        else {
-            setStartLine();
-            for(int i = 0; i < startLine.size(); i++) {
-                startLine.get(i).setType(down ? Material.AIR : startLineMaterials.get(i));
-            }
-        }
-    }
-
-    private void setStartLine() {
-        if(startLine != null) return;
-        int xDir;
-        int zDir;
-        Vector dir = startLine1.toVector().subtract(startLine2.toVector());
-        int index = 0;
-        if(dir.getBlockX() == 0) {
-            zDir = dir.getBlockZ() < 0 ? -1 : 1;
-            for(int i = startLine1.getBlockZ(); i == startLine2.getBlockZ(); i += zDir) {
-                startLine.add(startWorld.getBlockAt(startLine1.getBlockX(), startLine1.getBlockY(), i));
-                startLineMaterials.put(index, startLine.get(index).getType());
-                index++;
-            }
-        } else {
-            xDir = dir.getBlockZ() < 0 ? -1 : 1;
-            for(int i = startLine1.getBlockX(); i == startLine2.getBlockX(); i += xDir) {
-                startLine.add(startWorld.getBlockAt(i, startLine1.getBlockY(), startLine1.getBlockZ()));
-                startLineMaterials.put(index, startLine.get(index).getType());
-                index++;
-            }
-        }
-
+        startLineActivator.getBlock().setType(down ? Material.REDSTONE_BLOCK : Material.STONE);
     }
 
     public void startGame() {
@@ -222,20 +197,21 @@ public class Arena implements ConfigurationSerializable {
                             dropStartLine(true);
                         }
                     }
-                } else {
-                    players.forEach(p -> deathBarriers.forEach(b -> {
-                        if (b.contains(p.getLocation().toVector())) respawn(p);
-                    }));
-                    players.forEach(p -> {
-                        int index = 0;
-                        for (BoundingBox b : checkpointBoxes) {
-                            if (b.contains(p.getLocation().toVector()) && gameData.get(p).checkpoint == checkpointBoxes.indexOf(b))
-                                gameData.get(p).checkpoint = index;
-                            index++;
-                        }
-                    });
+                    return;
                 }
-            }
+                players.forEach(p -> deathBarriers.forEach(b -> {
+                    if(b.contains(p.getLocation().toVector())) respawn(p);
+                }));
+                players.forEach(p -> {
+                    int currentCheckpoint = gameData.get(p).checkpoint;
+                    for (BoundingBox b : checkpointBoxes) {
+                        if(b.contains(p.getLocation().toVector())) {
+                            //todo add checkpoint logic
+                        }
+
+                    }
+                });
+                         }
         }.runTaskTimer(plugin, 0, 1);
 
     }
@@ -275,8 +251,7 @@ public class Arena implements ConfigurationSerializable {
         minPlayers = (int) m.get("minPlayers");
 
         lobbyLocation = stringToLoc((String) m.get("lobbyLocation"));
-        startLine1 = stringToLoc((String) m.get("startLine1"));
-        startLine2 = stringToLoc((String) m.get("startLine2"));
+        startLineActivator = stringToLoc((String) m.get("startLineActivator"));
 
         startLocations = vectorStringToLocList((List<String>) m.get("startLocations"), startWorld);
         lightLocations = vectorStringToLocList((List<String>) m.get("lightLocations"), startWorld);
@@ -484,8 +459,7 @@ public class Arena implements ConfigurationSerializable {
         m.put("minPlayers", minPlayers);
 
         m.put("lobbyLocaion", locToString(lobbyLocation));
-        m.put("startLine1", locToString(startLine1));
-        m.put("startLine2", locToString(startLine2));
+        m.put("startLineActivator", locToString(startLineActivator));
 
         m.put("startWorld", startWorld.getName());
         m.put("startLocations", locToVectorStringList(startLocations));
