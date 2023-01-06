@@ -37,20 +37,19 @@ public class Arena implements ConfigurationSerializable {
         return arenas.stream().filter(a -> a.name.equals(name)).findFirst();
     }
 
-    private static final HashMap<Player, Arena> arenasP = new HashMap<>();
+    private static final HashMap<Player, Arena> playerArenaMap = new HashMap<>();
     /**
      * Gets an {@link Arena} object based on a {@link Player}
      * @param player the player
      * @return An optional that contains the arena containing the given player, if it exists
      */
     public static Optional<Arena> get(Player player) {
-        return Optional.ofNullable(arenasP.get(player));
+        return Optional.ofNullable(playerArenaMap.get(player));
     }
 
     //unserialized feilds
     private final List<Player> players = new ArrayList<>();
     private final Set<ArmorStand> queueStands = new HashSet<>();
-    private final Map<Location, Material> startLineBlocks = new HashMap<>();
     /**
      * The state the game is in: 0 = idle, 1 = in queue, 2 = running.
      */
@@ -77,7 +76,7 @@ public class Arena implements ConfigurationSerializable {
         this.minPlayers = 1;
     }
 
-    public Arena(String name, int minPlayers, Location lobbyLocation, Location startLineActivator, Location startLine2, World startWorld, List<Location> startLocations, List<Location> lightLocations, List<BoundingBox> deathBarriers, List<BoundingBox> checkpointBoxes, List<Location> checkpointSpawns) {
+    public Arena(String name, int minPlayers, Location lobbyLocation, Location startLineActivator, World startWorld, List<Location> startLocations, List<Location> lightLocations, List<BoundingBox> deathBarriers, List<BoundingBox> checkpointBoxes, List<Location> checkpointSpawns) {
         this.name = name;
         this.minPlayers = minPlayers;
         this.lobbyLocation = lobbyLocation;
@@ -91,7 +90,11 @@ public class Arena implements ConfigurationSerializable {
     }
 
 
-
+    /**
+     * Adds/removes a player from the arena.
+     * @param player The player.
+     * @param join 'true' to add the player to the arena, 'false' to remove them.
+     */
     public void setGameStatus(Player player, boolean join) {
         if(join) {
             //failsafe
@@ -103,7 +106,7 @@ public class Arena implements ConfigurationSerializable {
             boat.setInvulnerable(true);
 
             players.add(player);
-            arenasP.put(player, this);
+            playerArenaMap.put(player, this);
             gameData.put(player, new GameData());
 
             boat.addPassenger(player);
@@ -121,7 +124,7 @@ public class Arena implements ConfigurationSerializable {
             PlayerManager.restore(player);
 
             players.remove(player);
-            arenasP.remove(player);
+            playerArenaMap.remove(player);
             gameData.remove(player);
 
             if(state == 1)
@@ -170,7 +173,9 @@ public class Arena implements ConfigurationSerializable {
     }
 
 
-
+    /**
+     * Starts the game
+     */
     public void startGame() {
         state = 2;
         queueStands.forEach(Entity::remove);
@@ -184,16 +189,15 @@ public class Arena implements ConfigurationSerializable {
             public void run() {
                 if(prestartTimer != -1) {
                     prestartTimer++;
-                    if(prestartTimer % 20 == 0) {
-                        Block block = lightsIterator.next().getBlock();
-                        block.setType(Material.REDSTONE_LAMP);
-                        ((Lightable) block.getBlockData()).setLit(true);
-                        if(!lightsIterator.hasNext()) {
-                            lightLocations.forEach(l -> ((Lightable) l.getBlock().getBlockData()).setLit(false));
-                            startLineActivator.getBlock().setType(Material.STONE);
-                        }
+                    if(prestartTimer % 20 != 0) return;
+
+                    Block block = lightsIterator.next().getBlock();
+                    block.setType(Material.REDSTONE_LAMP);
+                    ((Lightable) block.getBlockData()).setLit(true);
+                    if(!lightsIterator.hasNext()) {
+                        lightLocations.forEach(l -> ((Lightable) l.getBlock().getBlockData()).setLit(false));
+                        startLineActivator.getBlock().setType(Material.STONE);
                     }
-                    return;
                 }
                 players.forEach(p -> deathBarriers.forEach(b -> {
                     if(b.contains(p.getLocation().toVector())) respawn(p);
@@ -208,14 +212,16 @@ public class Arena implements ConfigurationSerializable {
      * Stops the game.
      */
     public void stopGame() {
+        state = 0;
         mainLoop.cancel();
         players.forEach(p -> {
             p.teleport(lobbyLocation);
             PlayerManager.restore(p);
         });
         players.clear();
-        arenasP.clear();
+        playerArenaMap.clear();
         gameData.clear();
+        startLineActivator.getBlock().setType(Material.REDSTONE_BLOCK);
 
         //todo game stop logic
     }
