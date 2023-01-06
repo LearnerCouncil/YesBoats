@@ -53,8 +53,8 @@ public class Arena implements ConfigurationSerializable {
     /**
      * The state the game is in: 0 = idle, 1 = in queue, 2 = running.
      */
-    private int state = 0;
-    private BukkitTask queueTimer;
+    public int state = 0;
+    public BukkitTask queueTimer;
     private BukkitTask mainLoop;
     private final Map<Player, GameData> gameData = new HashMap<>();
 

@@ -17,13 +17,13 @@ import java.util.stream.Collectors;
 
 import static rocks.learnercouncil.yesboats.commands.CommandResult.*;
 
-public class JoinArg implements CommandArgument {
+public class LeaveArg implements CommandArgument {
 
     private static final YesBoats plugin = YesBoats.getInstance();
 
     @Override
     public String execute(CommandSender sender, Command cmd, String label, String[] args) {
-        if(!args[0].equalsIgnoreCase("join")) return "";
+        if(!args[0].equalsIgnoreCase("leave")) return "";
         if(!sender.hasPermission("yesboats.commmands.yesboats.user")) return CommandResult.NO_PERMISSION;
         if(args.length < 2) return TOO_FEW_ARGS;
         boolean isAdmin = sender.hasPermission("yesboats.commands.yesboats.admin");
@@ -35,20 +35,20 @@ public class JoinArg implements CommandArgument {
             String playername = args[2];
             Player player = plugin.getServer().getPlayer(playername);
             if(player == null) return PLAYER_NOT_FOUND;
-            if(Arena.get(player).isPresent()) return CommandResult.ALREADY_IN_ARENA_OTHER;
-            arenaOptional.get().setGameStatus(player, true);
-            return joinedOther(playername);
+            if(!Arena.get(player).isPresent()) return CommandResult.NOT_IN_ARENA_OTHER;
+            arenaOptional.get().setGameStatus(player, false);
+            return leftOther(playername);
         }
-        if(Arena.get((Player) sender).isPresent()) return CommandResult.ALREADY_IN_ARENA_SELF;
-        arenaOptional.get().setGameStatus((Player) sender, true);
-        return JOINED;
+        if(!Arena.get((Player) sender).isPresent()) return CommandResult.NOT_IN_ARENA_SELF;
+        arenaOptional.get().setGameStatus((Player) sender, false);
+        return LEFT;
     }
 
     @Override
     public List<String> tabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
-        if(args.length == 1) return Collections.singletonList("join");
-        if(args.length == 2 && args[0].equalsIgnoreCase("join")) return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
-        if(args.length == 3 && args[0].equalsIgnoreCase("join") && sender.hasPermission("yesboats.commands.yesboats.admin")) return plugin.getServer().getOnlinePlayers().stream().map(HumanEntity::getName).collect(Collectors.toList());
+        if(args.length == 1) return Collections.singletonList("leave");
+        if(args.length == 2 && args[0].equalsIgnoreCase("leave")) return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
+        if(args.length == 3 && args[0].equalsIgnoreCase("leave") && sender.hasPermission("yesboats.commands.yesboats.admin")) return plugin.getServer().getOnlinePlayers().stream().map(HumanEntity::getName).collect(Collectors.toList());
         return new ArrayList<>();
     }
 }

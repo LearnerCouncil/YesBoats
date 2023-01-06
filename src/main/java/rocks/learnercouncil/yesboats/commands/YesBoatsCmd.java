@@ -9,6 +9,7 @@ import rocks.learnercouncil.yesboats.YesBoats;
 import rocks.learnercouncil.yesboats.commands.arguments.AddArg;
 import rocks.learnercouncil.yesboats.commands.arguments.EditArg;
 import rocks.learnercouncil.yesboats.commands.arguments.JoinArg;
+import rocks.learnercouncil.yesboats.commands.arguments.RemoveArg;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,9 +29,10 @@ public class YesBoatsCmd implements TabExecutor {
         List<CommandArgument> result = new ArrayList<>();
 
         result.add(new JoinArg());
+        result.add(new RemoveArg());
         result.add(new AddArg());
         result.add(new EditArg());
-        //TODO Addd leave, start, and stop arguments
+        //TODO Add leave, start, and stop arguments
 
         return result;
     }
