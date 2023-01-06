@@ -58,8 +58,6 @@ public class Arena implements ConfigurationSerializable {
     private BukkitTask queueTimer;
     private BukkitTask mainLoop;
     private final Map<Player, GameData> gameData = new HashMap<>();
-    private List<Block> startLine = new ArrayList<>();
-    private HashMap<Integer, Material> startLineMaterials = new HashMap<>();
 
 
     //serialized feilds
@@ -171,9 +169,7 @@ public class Arena implements ConfigurationSerializable {
         }.runTaskTimer(plugin, 0, 20);
     }
 
-    private void dropStartLine(boolean down) {
-        startLineActivator.getBlock().setType(down ? Material.REDSTONE_BLOCK : Material.STONE);
-    }
+
 
     public void startGame() {
         state = 2;
@@ -194,7 +190,7 @@ public class Arena implements ConfigurationSerializable {
                         ((Lightable) block.getBlockData()).setLit(true);
                         if(!lightsIterator.hasNext()) {
                             lightLocations.forEach(l -> ((Lightable) l.getBlock().getBlockData()).setLit(false));
-                            dropStartLine(true);
+                            startLineActivator.getBlock().setType(Material.STONE);
                         }
                     }
                     return;
@@ -202,16 +198,8 @@ public class Arena implements ConfigurationSerializable {
                 players.forEach(p -> deathBarriers.forEach(b -> {
                     if(b.contains(p.getLocation().toVector())) respawn(p);
                 }));
-                players.forEach(p -> {
-                    int currentCheckpoint = gameData.get(p).checkpoint;
-                    for (BoundingBox b : checkpointBoxes) {
-                        if(b.contains(p.getLocation().toVector())) {
-                            //todo add checkpoint logic
-                        }
-
-                    }
-                });
-                         }
+                players.forEach(p -> updateCheckpoint(p));
+            }
         }.runTaskTimer(plugin, 0, 1);
 
     }
@@ -230,6 +218,22 @@ public class Arena implements ConfigurationSerializable {
         gameData.clear();
 
         //todo game stop logic
+    }
+
+    private void updateCheckpoint(Player player) {
+        int previousCheckpoint = gameData.get(player).checkpoint;
+        for (BoundingBox b : checkpointBoxes) {
+            int currentCheckpoint = checkpointBoxes.indexOf(b);
+            if(!b.contains(player.getLocation().toVector())) continue;
+            if(currentCheckpoint == previousCheckpoint) continue;
+
+            if(currentCheckpoint == previousCheckpoint + 1)
+                gameData.get(player).checkpoint = currentCheckpoint;
+            if(currentCheckpoint == 0 && previousCheckpoint == checkpointBoxes.size() - 1) {
+                gameData.get(player).lap += 1;
+                gameData.get(player).checkpoint = currentCheckpoint;
+            }
+        }
     }
 
     /**
