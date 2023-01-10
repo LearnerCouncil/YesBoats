@@ -5,11 +5,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
-import rocks.learnercouncil.yesboats.YesBoats;
-import rocks.learnercouncil.yesboats.commands.arguments.AddArg;
-import rocks.learnercouncil.yesboats.commands.arguments.EditArg;
-import rocks.learnercouncil.yesboats.commands.arguments.JoinArg;
-import rocks.learnercouncil.yesboats.commands.arguments.RemoveArg;
+import rocks.learnercouncil.yesboats.commands.arguments.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,22 +13,18 @@ import java.util.stream.Collectors;
 
 public class YesBoatsCmd implements TabExecutor {
 
-    private final YesBoats plugin;
-
     private final List<CommandArgument> arguments = initializeArgs();
-
-    public YesBoatsCmd(YesBoats plugin) {
-        this.plugin = plugin;
-    }
 
     private List<CommandArgument> initializeArgs() {
         List<CommandArgument> result = new ArrayList<>();
 
         result.add(new JoinArg());
-        result.add(new RemoveArg());
+        result.add(new LeaveArg());
         result.add(new AddArg());
+        result.add(new RemoveArg());
         result.add(new EditArg());
-        //TODO Add leave, start, and stop arguments
+        result.add(new StartArg());
+        result.add(new StopArg());
 
         return result;
     }

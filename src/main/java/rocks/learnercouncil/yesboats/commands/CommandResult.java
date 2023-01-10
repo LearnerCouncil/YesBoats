@@ -15,6 +15,7 @@ public class CommandResult {
             ARENA_NOT_EXIST = prefix + RED + "That arena doesn't exsist.",
             PLAYER_NOT_FOUND = prefix + RED + "Player not found.",
             ALREADY_RUNNING = prefix + RED + "Arena already running.",
+            NOT_RUNNING = prefix + RED + "Arena not running.",
             TOO_FEW_PLAYERS = prefix + RED + "Arena doesn't have enough players.",
             NOT_IN_ARENA_SELF = prefix + RED + "You are not in an arena.",
             NOT_IN_ARENA_OTHER = prefix + RED + "That player is not in an arena.",
@@ -36,7 +37,8 @@ public class CommandResult {
             JOINED = prefix + AQUA + "Joined the game.",
             LEFT = prefix + AQUA + "Joined the game.",
             EDITING = prefix + AQUA + "Now editing.",
-            STARTED = prefix + AQUA + "Started the game.";
+            STARTED = prefix + AQUA + "Started the game.",
+            STOPPED = prefix + AQUA + "Stopped the game.";
 
 
 }

@@ -46,7 +46,7 @@ public final class YesBoats extends JavaPlugin {
         config = new ConfigFile(this, "config.yml");
         Arena.queueTime = config.getConfig().getInt("queue-time");
 
-        TabExecutor yb = new YesBoatsCmd(this);
+        TabExecutor yb = new YesBoatsCmd();
         getCommand("yesboats").setExecutor(yb);
         getCommand("yesboats").setTabCompleter(yb);
 

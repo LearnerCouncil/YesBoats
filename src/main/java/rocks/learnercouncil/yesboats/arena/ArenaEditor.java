@@ -39,7 +39,7 @@ public class ArenaEditor {
 
     private final LinkedList<ItemStack> editorItems = new LinkedList<>();
     private final List<Boat> startBoats = new LinkedList<>();
-    private final HashMap<Location, Material> oldLightMaterials = new HashMap<>();
+    private final HashMap<Block, Material> oldLightMaterials = new HashMap<>();
     private final ItemStack[] playerInv;
     private final Player player;
     public final Arena arena;
@@ -163,7 +163,7 @@ public class ArenaEditor {
         DEATH_BARRIER, CHECKPOINT, REMOVE
     }
     /**
-     * Adds a bounding box the the specified type the the {@link Arena}.
+     * Adds a bounding box the the specified type to the {@link Arena}.
      * @param type The {@link BoundingBoxType}.
      */
     private void addBoundingBox(BoundingBoxType type) {
@@ -177,26 +177,30 @@ public class ArenaEditor {
             return BoundingBoxType.REMOVE;
         }).get();
 
-        if(selectedType != type) {
-            switch (type) {
-                case CHECKPOINT:
-                    if(selectedType == BoundingBoxType.DEATH_BARRIER) arena.deathBarriers.remove(selectedBox);
-                    arena.checkpointBoxes.add(selectedBox.clone());
-                    break;
-                case DEATH_BARRIER:
-                    if(selectedType == BoundingBoxType.CHECKPOINT) arena.checkpointBoxes.remove(selectedBox);
-                    arena.deathBarriers.add(selectedBox.clone());
-                    break;
-                case REMOVE:
-                    if(selectedType == BoundingBoxType.CHECKPOINT) arena.checkpointBoxes.remove(selectedBox);
-                    if(selectedType == BoundingBoxType.DEATH_BARRIER) arena.deathBarriers.remove(selectedBox);
-                    break;
-            }
-        }
+
         boxCorner1 = boxCorner2 = null;
         createdBox = null;
+
+        if(selectedType == type) return;
+        switch (type) {
+            case CHECKPOINT:
+                if(selectedType == BoundingBoxType.DEATH_BARRIER) arena.deathBarriers.remove(selectedBox);
+                arena.checkpointBoxes.add(selectedBox.clone());
+                break;
+            case DEATH_BARRIER:
+                if(selectedType == BoundingBoxType.CHECKPOINT) arena.checkpointBoxes.remove(selectedBox);
+                arena.deathBarriers.add(selectedBox.clone());
+                break;
+            case REMOVE:
+                if(selectedType == BoundingBoxType.CHECKPOINT) arena.checkpointBoxes.remove(selectedBox);
+                if(selectedType == BoundingBoxType.DEATH_BARRIER) arena.deathBarriers.remove(selectedBox);
+                break;
+        }
     }
 
+    /**
+     * Starts displaying the bounding boxes of the {@link Arena}
+     */
     private void startBoxDisplay() {
         displayTask = new BukkitRunnable() {
             @Override
@@ -235,7 +239,6 @@ public class ArenaEditor {
         }
         return false;
     }
-
 
     private boolean offsetDisplayBox = false;
     /**
@@ -280,12 +283,12 @@ public class ArenaEditor {
     public void restore(boolean save) {
         if(save) {
             if(!validate().isEmpty()) {
-                player.sendMessage(DARK_AQUA + "[YesBoats] " + RED + "Arena validation failed. Validator found problems with the following feilds: " + validate());
+                player.sendMessage(DARK_AQUA + "[YesBoats] " + RED + "Arena validation failed. Validator found problems with the following fields: " + validate());
                 return;
             }
             if(!Arena.arenas.contains(arena)) Arena.arenas.add(arena);
         } else
-            oldLightMaterials.forEach((k, v) -> k.getBlock().setType(v));
+            oldLightMaterials.forEach(Block::setType);
         player.getInventory().setContents(playerInv);
         displayTask.cancel();
         boxCorner1 = null;
@@ -294,8 +297,7 @@ public class ArenaEditor {
         createdBox = null;
         startBoats.forEach(b -> {
             if(b.isInsideVehicle())
-                //noinspection ConstantConditions
-                b.getVehicle().remove();
+                Objects.requireNonNull(b.getVehicle()).remove();
             b.remove();
         });
     }
@@ -323,6 +325,7 @@ public class ArenaEditor {
             if(!(e.getAttacker() instanceof Player)) return;
             if(!(e.getVehicle() instanceof Boat)) return;
             if(!editors.containsKey((Player) e.getAttacker())) return;
+
             ArenaEditor editor = editors.get((Player) e.getAttacker());
             if(editor.startBoats.contains((Boat) e.getVehicle())) {
                 Boat boat = (Boat) e.getVehicle();
@@ -346,6 +349,7 @@ public class ArenaEditor {
             ArenaEditor editor = editors.get((Player) e.getWhoClicked());
             if(e.getCurrentItem() == null) return;
             if(!editor.editorItems.contains(e.getCurrentItem())) return;
+
             e.setCancelled(true);
             if(e.getCurrentItem().getType() == Material.RED_CONCRETE) editor.restore(false);
             if(e.getCurrentItem().getType() == Material.LIME_CONCRETE) editor.restore(true);
@@ -360,6 +364,7 @@ public class ArenaEditor {
             if(!editor.editorItems.contains(e.getItem())) return;
             if(e.getItem() == null) return;
             Arena arena = editor.arena;
+
             switch (e.getItem().getType()) {
                 case IRON_AXE:
                     handleSelection(e, action, player, editor);
@@ -405,7 +410,7 @@ public class ArenaEditor {
                 //noinspection ConstantConditions
                 Location location = e.getClickedBlock().getLocation();
                 editor.setBoxCorner2(location.toVector());
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(AQUA + "Position 1 set. (" +
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(AQUA + "Position 2 set. (" +
                         location.getBlockX() + ", " +
                         location.getBlockY() + ", " +
                         location.getBlockZ() + ")"));
@@ -414,38 +419,35 @@ public class ArenaEditor {
         }
 
         private void handleSelectionRemoval(PlayerInteractEvent e, Action action, ArenaEditor editor) {
-            if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
-                editor.addBoundingBox(BoundingBoxType.REMOVE);
-                e.setCancelled(true);
-            }
+            if(action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
+            editor.addBoundingBox(BoundingBoxType.REMOVE);
+            e.setCancelled(true);
         }
 
         private void handleDeathBarrier(PlayerInteractEvent e, Action action, Player player, ArenaEditor editor) {
-            if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
-                editor.addBoundingBox(BoundingBoxType.DEATH_BARRIER);
-                player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + "Death barrier added.");
-                e.setCancelled(true);
-            }
+            if(action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
+            editor.addBoundingBox(BoundingBoxType.DEATH_BARRIER);
+            player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + "Death barrier added.");
+            e.setCancelled(true);
         }
 
         private void handleCheckpoint(PlayerInteractEvent e, Action action, Player player, ArenaEditor editor, Arena arena) {
-            if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
-                if(!settingCheckpoint.contains(player)) {
-                    editor.addBoundingBox(BoundingBoxType.CHECKPOINT);
-                    player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +" Bounding box for chectpoint #" + arena.checkpointBoxes.size() + " set. Click again to set the spawnpoint.");
-                    settingCheckpoint.add(player);
-                } else {
-                    Location playerLocation = player.getLocation();
-                    float yaw = (float) (Math.round(playerLocation.getYaw() / 22.5) * 22.5);
-                    arena.checkpointSpawns.add(new Location(player.getWorld(), playerLocation.getBlockX(), playerLocation.getBlockY(), playerLocation.getBlockZ(), yaw, 0));
-                    player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +" Spawnpoint for chectpoint #" + arena.checkpointBoxes.size() + " set. (" +
-                            playerLocation.getBlockX() + ", " +
-                            playerLocation.getBlockY() + ", " +
-                            playerLocation.getBlockZ() + ")");
-                    settingCheckpoint.remove(player);
-                }
-                e.setCancelled(true);
+            if(action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
+            if(!settingCheckpoint.contains(player)) {
+                editor.addBoundingBox(BoundingBoxType.CHECKPOINT);
+                player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +" Bounding box for chectpoint #" + arena.checkpointBoxes.size() + " set. Click again to set the spawnpoint.");
+                settingCheckpoint.add(player);
+            } else {
+                Location playerLocation = player.getLocation();
+                float yaw = (float) (Math.round(playerLocation.getYaw() / 22.5) * 22.5);
+                arena.checkpointSpawns.add(new Location(player.getWorld(), playerLocation.getBlockX(), playerLocation.getBlockY(), playerLocation.getBlockZ(), yaw, 0));
+                player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +" Spawnpoint for chectpoint #" + arena.checkpointBoxes.size() + " set. (" +
+                        playerLocation.getBlockX() + ", " +
+                        playerLocation.getBlockY() + ", " +
+                        playerLocation.getBlockZ() + ")");
+                settingCheckpoint.remove(player);
             }
+            e.setCancelled(true);
         }
 
         private void handleMinPlayers(PlayerInteractEvent e, Action action, ArenaEditor editor, Arena arena) {
@@ -470,21 +472,20 @@ public class ArenaEditor {
         }
 
         private void handleStartLocations(PlayerInteractEvent e, Action action, Player player, ArenaEditor editor, Arena arena) {
-            if(action == Action.RIGHT_CLICK_BLOCK) {
-                if(e.getBlockFace() != BlockFace.UP) return;
-                if(e.getClickedBlock() == null) return;
-                Location boatLocation = e.getClickedBlock().getLocation().add(0.5, 1, 0.5);
-                ArmorStand stand = (ArmorStand) player.getWorld().spawnEntity(boatLocation, EntityType.ARMOR_STAND);
-                Entity boat = player.getWorld().spawnEntity(boatLocation, EntityType.BOAT);
-                stand.setInvisible(true);
-                stand.setMarker(true);
-                boat.setRotation((float) ((Math.round(player.getLocation().getYaw() / 45)) * 45), 0);
-                editor.startBoats.add((Boat) boat);
-                arena.startLocations.add(boat.getLocation());
-                arena.startWorld = boat.getWorld();
-                stand.addPassenger(boat);
-                e.setCancelled(true);
-            }
+            if(action != Action.RIGHT_CLICK_BLOCK) return;
+            if(e.getBlockFace() != BlockFace.UP) return;
+            if(e.getClickedBlock() == null) return;
+            Location boatLocation = e.getClickedBlock().getLocation().add(0.5, 1, 0.5);
+            ArmorStand stand = (ArmorStand) player.getWorld().spawnEntity(boatLocation, EntityType.ARMOR_STAND);
+            Entity boat = player.getWorld().spawnEntity(boatLocation, EntityType.BOAT);
+            stand.setInvisible(true);
+            stand.setMarker(true);
+            boat.setRotation((float) ((Math.round(player.getLocation().getYaw() / 45)) * 45), 0);
+            editor.startBoats.add((Boat) boat);
+            arena.startLocations.add(boat.getLocation());
+            arena.startWorld = boat.getWorld();
+            stand.addPassenger(boat);
+            e.setCancelled(true);
         }
 
         private void handleLobbyLocation(PlayerInteractEvent e, Player player, Arena arena) {
@@ -497,27 +498,25 @@ public class ArenaEditor {
         }
 
         private void handleStartLineActivator(PlayerInteractEvent e, Action action, Player player, Arena arena) {
-            if(action == Action.RIGHT_CLICK_BLOCK || action == Action.LEFT_CLICK_BLOCK) {
-                if(e.getClickedBlock() == null) return;
-                Location blockLocation = e.getClickedBlock().getLocation();
-                arena.startLineActivator = blockLocation;
-                player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + " Set start line activator. (" +
-                        blockLocation.getBlockX() + ", " +
-                        blockLocation.getBlockY() + ", " +
-                        blockLocation.getBlockZ() + ")");
-                e.setCancelled(true);
-            }
+            if(action != Action.RIGHT_CLICK_BLOCK && action != Action.LEFT_CLICK_BLOCK) return;
+            if(e.getClickedBlock() == null) return;
+            Location blockLocation = e.getClickedBlock().getLocation();
+            arena.startLineActivator = blockLocation;
+            player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + " Set start line activator. (" +
+                    blockLocation.getBlockX() + ", " +
+                    blockLocation.getBlockY() + ", " +
+                    blockLocation.getBlockZ() + ")");
+            e.setCancelled(true);
         }
 
         private void handleLightLocations(PlayerInteractEvent e, Action action, ArenaEditor editor, Arena arena) {
-            if(action == Action.RIGHT_CLICK_BLOCK || action == Action.LEFT_CLICK_BLOCK) {
-                if(e.getClickedBlock() == null) return;
-                Block block = e.getClickedBlock();
-                editor.oldLightMaterials.put(block.getLocation(), block.getType());
-                block.setType(Material.REDSTONE_LAMP);
-                ((Lightable) block.getBlockData()).setLit(true);
-                arena.lightLocations.add(block.getLocation());
-            }
+            if(action != Action.RIGHT_CLICK_BLOCK && action != Action.LEFT_CLICK_BLOCK) return;
+            if(e.getClickedBlock() == null) return;
+            Block block = e.getClickedBlock();
+            editor.oldLightMaterials.put(block, block.getType());
+            block.setType(Material.REDSTONE_LAMP);
+            ((Lightable) block.getBlockData()).setLit(true);
+            arena.lightLocations.add(block.getLocation());
         }
     }
 }
