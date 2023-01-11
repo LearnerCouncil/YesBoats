@@ -28,9 +28,9 @@ public class StopArg implements CommandArgument {
             if(!arenaOptional.isPresent()) return CommandResult.ARENA_NOT_EXIST;
             arena = arenaOptional.get();
         }
-        if(arena.state == 0) return CommandResult.NOT_RUNNING;
-        if(arena.state == 1) arena.queueTimer.cancel();
-        if(arena.state == 2) arena.stopGame();
+        if(arena.getState() == 0) return CommandResult.NOT_RUNNING;
+        if(arena.getState() == 1) arena.queueTimer.cancel();
+        if(arena.getState() == 2) arena.stopGame();
         return CommandResult.STOPPED;
     }
 

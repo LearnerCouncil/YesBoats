@@ -53,11 +53,14 @@ public class Arena implements ConfigurationSerializable {
     /**
      * The state the game is in: 0 = idle, 1 = in queue, 2 = running.
      */
-    public int state = 0;
+    private int state = 0;
+    public int getState() {
+        return state;
+    }
     public BukkitTask queueTimer;
     private BukkitTask mainLoop;
     private final Map<Player, GameData> gameData = new HashMap<>();
-
+    protected final Set<ArenaSign> signs = new HashSet<>();
 
     //serialized feilds
     public final String name;
@@ -76,6 +79,12 @@ public class Arena implements ConfigurationSerializable {
         this.minPlayers = 1;
     }
 
+    /**
+     * Updates arena signs
+     */
+    public void updateSigns() {
+        signs.forEach(s -> s.update(players.size(), startLocations.size()));
+    }
 
     /**
      * Adds/removes a player from the arena.
