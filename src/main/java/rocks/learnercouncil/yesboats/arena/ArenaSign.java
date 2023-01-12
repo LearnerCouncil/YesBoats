@@ -1,17 +1,20 @@
 package rocks.learnercouncil.yesboats.arena;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import rocks.learnercouncil.yesboats.YesBoats;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class ArenaSign {
 
@@ -53,15 +56,51 @@ public class ArenaSign {
         sign.update();
     }
 
+    public static List<String> serialize(Collection<ArenaSign> signs) {
+        return signs.stream().map(s -> {
+            Location location = s.sign.getLocation();
+            return s.sign.getWorld().getName() + "," + location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ();
+        }).collect(Collectors.toList());
+    }
+
+    public static Set<ArenaSign> deserialize(Arena arena, Collection<String> serializedSigns) {
+        HashSet<ArenaSign> result = new HashSet<>();
+        serializedSigns.forEach(s -> {
+            Optional<ArenaSign> signOptional = ArenaSign.deserializeSingle(arena, s);
+            if(!signOptional.isPresent()) {
+                plugin.getLogger().warning("Arena Sign '" + s + "' failed to deserialize.");
+                return;
+            }
+            result.add(signOptional.get());
+        });
+        return result;
+    }
+
+    private static Optional<ArenaSign> deserializeSingle(Arena arena, String serializedSign) {
+        String[] segments = serializedSign.split(",");
+        if(segments.length != 4) return Optional.empty();
+        World world = plugin.getServer().getWorld(segments[1]);
+        if(world == null) return Optional.empty();
+        try {
+            Block block = world.getBlockAt(Integer.parseInt(segments[1]), Integer.parseInt(segments[2]), Integer.parseInt(segments[3]));
+            if(!(block instanceof Sign)) return Optional.empty();
+            return Optional.of(new ArenaSign((Sign) block, arena));
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
+    }
+
     public static boolean contains(Collection<ArenaSign> signs, Sign sign) {
         return signs.stream().anyMatch(s -> s.sign.equals(sign) || s.sign.getLocation().equals(sign.getLocation()));
+    }
+
+    public static Optional<ArenaSign> get(Collection<ArenaSign> signs, Sign sign) {
+        return signs.stream().filter(s -> s.sign.equals(sign) || s.sign.getLocation().equals(sign.getLocation())).findFirst();
     }
 
     public static boolean isValid(String[] text) {
         return text[0].equalsIgnoreCase("[YesBoats]") && Arena.get(text[1]).isPresent();
     }
-
-    //TODO sign serialzation and deserialization
 
     public static class Events implements Listener {
 
@@ -79,7 +118,7 @@ public class ArenaSign {
         }
 
         @EventHandler
-        public void OnSignEdit(SignChangeEvent e) {
+        public void onSignEdit(SignChangeEvent e) {
             if (!ArenaSign.isValid(e.getLines())) return;
 
             Optional<Arena> arenaOptional = Arena.get(e.getLine(1));
@@ -87,6 +126,16 @@ public class ArenaSign {
             arenaOptional.get().signs.add(new ArenaSign((Sign) e.getBlock(), arenaOptional.get()));
         }
 
-        //TODO sign breaking
+        @EventHandler
+        public void onBlockBreak(BlockBreakEvent e) {
+            if(!(e.getBlock() instanceof Sign)) return;
+            Sign sign = (Sign) e.getBlock();
+            String[] text = Arrays.stream(sign.getLines()).map(ChatColor::stripColor).toArray(String[]::new);
+            if(!text[0].equalsIgnoreCase("[YesBoats]")) return;
+            if(!Arena.get(text[1]).isPresent()) return;
+
+            Arena arena = Arena.get(text[1]).get();
+            ArenaSign.get(arena.signs, sign).ifPresent(arena.signs::remove);
+        }
     }
 }

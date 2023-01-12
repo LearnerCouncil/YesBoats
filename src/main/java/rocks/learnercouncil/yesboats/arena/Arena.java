@@ -60,7 +60,7 @@ public class Arena implements ConfigurationSerializable {
     public BukkitTask queueTimer;
     private BukkitTask mainLoop;
     private final Map<Player, GameData> gameData = new HashMap<>();
-    protected final Set<ArenaSign> signs = new HashSet<>();
+
 
     //serialized feilds
     public final String name;
@@ -73,6 +73,7 @@ public class Arena implements ConfigurationSerializable {
     protected List<BoundingBox> deathBarriers = new ArrayList<>();
     protected List<BoundingBox> checkpointBoxes = new ArrayList<>();
     protected List<Location> checkpointSpawns = new ArrayList<>();
+    protected Set<ArenaSign> signs = new HashSet<>();
 
     public Arena(String name) {
         this.name = name;
@@ -266,6 +267,8 @@ public class Arena implements ConfigurationSerializable {
 
         checkpointBoxes = stringToBoxList((List<String>) m.get("checkpointBoxes"));
         checkpointSpawns = stringToLocList((List<String>) m.get("checkpointSpawns"));
+
+        signs = ArenaSign.deserialize(this, (List<String>) m.get("signs"));
     }
 
     //Methods to change locations to and from their string representations
@@ -477,6 +480,7 @@ public class Arena implements ConfigurationSerializable {
         m.put("checkpointBoxes", boxToStringList(checkpointBoxes));
         m.put("checkpointSpawns", locToStringList(checkpointSpawns));
 
+        m.put("signs", ArenaSign.serialize(signs));
         return m;
     }
 
