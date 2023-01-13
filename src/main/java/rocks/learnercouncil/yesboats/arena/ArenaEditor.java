@@ -279,11 +279,11 @@ public class ArenaEditor {
 
     public void restore(boolean save) {
         if(save) {
-            if(!validate().isEmpty()) {
+            if(!validate().equals("")) {
                 player.sendMessage(DARK_AQUA + "[YesBoats] " + RED + "Arena validation failed. Validator found problems with the following fields: " + validate());
                 return;
             }
-            if(!Arena.arenas.contains(arena)) Arena.arenas.add(arena);
+            Arena.arenas.add(arena);
         } else
             oldLightMaterials.forEach(Block::setType);
         player.getInventory().setContents(playerInv);
@@ -310,7 +310,7 @@ public class ArenaEditor {
         if(arena.deathBarriers == null || arena.deathBarriers.isEmpty()) result.append("deathBarriers, ");
         if(arena.checkpointBoxes == null || arena.checkpointBoxes.isEmpty()) result.append("checkpointBoxes, ");
         if(arena.checkpointSpawns == null || (arena.checkpointBoxes != null && arena.checkpointSpawns.size() != arena.checkpointBoxes.size())) result.append("checkpointSpawns, ");
-        return result.substring(0, result.length() - 2);
+        return result.length() < 2 ? result.toString() : result.substring(0, result.length() - 2);
     }
 
     public static class Events implements Listener {

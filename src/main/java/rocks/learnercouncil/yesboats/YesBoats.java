@@ -6,6 +6,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import rocks.learnercouncil.yesboats.arena.Arena;
 import rocks.learnercouncil.yesboats.arena.ArenaEditor;
+import rocks.learnercouncil.yesboats.arena.ArenaSign;
 import rocks.learnercouncil.yesboats.commands.YesBoatsCmd;
 import rocks.learnercouncil.yesboats.events.VehicleExit;
 
@@ -53,7 +54,8 @@ public final class YesBoats extends JavaPlugin {
 
         registerEvents(
                 new VehicleExit(),
-                new ArenaEditor.Events()
+                new ArenaEditor.Events(),
+                new ArenaSign.Events()
         );
     }
 
