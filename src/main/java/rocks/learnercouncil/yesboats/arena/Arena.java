@@ -188,13 +188,13 @@ public class Arena implements ConfigurationSerializable {
                 if(prestartTimer != -1) {
                     prestartTimer++;
                     if(prestartTimer % 20 != 0) return;
-
-                    Block block = lightsIterator.next().getBlock();
-                    block.setType(Material.REDSTONE_LAMP);
-                    Lightable blockData = (Lightable) block.getBlockData();
-                    blockData.setLit(true);
-                    block.setBlockData(blockData);
-                    if(!lightsIterator.hasNext()) {
+                    if(lightsIterator.hasNext()) {
+                        Block block = lightsIterator.next().getBlock();
+                        block.setType(Material.REDSTONE_LAMP);
+                        Lightable blockData = (Lightable) block.getBlockData();
+                        blockData.setLit(true);
+                        block.setBlockData(blockData);
+                    } else {
                         lightLocations.forEach(l -> {
                             Lightable locationBlockData = (Lightable) l.getBlock().getBlockData();
                             locationBlockData.setLit(false);
