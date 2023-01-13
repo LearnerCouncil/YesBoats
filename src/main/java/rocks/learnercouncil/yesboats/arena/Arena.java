@@ -179,6 +179,7 @@ public class Arena implements ConfigurationSerializable {
         queueStands.clear();
         players.forEach(p -> p.getInventory().clear());
         final Iterator<Location> lightsIterator = lightLocations.iterator();
+        plugin.getLogger().info(lightLocations.toString());
         //TODO game logic
         mainLoop = new BukkitRunnable() {
             int prestartTimer = 0;
@@ -190,10 +191,17 @@ public class Arena implements ConfigurationSerializable {
 
                     Block block = lightsIterator.next().getBlock();
                     block.setType(Material.REDSTONE_LAMP);
-                    ((Lightable) block.getBlockData()).setLit(true);
+                    Lightable blockData = (Lightable) block.getBlockData();
+                    blockData.setLit(true);
+                    block.setBlockData(blockData);
                     if(!lightsIterator.hasNext()) {
-                        lightLocations.forEach(l -> ((Lightable) l.getBlock().getBlockData()).setLit(false));
+                        lightLocations.forEach(l -> {
+                            Lightable locationBlockData = (Lightable) l.getBlock().getBlockData();
+                            locationBlockData.setLit(false);
+                            l.getBlock().setBlockData(locationBlockData);
+                        });
                         startLineActivator.getBlock().setType(Material.RED_CONCRETE);
+                        prestartTimer = -1;
                     }
                 }
                 players.forEach(p -> deathBarriers.forEach(b -> {
@@ -212,6 +220,8 @@ public class Arena implements ConfigurationSerializable {
         state = State.WAITING;
         mainLoop.cancel();
         players.forEach(p -> {
+            if(p.isInsideVehicle())
+                Objects.requireNonNull(p.getVehicle()).remove();
             p.teleport(lobbyLocation);
             PlayerManager.restore(p);
         });
@@ -244,8 +254,16 @@ public class Arena implements ConfigurationSerializable {
      * @param player The player to teleport
      */
     private void respawn(Player player) {
-        if(player.getVehicle() == null) return;
-        player.getVehicle().teleport(checkpointSpawns.get(gameData.get(player).checkpoint));
+        Entity vehicle = player.getVehicle();
+        if(vehicle == null) return;
+        vehicle.removePassenger(player);
+        vehicle.teleport(checkpointSpawns.get(gameData.get(player).checkpoint));
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                vehicle.addPassenger(player);
+            }
+        }.runTaskLater(plugin, 2);
     }
 
 
@@ -258,7 +276,8 @@ public class Arena implements ConfigurationSerializable {
         minPlayers = (int) m.get("minPlayers");
 
         lobbyLocation = stringToLoc((String) m.get("lobbyLocation"));
-        startLineActivator = stringToLoc((String) m.get("startLineActivator"));
+
+        startLineActivator = vectorStringToLoc((String) m.get("startLineActivator"), startWorld);
 
         startLocations = vectorStringToLocList((List<String>) m.get("startLocations"), startWorld);
         lightLocations = vectorStringToLocList((List<String>) m.get("lightLocations"), startWorld);
@@ -394,9 +413,9 @@ public class Arena implements ConfigurationSerializable {
     private static List<String> locToVectorStringList(List<Location> locs) {
         List<String> result = new ArrayList<>();
         locs.forEach(l -> {
-            String str = l.getX() + "," +
-                    l.getY() + "," +
-                    l.getZ() + ",";
+            String str = l.getX() +
+                    "," + l.getY() +
+                    "," + l.getZ();
             result.add(str);
         });
         return result;
@@ -467,7 +486,7 @@ public class Arena implements ConfigurationSerializable {
         m.put("minPlayers", minPlayers);
 
         m.put("lobbyLocation", locToString(lobbyLocation));
-        m.put("startLineActivator", locToString(startLineActivator));
+        m.put("startLineActivator", locToVectorString(startLineActivator));
 
         m.put("startWorld", startWorld.getName());
         m.put("startLocations", locToVectorStringList(startLocations));
