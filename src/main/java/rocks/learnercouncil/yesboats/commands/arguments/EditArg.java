@@ -26,7 +26,7 @@ public class EditArg implements CommandArgument {
         String name = args[1];
         if(!Arena.get(name).isPresent()) return ARENA_NOT_EXIST;
 
-        ArenaEditor.editors.put((Player) sender, new ArenaEditor((Player) sender, new Arena(name)));
+        ArenaEditor.editors.put((Player) sender, new ArenaEditor((Player) sender, Arena.get(name).get()));
         return EDITING;
     }
 
