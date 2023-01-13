@@ -4,7 +4,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import rocks.learnercouncil.yesboats.arena.Arena;
 import rocks.learnercouncil.yesboats.commands.CommandArgument;
-import rocks.learnercouncil.yesboats.commands.CommandResult;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,17 +11,19 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static rocks.learnercouncil.yesboats.commands.CommandResult.*;
+
 public class RemoveArg implements CommandArgument {
     @Override
     public String execute(CommandSender sender, Command cmd, String label, String[] args) {
         if(!args[0].equalsIgnoreCase("remove")) return "";
-        if(!sender.hasPermission("yesboats.commmands.yesboats.admin")) return CommandResult.NO_PERMISSION;
-        if(args.length < 2) return CommandResult.TOO_FEW_ARGS;
-        if(args.length > 2) return CommandResult.TOO_MANY_ARGS;
+        if(!sender.hasPermission("yesboats.commmands.yesboats.admin")) return NO_PERMISSION;
+        if(args.length < 2) return TOO_FEW_ARGS;
+        if(args.length > 2) return TOO_MANY_ARGS;
         Optional<Arena> arenaOptional = Arena.get(args[1]);
-        if(!arenaOptional.isPresent()) return CommandResult.ARENA_NOT_EXIST;
+        if(!arenaOptional.isPresent()) return ARENA_NOT_EXIST;
         Arena.arenas.remove(arenaOptional.get());
-        return CommandResult.REMOVED;
+        return REMOVED;
     }
 
     @Override

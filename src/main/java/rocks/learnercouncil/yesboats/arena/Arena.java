@@ -106,8 +106,8 @@ public class Arena implements ConfigurationSerializable {
             playerArenaMap.put(player, this);
             gameData.put(player, new GameData());
 
-            boat.addPassenger(player);
             spawnQueueStand(loc).addPassenger(boat);
+            boat.addPassenger(player);
             PlayerManager.set(player);
 
             if(players.size() <= minPlayers) startQueueTimer();
