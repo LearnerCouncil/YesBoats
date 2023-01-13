@@ -31,8 +31,10 @@ public class EditArg implements CommandArgument {
 
     @Override
     public List<String> tabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
-        if(args.length == 1) return Collections.singletonList("edit");
-        if(args.length == 2 && args[0].equalsIgnoreCase("edit")) return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
+        if(args.length == 1)
+            return Collections.singletonList("edit");
+        if(args.length == 2 && args[0].equalsIgnoreCase("edit"))
+            return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
         return new ArrayList<>();
     }
 }

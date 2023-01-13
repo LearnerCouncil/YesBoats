@@ -40,8 +40,10 @@ public class StartArg implements CommandArgument {
 
     @Override
     public List<String> tabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
-        if(args.length == 0) return Collections.singletonList("start");
-        if(args.length == 1 && args[0].equalsIgnoreCase("start")) return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
+        if(args.length == 1)
+            return Collections.singletonList("start");
+        if(args.length == 2 && args[0].equalsIgnoreCase("start"))
+            return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
         return new ArrayList<>();
     }
 }

@@ -7,8 +7,11 @@ import rocks.learnercouncil.yesboats.arena.Arena;
 import rocks.learnercouncil.yesboats.commands.CommandArgument;
 import rocks.learnercouncil.yesboats.commands.CommandResult;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class StopArg implements CommandArgument {
     @Override
@@ -36,6 +39,10 @@ public class StopArg implements CommandArgument {
 
     @Override
     public List<String> tabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
-        return null;
+        if(args.length == 1)
+            return Collections.singletonList("stop");
+        if(args.length == 2 && args[0].equalsIgnoreCase("stop"))
+            return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
+        return new ArrayList<>();
     }
 }

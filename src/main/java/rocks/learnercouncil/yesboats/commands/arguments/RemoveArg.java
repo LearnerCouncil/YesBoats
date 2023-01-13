@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class RemoveArg implements CommandArgument {
     @Override
@@ -26,7 +27,10 @@ public class RemoveArg implements CommandArgument {
 
     @Override
     public List<String> tabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
-        if(args.length == 0) return Collections.singletonList("remove");
+        if(args.length == 1)
+            return Collections.singletonList("remove");
+        if(args.length == 2)
+            return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
         return new ArrayList<>();
     }
 }

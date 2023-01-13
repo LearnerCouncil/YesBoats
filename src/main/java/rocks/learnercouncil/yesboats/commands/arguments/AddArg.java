@@ -28,7 +28,8 @@ public class AddArg implements CommandArgument {
 
     @Override
     public List<String> tabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
-        if(args.length == 1) return Collections.singletonList("add");
+        if(args.length == 1)
+            return Collections.singletonList("add");
         return new ArrayList<>();
     }
 }

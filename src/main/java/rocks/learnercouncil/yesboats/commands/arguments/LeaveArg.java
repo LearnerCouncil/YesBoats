@@ -46,9 +46,12 @@ public class LeaveArg implements CommandArgument {
 
     @Override
     public List<String> tabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
-        if(args.length == 1) return Collections.singletonList("leave");
-        if(args.length == 2 && args[0].equalsIgnoreCase("leave")) return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
-        if(args.length == 3 && args[0].equalsIgnoreCase("leave") && sender.hasPermission("yesboats.commands.yesboats.admin")) return plugin.getServer().getOnlinePlayers().stream().map(HumanEntity::getName).collect(Collectors.toList());
+        if(args.length == 1)
+            return Collections.singletonList("leave");
+        if(args.length == 2 && args[0].equalsIgnoreCase("leave"))
+            return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
+        if(args.length == 3 && args[0].equalsIgnoreCase("leave") && sender.hasPermission("yesboats.commands.yesboats.admin"))
+            return plugin.getServer().getOnlinePlayers().stream().map(HumanEntity::getName).collect(Collectors.toList());
         return new ArrayList<>();
     }
 }
