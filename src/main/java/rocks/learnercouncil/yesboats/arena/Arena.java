@@ -50,6 +50,10 @@ public class Arena implements ConfigurationSerializable {
     //unserialized feilds
     private final List<Player> players = new ArrayList<>();
     private final Set<ArmorStand> queueStands = new HashSet<>();
+    public BukkitTask queueTimer;
+    private BukkitTask mainLoop;
+    private final Map<Player, GameData> gameData = new HashMap<>();
+
     private State state = State.WAITING;
     public State getState() {
         return state;
@@ -57,10 +61,6 @@ public class Arena implements ConfigurationSerializable {
     public enum State {
         WAITING, IN_QUEUE, RUNNING
     }
-    public BukkitTask queueTimer;
-    private BukkitTask mainLoop;
-    private final Map<Player, GameData> gameData = new HashMap<>();
-
 
     //serialized feilds
     public final String name;
@@ -303,7 +303,6 @@ public class Arena implements ConfigurationSerializable {
      * @see Arena#locToString(Location)
      */
     private static Location stringToLoc(String str) {
-        if(str.isEmpty()) return null;
         String[] segments = str.split(",");
         return new Location(
                 plugin.getServer().getWorld(segments[0]),
@@ -467,7 +466,7 @@ public class Arena implements ConfigurationSerializable {
 
         m.put("minPlayers", minPlayers);
 
-        m.put("lobbyLocaion", locToString(lobbyLocation));
+        m.put("lobbyLocation", locToString(lobbyLocation));
         m.put("startLineActivator", locToString(startLineActivator));
 
         m.put("startWorld", startWorld.getName());
