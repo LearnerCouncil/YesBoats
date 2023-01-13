@@ -14,6 +14,7 @@ import rocks.learnercouncil.yesboats.PlayerManager;
 import rocks.learnercouncil.yesboats.YesBoats;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Represents an arena
@@ -179,7 +180,6 @@ public class Arena implements ConfigurationSerializable {
         queueStands.clear();
         players.forEach(p -> p.getInventory().clear());
         final Iterator<Location> lightsIterator = lightLocations.iterator();
-        plugin.getLogger().info(lightLocations.toString());
         //TODO game logic
         mainLoop = new BukkitRunnable() {
             int prestartTimer = 0;
@@ -254,16 +254,21 @@ public class Arena implements ConfigurationSerializable {
      * @param player The player to teleport
      */
     private void respawn(Player player) {
-        Entity vehicle = player.getVehicle();
-        if(vehicle == null) return;
+        if(player.getVehicle() == null) return;
+        if(player.getVehicle().getType() != EntityType.BOAT) return;
+        Boat vehicle = (Boat) player.getVehicle();
+
+        List<Entity> passengers = vehicle.getPassengers().stream().filter(e -> e.getType() == EntityType.PLAYER).collect(Collectors.toList());
+        Boat newBoat = (Boat) startWorld.spawnEntity(checkpointSpawns.get(gameData.get(player).checkpoint), EntityType.BOAT);
         vehicle.removePassenger(player);
-        vehicle.teleport(checkpointSpawns.get(gameData.get(player).checkpoint));
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                vehicle.addPassenger(player);
-            }
-        }.runTaskLater(plugin, 2);
+        player.teleport(checkpointSpawns.get(gameData.get(player).checkpoint));
+        newBoat.setWoodType(vehicle.getWoodType());
+        newBoat.addPassenger(player);
+        passengers.forEach(p -> {
+            vehicle.removePassenger(p);
+            newBoat.addPassenger(p);
+        });
+        vehicle.remove();
     }
 
 
@@ -276,10 +281,9 @@ public class Arena implements ConfigurationSerializable {
         minPlayers = (int) m.get("minPlayers");
 
         lobbyLocation = stringToLoc((String) m.get("lobbyLocation"));
-
         startLineActivator = vectorStringToLoc((String) m.get("startLineActivator"), startWorld);
 
-        startLocations = vectorStringToLocList((List<String>) m.get("startLocations"), startWorld);
+        startLocations = stringToLocList((List<String>) m.get("startLocations"));
         lightLocations = vectorStringToLocList((List<String>) m.get("lightLocations"), startWorld);
 
         deathBarriers = stringToBoxList((List<String>) m.get("deathBarriers"));
@@ -489,7 +493,7 @@ public class Arena implements ConfigurationSerializable {
         m.put("startLineActivator", locToVectorString(startLineActivator));
 
         m.put("startWorld", startWorld.getName());
-        m.put("startLocations", locToVectorStringList(startLocations));
+        m.put("startLocations", locToStringList(startLocations));
 
         m.put("lightLocations", locToVectorStringList(lightLocations));
 

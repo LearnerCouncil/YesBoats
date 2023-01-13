@@ -287,6 +287,7 @@ public class ArenaEditor {
         } else
             oldLightMaterials.forEach(Block::setType);
         player.getInventory().setContents(playerInv);
+        player.setItemOnCursor(null);
         displayTask.cancel();
         boxCorner1 = null;
         boxCorner2 = null;
