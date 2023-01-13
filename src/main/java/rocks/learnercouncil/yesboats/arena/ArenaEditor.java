@@ -14,6 +14,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
@@ -78,52 +79,48 @@ public class ArenaEditor {
         inv.setItem(0, getItem(Material.IRON_AXE,
                 BOLD.toString() + YELLOW + "Area Selector",
                 GOLD + "Left click a block to select the 1st corner",
-                GOLD + "Right click a block to select the 2nd corner"));
+                GOLD + "Right click a block to select the 2nd corner",
+                GOLD + "Drop to remove selected bounding box"));
 
-        inv.setItem(1, getItem(Material.TNT,
-                BOLD.toString() + RED + "Remove Bounding Box",
-                DARK_RED + "Click to remove the selected",
-                DARK_RED + "bounding box."));
-
-        inv.setItem(2, getItem(Material.BARRIER,
+        inv.setItem(1, getItem(Material.BARRIER,
                 BOLD.toString() + RED + "Death Barrier",
                 DARK_RED + "Click to set the selected",
                 DARK_RED + "bouding box to a death barrier"));
 
-        inv.setItem(3, getItem(Material.LIGHT_BLUE_BANNER,
+        inv.setItem(2, getItem(Material.LIGHT_BLUE_BANNER,
                 BOLD.toString() + AQUA + "Checkpoint",
                 DARK_AQUA + "Click to set the selected",
                 DARK_AQUA + "bouding box to a checkpoint"));
 
-        inv.setItem(4, getItem(Material.RED_CARPET,
+        inv.setItem(3, getItem(Material.RED_CARPET,
                 BOLD.toString() + RED + "Minimum Players",
                 YELLOW + "Left click to increase",
                 YELLOW + "Right click to decrease"));
-        inv.getItem(4).setAmount(arena.minPlayers);
+        inv.getItem(3).setAmount(arena.minPlayers);
 
-        inv.setItem(5, getItem(Material.OAK_BOAT,
+        inv.setItem(4, getItem(Material.OAK_BOAT,
                 BOLD.toString() + YELLOW + "Add start location",
                 GOLD + "Place to add a start location"));
 
-        inv.setItem(6, getItem(Material.ENDER_PEARL,
+        inv.setItem(5, getItem(Material.ENDER_PEARL,
                 BOLD.toString() + YELLOW + "Set lobby Location",
                 GOLD + "Click to set the Lobby Location"));
 
-        inv.setItem(7, getItem(Material.REDSTONE_BLOCK,
+        inv.setItem(6, getItem(Material.REDSTONE_BLOCK,
                 BOLD.toString() + RED + "Start Line Activator.",
                 YELLOW + "Click a block to set that block as the start line activator"));
 
-        inv.setItem(8, getItem(Material.REDSTONE_LAMP,
+        inv.setItem(7, getItem(Material.REDSTONE_LAMP,
                 BOLD.toString() + YELLOW + "Add Light Location",
                 GOLD + "Click a block to add a light there,",
                 GOLD + "Lights are turned on in the order they were placed"));
 
-        inv.setItem(21, getItem(Material.RED_CONCRETE,
+        inv.setItem(20, getItem(Material.RED_CONCRETE,
                 BOLD.toString() + DARK_RED + "Cancel",
                 RED + "Stops editing without saving. ",
                 RED + "(Cannot be undone)"));
 
-        inv.setItem(25, getItem(Material.LIME_CONCRETE,
+        inv.setItem(24, getItem(Material.LIME_CONCRETE,
                 BOLD.toString() + GREEN + "Save",
                 DARK_GREEN + "Stops editing, saving changes.",
                 DARK_GREEN + "(Arena must be valid)"));
@@ -343,8 +340,17 @@ public class ArenaEditor {
         }
 
         @EventHandler
+        public void onItemDrop(PlayerDropItemEvent e) {
+            if(!editors.containsKey(e.getPlayer())) return;
+            ArenaEditor editor = editors.get(e.getPlayer());
+            ItemStack item = e.getItemDrop().getItemStack();
+            if(!editor.editorItems.contains(item)) return;
+
+            e.setCancelled(true);
+            if(item.getType() == Material.IRON_AXE) editor.addBoundingBox(BoundingBoxType.REMOVE);
+        }
+        @EventHandler
         public void onInventoryClick(InventoryClickEvent e) {
-            if(e.getInventory() != e.getWhoClicked().getInventory()) return;
             if(!editors.containsKey((Player) e.getWhoClicked())) return;
             ArenaEditor editor = editors.get((Player) e.getWhoClicked());
             if(e.getCurrentItem() == null) return;
@@ -368,9 +374,6 @@ public class ArenaEditor {
             switch (e.getItem().getType()) {
                 case IRON_AXE:
                     handleSelection(e, action, player, editor);
-                    break;
-                case TNT:
-                    handleSelectionRemoval(e, action, editor);
                     break;
                 case BARRIER:
                     handleDeathBarrier(e, action, player, editor);
@@ -416,12 +419,6 @@ public class ArenaEditor {
                         location.getBlockZ() + ")"));
                 e.setCancelled(true);
             }
-        }
-
-        private void handleSelectionRemoval(PlayerInteractEvent e, Action action, ArenaEditor editor) {
-            if(action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
-            editor.addBoundingBox(BoundingBoxType.REMOVE);
-            e.setCancelled(true);
         }
 
         private void handleDeathBarrier(PlayerInteractEvent e, Action action, Player player, ArenaEditor editor) {
@@ -517,6 +514,7 @@ public class ArenaEditor {
             block.setType(Material.REDSTONE_LAMP);
             ((Lightable) block.getBlockData()).setLit(true);
             arena.lightLocations.add(block.getLocation());
+            e.setCancelled(true);
         }
     }
 }
