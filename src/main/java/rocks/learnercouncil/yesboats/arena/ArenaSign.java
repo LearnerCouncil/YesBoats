@@ -39,16 +39,16 @@ public class ArenaSign {
         this.players = players;
         this.maxPlayers = maxPlayers;
         ChatColor signColor = ChatColor.BLACK;
-        int state = arena.getState();
+        Arena.State state = arena.getState();
         switch (state) {
-            case 0:
+            case WAITING:
                 signColor = ChatColor.GREEN;
                 sign.setLine(2, signColor + "Waiting...");
                 break;
-            case 1:
+            case IN_QUEUE:
                 signColor = ChatColor.YELLOW;
                 sign.setLine(2, signColor + "Starting...");
-            case 2:
+            case RUNNING:
                 signColor = ChatColor.RED;
                 sign.setLine(2, signColor + "Running");
         }

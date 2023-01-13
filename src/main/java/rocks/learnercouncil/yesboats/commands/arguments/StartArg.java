@@ -31,8 +31,8 @@ public class StartArg implements CommandArgument {
             if(!arenaOptional.isPresent()) return CommandResult.ARENA_NOT_EXIST;
             arena = arenaOptional.get();
         }
-        if(arena.getState() == 0) return CommandResult.TOO_FEW_PLAYERS;
-        if(arena.getState() == 2) return CommandResult.ALREADY_RUNNING;
+        if(arena.getState() == Arena.State.WAITING) return CommandResult.TOO_FEW_PLAYERS;
+        if(arena.getState() == Arena.State.RUNNING) return CommandResult.ALREADY_RUNNING;
         arena.queueTimer.cancel();
         arena.startGame();
         return CommandResult.STARTED;

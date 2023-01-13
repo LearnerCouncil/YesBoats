@@ -50,12 +50,12 @@ public class Arena implements ConfigurationSerializable {
     //unserialized feilds
     private final List<Player> players = new ArrayList<>();
     private final Set<ArmorStand> queueStands = new HashSet<>();
-    /**
-     * The state the game is in: 0 = idle, 1 = in queue, 2 = running.
-     */
-    private int state = 0;
-    public int getState() {
+    private State state = State.WAITING;
+    public State getState() {
         return state;
+    }
+    public enum State {
+        WAITING, IN_QUEUE, RUNNING
     }
     public BukkitTask queueTimer;
     private BukkitTask mainLoop;
@@ -124,9 +124,9 @@ public class Arena implements ConfigurationSerializable {
             playerArenaMap.remove(player);
             gameData.remove(player);
 
-            if(state == 1)
+            if(state == State.IN_QUEUE)
                 if(players.size() < minPlayers) queueTimer.cancel();
-            if(state == 2)
+            if(state == State.RUNNING)
                 if(players.size() == 0) stopGame();
         }
     }
@@ -155,7 +155,7 @@ public class Arena implements ConfigurationSerializable {
     }
 
     public void startQueueTimer() {
-        state = 1;
+        state = State.IN_QUEUE;
         queueTimer = new BukkitRunnable() {
             int timeleft = queueTime;
             @Override
@@ -174,7 +174,7 @@ public class Arena implements ConfigurationSerializable {
      * Starts the game
      */
     public void startGame() {
-        state = 2;
+        state = State.RUNNING;
         queueStands.forEach(Entity::remove);
         queueStands.clear();
         players.forEach(p -> p.getInventory().clear());
@@ -209,7 +209,7 @@ public class Arena implements ConfigurationSerializable {
      * Stops the game.
      */
     public void stopGame() {
-        state = 0;
+        state = State.WAITING;
         mainLoop.cancel();
         players.forEach(p -> {
             p.teleport(lobbyLocation);
