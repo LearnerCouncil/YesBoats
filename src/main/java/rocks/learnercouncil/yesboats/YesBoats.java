@@ -55,7 +55,8 @@ public final class YesBoats extends JavaPlugin {
         registerEvents(
                 new VehicleExit(),
                 new ArenaEditor.Events(),
-                new ArenaSign.Events()
+                new ArenaSign.Events(),
+                new PlayerManager.Events()
         );
     }
 
