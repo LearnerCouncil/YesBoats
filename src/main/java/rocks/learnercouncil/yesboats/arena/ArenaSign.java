@@ -65,10 +65,10 @@ public class ArenaSign {
 
     public static Set<ArenaSign> deserialize(Arena arena, Collection<String> serializedSigns) {
         HashSet<ArenaSign> result = new HashSet<>();
-        serializedSigns.forEach(s -> {
-            Optional<ArenaSign> signOptional = ArenaSign.deserializeSingle(arena, s);
+        serializedSigns.forEach(sign -> {
+            Optional<ArenaSign> signOptional = ArenaSign.deserializeSingle(arena, sign);
             if(!signOptional.isPresent()) {
-                plugin.getLogger().warning("Arena Sign '" + s + "' failed to deserialize.");
+                plugin.getLogger().warning("Arena Sign '" + sign + "' failed to deserialize.");
                 return;
             }
             result.add(signOptional.get());
@@ -85,7 +85,7 @@ public class ArenaSign {
             Block block = world.getBlockAt(Integer.parseInt(segments[1]), Integer.parseInt(segments[2]), Integer.parseInt(segments[3]));
             if(!(block instanceof Sign)) return Optional.empty();
             return Optional.of(new ArenaSign((Sign) block, arena));
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException ignored) {
             return Optional.empty();
         }
     }
@@ -105,31 +105,31 @@ public class ArenaSign {
     public static class Events implements Listener {
 
         @EventHandler
-        public void onClick(PlayerInteractEvent e) {
-            if(e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-            if(!(e.getClickedBlock() instanceof Sign)) return;
-            Sign sign = (Sign) e.getClickedBlock();
+        public void onClick(PlayerInteractEvent event) {
+            if(event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+            if(!(event.getClickedBlock() instanceof Sign)) return;
+            Sign sign = (Sign) event.getClickedBlock();
             String[] text = Arrays.stream(sign.getLines()).map(ChatColor::stripColor).toArray(String[]::new);
             if(!text[0].equalsIgnoreCase("[YesBoats]")) return;
             if(!Arena.get(text[1]).isPresent()) return;
             if(!ArenaSign.contains(Arena.get(text[1]).get().signs, sign)) return;
 
-            plugin.getServer().dispatchCommand(e.getPlayer(), "yesboats join " + text[1]);
+            plugin.getServer().dispatchCommand(event.getPlayer(), "yesboats join " + text[1]);
         }
 
         @EventHandler
-        public void onSignEdit(SignChangeEvent e) {
-            if (!ArenaSign.isValid(e.getLines())) return;
+        public void onSignEdit(SignChangeEvent event) {
+            if (!ArenaSign.isValid(event.getLines())) return;
 
-            Optional<Arena> arenaOptional = Arena.get(e.getLine(1));
+            Optional<Arena> arenaOptional = Arena.get(event.getLine(1));
             assert arenaOptional.isPresent();
-            arenaOptional.get().signs.add(new ArenaSign((Sign) e.getBlock(), arenaOptional.get()));
+            arenaOptional.get().signs.add(new ArenaSign((Sign) event.getBlock(), arenaOptional.get()));
         }
 
         @EventHandler
-        public void onBlockBreak(BlockBreakEvent e) {
-            if(!(e.getBlock() instanceof Sign)) return;
-            Sign sign = (Sign) e.getBlock();
+        public void onBlockBreak(BlockBreakEvent event) {
+            if(!(event.getBlock() instanceof Sign)) return;
+            Sign sign = (Sign) event.getBlock();
             String[] text = Arrays.stream(sign.getLines()).map(ChatColor::stripColor).toArray(String[]::new);
             if(!text[0].equalsIgnoreCase("[YesBoats]")) return;
             if(!Arena.get(text[1]).isPresent()) return;

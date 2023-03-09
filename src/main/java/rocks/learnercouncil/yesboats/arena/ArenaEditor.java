@@ -57,11 +57,11 @@ public class ArenaEditor {
         this.arena = arena;
         initializeInventory();
         startBoxDisplay();
-        arena.startLocations.forEach(l -> {
-            ArmorStand stand = (ArmorStand) arena.startWorld.spawnEntity(l, EntityType.ARMOR_STAND);
+        arena.startLocations.forEach(location -> {
+            ArmorStand stand = (ArmorStand) arena.startWorld.spawnEntity(location, EntityType.ARMOR_STAND);
             stand.setInvisible(true);
             stand.setMarker(true);
-            Boat boat = (Boat) arena.startWorld.spawnEntity(l, EntityType.BOAT);
+            Boat boat = (Boat) arena.startWorld.spawnEntity(location, EntityType.BOAT);
             stand.addPassenger(boat);
             startBoats.add(boat);
         });
@@ -244,31 +244,31 @@ public class ArenaEditor {
      * @param color the color and size on the particles in the for of a {@link Particle.DustOptions} object.
      */
     private void displayBoundingBox(BoundingBox box, Particle.DustOptions color) {
-        Vector c1 = box.getMin();
-        Vector c2 = box.getMax().add(new Vector(1, 1, 1));
+        Vector corner1 = box.getMin();
+        Vector corner2 = box.getMax().add(new Vector(1, 1, 1));
 
         double offset = offsetDisplayBox ? 0.5 : 0;
 
         //x axis lines
-        for(double x = c1.getX() + offset; x <= c2.getX(); x += 1) {
-            spawnParticle(x, c1.getY(), c1.getZ(), color);
-            spawnParticle(x, c1.getY(), c2.getZ(), color);
-            spawnParticle(x, c2.getY(), c1.getZ(), color);
-            spawnParticle(x, c2.getY(), c2.getZ(), color);
+        for(double x = corner1.getX() + offset; x <= corner2.getX(); x += 1) {
+            spawnParticle(x, corner1.getY(), corner1.getZ(), color);
+            spawnParticle(x, corner1.getY(), corner2.getZ(), color);
+            spawnParticle(x, corner2.getY(), corner1.getZ(), color);
+            spawnParticle(x, corner2.getY(), corner2.getZ(), color);
         }
         //y axis lines
-        for(double y = c1.getY() + offset; y <= c2.getY(); y += 1) {
-            spawnParticle(c1.getX(), y, c1.getZ(), color);
-            spawnParticle(c1.getX(), y, c2.getZ(), color);
-            spawnParticle(c2.getX(), y, c1.getZ(), color);
-            spawnParticle(c2.getX(), y, c2.getZ(), color);
+        for(double y = corner1.getY() + offset; y <= corner2.getY(); y += 1) {
+            spawnParticle(corner1.getX(), y, corner1.getZ(), color);
+            spawnParticle(corner1.getX(), y, corner2.getZ(), color);
+            spawnParticle(corner2.getX(), y, corner1.getZ(), color);
+            spawnParticle(corner2.getX(), y, corner2.getZ(), color);
         }
         //z axis lines
-        for(double z = c1.getZ() + offset; z <= c2.getZ(); z += 1) {
-            spawnParticle(c1.getX(), c1.getY(), z, color);
-            spawnParticle(c1.getX(), c2.getY(), z, color);
-            spawnParticle(c2.getX(), c1.getY(), z, color);
-            spawnParticle(c2.getX(), c2.getY(), z, color);
+        for(double z = corner1.getZ() + offset; z <= corner2.getZ(); z += 1) {
+            spawnParticle(corner1.getX(), corner1.getY(), z, color);
+            spawnParticle(corner1.getX(), corner2.getY(), z, color);
+            spawnParticle(corner2.getX(), corner1.getY(), z, color);
+            spawnParticle(corner2.getX(), corner2.getY(), z, color);
         }
     }
     private void spawnParticle(double x, double y, double z, Particle.DustOptions color) {
@@ -293,10 +293,10 @@ public class ArenaEditor {
         boxCorner2 = null;
         selectedBox = null;
         createdBox = null;
-        startBoats.forEach(b -> {
-            if(b.isInsideVehicle())
-                Objects.requireNonNull(b.getVehicle()).remove();
-            b.remove();
+        startBoats.forEach(boat -> {
+            if(boat.isInsideVehicle())
+                Objects.requireNonNull(boat.getVehicle()).remove();
+            boat.remove();
         });
     }
 
@@ -307,7 +307,7 @@ public class ArenaEditor {
         if(arena.startWorld == null) result.append("startWorld, ");
         if(arena.startLineActivator == null) result.append("startLineActivator, ");
         if(arena.startLocations == null || arena.startLocations.isEmpty()) result.append("startLocations, ");
-        if(arena.lightLocations == null ||arena.lightLocations.isEmpty()) result.append("lightLocations, ");
+        if(arena.lightLocations == null || arena.lightLocations.isEmpty()) result.append("lightLocations, ");
         if(arena.deathBarriers == null || arena.deathBarriers.isEmpty()) result.append("deathBarriers, ");
         if(arena.checkpointBoxes == null || arena.checkpointBoxes.isEmpty()) result.append("checkpointBoxes, ");
         if(arena.checkpointSpawns == null || (arena.checkpointBoxes != null && arena.checkpointSpawns.size() != arena.checkpointBoxes.size())) result.append("checkpointSpawns, ");
@@ -319,14 +319,14 @@ public class ArenaEditor {
         private final List<Player> settingCheckpoint = new ArrayList<>();
 
         @EventHandler
-        public void onVehicleDestroy(VehicleDestroyEvent e) {
-            if(!(e.getAttacker() instanceof Player)) return;
-            if(!(e.getVehicle() instanceof Boat)) return;
-            if(!editors.containsKey((Player) e.getAttacker())) return;
+        public void onVehicleDestroy(VehicleDestroyEvent event) {
+            if(!(event.getAttacker() instanceof Player)) return;
+            if(!(event.getVehicle() instanceof Boat)) return;
+            if(!editors.containsKey((Player) event.getAttacker())) return;
 
-            ArenaEditor editor = editors.get((Player) e.getAttacker());
-            if(editor.startBoats.contains((Boat) e.getVehicle())) {
-                Boat boat = (Boat) e.getVehicle();
+            ArenaEditor editor = editors.get((Player) event.getAttacker());
+            if(editor.startBoats.contains((Boat) event.getVehicle())) {
+                Boat boat = (Boat) event.getVehicle();
                 if(boat.isInsideVehicle())
                     Objects.requireNonNull(boat.getVehicle()).remove();
                 editor.arena.startLocations.remove(boat.getLocation());
@@ -334,68 +334,68 @@ public class ArenaEditor {
         }
 
         @EventHandler
-        public void onVehicleEnter(VehicleEnterEvent e) {
-            if(!(e.getEntered() instanceof Player)) return;
-            if(editors.containsKey((Player) e.getEntered()))
-                e.setCancelled(true);
+        public void onVehicleEnter(VehicleEnterEvent event) {
+            if(!(event.getEntered() instanceof Player)) return;
+            if(editors.containsKey((Player) event.getEntered()))
+                event.setCancelled(true);
         }
 
         @EventHandler
-        public void onItemDrop(PlayerDropItemEvent e) {
-            if(!editors.containsKey(e.getPlayer())) return;
-            ArenaEditor editor = editors.get(e.getPlayer());
-            ItemStack item = e.getItemDrop().getItemStack();
+        public void onItemDrop(PlayerDropItemEvent event) {
+            if(!editors.containsKey(event.getPlayer())) return;
+            ArenaEditor editor = editors.get(event.getPlayer());
+            ItemStack item = event.getItemDrop().getItemStack();
             if(!editor.editorItems.contains(item)) return;
 
-            e.setCancelled(true);
+            event.setCancelled(true);
             if(item.getType() == Material.IRON_AXE) editor.addBoundingBox(BoundingBoxType.REMOVE);
         }
         @EventHandler
-        public void onInventoryClick(InventoryClickEvent e) {
-            if(!editors.containsKey((Player) e.getWhoClicked())) return;
-            ArenaEditor editor = editors.get((Player) e.getWhoClicked());
-            if(e.getCurrentItem() == null) return;
-            if(!editor.editorItems.contains(e.getCurrentItem())) return;
+        public void onInventoryClick(InventoryClickEvent event) {
+            if(!editors.containsKey((Player) event.getWhoClicked())) return;
+            ArenaEditor editor = editors.get((Player) event.getWhoClicked());
+            if(event.getCurrentItem() == null) return;
+            if(!editor.editorItems.contains(event.getCurrentItem())) return;
 
-            e.setCancelled(true);
-            if(e.getCurrentItem().getType() == Material.RED_CONCRETE) editor.restore(false);
-            if(e.getCurrentItem().getType() == Material.LIME_CONCRETE) editor.restore(true);
+            event.setCancelled(true);
+            if(event.getCurrentItem().getType() == Material.RED_CONCRETE) editor.restore(false);
+            if(event.getCurrentItem().getType() == Material.LIME_CONCRETE) editor.restore(true);
         }
 
         @EventHandler
-        public void onClick(PlayerInteractEvent e) {
-            Action action = e.getAction();
-            Player player = e.getPlayer();
+        public void onClick(PlayerInteractEvent event) {
+            Action action = event.getAction();
+            Player player = event.getPlayer();
             if(!editors.containsKey(player)) return;
             ArenaEditor editor = editors.get(player);
-            if(!editor.editorItems.contains(e.getItem())) return;
-            if(e.getItem() == null) return;
+            if(!editor.editorItems.contains(event.getItem())) return;
+            if(event.getItem() == null) return;
             Arena arena = editor.arena;
 
-            switch (e.getItem().getType()) {
+            switch (event.getItem().getType()) {
                 case IRON_AXE:
-                    handleSelection(e, action, player, editor);
+                    handleSelection(event, action, player, editor);
                     break;
                 case BARRIER:
-                    handleDeathBarrier(e, action, player, editor);
+                    handleDeathBarrier(event, action, player, editor);
                     break;
                 case LIGHT_BLUE_BANNER:
-                    handleCheckpoint(e, action, player, editor, arena);
+                    handleCheckpoint(event, action, player, editor, arena);
                     break;
                 case RED_CARPET:
-                    handleMinPlayers(e, action, editor, arena);
+                    handleMinPlayers(event, action, editor, arena);
                     break;
                 case OAK_BOAT:
-                    handleStartLocations(e, action, player, editor, arena);
+                    handleStartLocations(event, action, player, editor, arena);
                     break;
                 case ENDER_PEARL:
-                    handleLobbyLocation(e, player, arena);
+                    handleLobbyLocation(event, player, arena);
                     break;
                 case REDSTONE_BLOCK:
-                    handleStartLineActivator(e, action, player, arena);
+                    handleStartLineActivator(event, action, player, arena);
                     break;
                 case REDSTONE_LAMP:
-                    handleLightLocations(e, action, editor, arena);
+                    handleLightLocations(event, action, editor, arena);
             }
         }
         //Handler methods

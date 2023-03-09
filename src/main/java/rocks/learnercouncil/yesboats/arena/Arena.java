@@ -138,15 +138,15 @@ public class Arena implements ConfigurationSerializable {
         Entity vehicle = player.getVehicle();
         if (vehicle.isInsideVehicle())
             vehicle.getVehicle().remove();
-        vehicle.getPassengers().forEach(p -> {
-            if(p.getType() != EntityType.PLAYER) p.remove();
+        vehicle.getPassengers().forEach(passenger -> {
+            if(passenger.getType() != EntityType.PLAYER) passenger.remove();
         });
         vehicle.remove();
     }
 
-    private ArmorStand spawnQueueStand(Location loc) {
-        if(loc.getWorld() == null) throw new NullPointerException("queueStand world is null.");
-        ArmorStand qs = (ArmorStand) loc.getWorld().spawnEntity(loc, EntityType.ARMOR_STAND);
+    private ArmorStand spawnQueueStand(Location location) {
+        if(location.getWorld() == null) throw new NullPointerException("queueStand world is null.");
+        ArmorStand qs = (ArmorStand) location.getWorld().spawnEntity(location, EntityType.ARMOR_STAND);
         qs.setInvulnerable(true);
         qs.setInvisible(true);
         qs.setSmall(true);
@@ -195,17 +195,18 @@ public class Arena implements ConfigurationSerializable {
                         blockData.setLit(true);
                         block.setBlockData(blockData);
                     } else {
-                        lightLocations.forEach(l -> {
-                            Lightable locationBlockData = (Lightable) l.getBlock().getBlockData();
+                        lightLocations.forEach(location -> {
+                            Lightable locationBlockData = (Lightable) location.getBlock().getBlockData();
                             locationBlockData.setLit(false);
-                            l.getBlock().setBlockData(locationBlockData);
+                            location.getBlock().setBlockData(locationBlockData);
                         });
                         startLineActivator.getBlock().setType(Material.RED_CONCRETE);
                         prestartTimer = -1;
                     }
                 }
                 players.forEach(p -> deathBarriers.forEach(b -> {
-                    if(b.contains(p.getLocation().toVector())) respawn(p);
+                    if(b.contains(p.getLocation().toVector()))
+                        respawn(p);
                 }));
                 players.forEach(p -> updateCheckpoint(p));
             }
@@ -258,7 +259,7 @@ public class Arena implements ConfigurationSerializable {
         if(player.getVehicle().getType() != EntityType.BOAT) return;
         Boat vehicle = (Boat) player.getVehicle();
 
-        List<Entity> passengers = vehicle.getPassengers().stream().filter(e -> e.getType() == EntityType.PLAYER).collect(Collectors.toList());
+        List<Entity> passengers = vehicle.getPassengers().stream().filter(e -> e.getType() != EntityType.PLAYER).collect(Collectors.toList());
         Boat newBoat = (Boat) startWorld.spawnEntity(checkpointSpawns.get(gameData.get(player).checkpoint), EntityType.BOAT);
         vehicle.removePassenger(player);
         player.teleport(checkpointSpawns.get(gameData.get(player).checkpoint));
