@@ -9,6 +9,7 @@ import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.*;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.util.BoundingBox;
 import rocks.learnercouncil.yesboats.PlayerManager;
 import rocks.learnercouncil.yesboats.YesBoats;
@@ -94,20 +95,24 @@ public class Arena implements ConfigurationSerializable {
      * @param join 'true' to add the player to the arena, 'false' to remove them.
      */
     public void setGameStatus(Player player, boolean join) {
+        ScoreboardManager scoreboardManager = Objects.requireNonNull(plugin.getServer().getScoreboardManager());
         if(join) {
             //failsafe
             if(players.size() == startLocations.size()) return;
 
-            Location loc = startLocations.get(players.size());
-            player.teleport(loc);
-            Boat boat = (Boat) startWorld.spawnEntity(loc, EntityType.BOAT);
+            Location location = startLocations.get(players.size());
+            player.teleport(location);
+            Boat boat = (Boat) startWorld.spawnEntity(location, EntityType.BOAT);
             boat.setInvulnerable(true);
 
             players.add(player);
             playerArenaMap.put(player, this);
             gameData.put(player, new GameData());
 
-            spawnQueueStand(loc).addPassenger(boat);
+            gameData.get(player).scoreboard = new ArenaScoreboard(scoreboardManager, player);
+            player.setScoreboard(gameData.get(player).scoreboard.getScoreboard());
+
+            spawnQueueStand(location).addPassenger(boat);
             boat.addPassenger(player);
             PlayerManager.set(player);
 
@@ -120,6 +125,9 @@ public class Arena implements ConfigurationSerializable {
 
             player.teleport(lobbyLocation);
             PlayerManager.restore(player);
+
+            gameData.get(player).scoreboard = null;
+            player.setScoreboard(scoreboardManager.getMainScoreboard());
 
             players.remove(player);
             playerArenaMap.remove(player);
@@ -182,8 +190,10 @@ public class Arena implements ConfigurationSerializable {
         final Iterator<Location> lightsIterator = lightLocations.iterator();
         mainLoop = new BukkitRunnable() {
             int prestartTimer = 0;
+            int secondCounter = 0;
             @Override
             public void run() {
+                secondCounter = secondCounter > 20 ? ++secondCounter : 0;
                 if(prestartTimer != -1) {
                     prestartTimer++;
                     if(prestartTimer % 20 != 0) return;
@@ -210,11 +220,13 @@ public class Arena implements ConfigurationSerializable {
                             respawn(player);
                     });
                 });
-                updatePlaces();
-                players.forEach(player -> {
-                GameData data = gameData.get(player);
-                data.scoreboard.update(++data.time, players);
-                });
+                if(secondCounter == 20) {
+                    updatePlaces();
+                    players.forEach(player -> {
+                        GameData data = gameData.get(player);
+                        data.scoreboard.update(++data.time, players);
+                    });
+                }
             }
         }.runTaskTimer(plugin, 0, 1);
 

@@ -14,12 +14,15 @@ import static org.bukkit.ChatColor.GOLD;
 public class ArenaScoreboard {
 
     private final Scoreboard scoreboard;
+    public Scoreboard getScoreboard() {
+        return scoreboard;
+    }
     private final Player player;
 
     private Objective gameObjective, queueObjective;
 
     private Team queueTime, raceTime;
-    private Team[] positions = new Team[5];
+    private final Team[] positions = new Team[5];
 
     public ArenaScoreboard(ScoreboardManager manager, Player player) {
         this.scoreboard = manager.getNewScoreboard();
@@ -29,8 +32,10 @@ public class ArenaScoreboard {
     }
 
     private void initializeScoreboard() {
-        gameObjective = scoreboard.registerNewObjective("main", "dummy", GOLD.toString() + BOLD + "YesBoats");
+        gameObjective = scoreboard.registerNewObjective("gameObjective", "dummy", GOLD.toString() + BOLD + "YesBoats");
+        gameObjective = scoreboard.registerNewObjective("queueObjective", "dummy", GOLD.toString() + BOLD + "YesBoats");
         queueTime = scoreboard.registerNewTeam("YBSB_queueTime");
+        queueTime.addEntry("Starts in: ");
         raceTime = scoreboard.registerNewTeam("YBSB_raceTime");
         raceTime.addEntry("Time: ");
         positions[0] = scoreboard.registerNewTeam("YBSB_position1");
@@ -42,53 +47,64 @@ public class ArenaScoreboard {
         positions[3] = scoreboard.registerNewTeam("YBSB_position4");
         positions[3].addEntry("#4 ");
         positions[4] = scoreboard.registerNewTeam("YBSB_position5");
-        positions[4].addEntry("#5 ");
+        positions[4].addEntry(" ");
 
-        //Game Objective
-        gameObjective.getScore("  ").setScore(0);
-        gameObjective.getScore("Time: ").setScore(1);
-        gameObjective.getScore("   ").setScore(2);
-        gameObjective.getScore("#1 ").setScore(3);
-        gameObjective.getScore("#2 ").setScore(4);
-        gameObjective.getScore("#3 ").setScore(5);
+        gameObjective.getScore("  ").setScore(1);
+
+        queueObjective.getScore("  ").setScore(3);
+        queueObjective.getScore("Starts in: ").setScore(2);
+        queueObjective.getScore("   ").setScore(1);
+    }
+
+    public void update(int queueTime) {
+        this.queueTime.setSuffix(String.valueOf(queueTime));
     }
 
     public void update(int time, List<Player> players) {
 
-        raceTime.setSuffix((time/60) + ":" + (time%60));
-
-        positions[0].setSuffix(players.get(0).getName());
-
-        positions[1].setSuffix(players.get(1).getName());
-
         int playerCount = players.size();
         int currentPosition = players.indexOf(player);
-
-        if(playerCount >= 3)
-            positions[2].setSuffix(players.get(2).getName());
-
-        gameObjective.getScore("    ").setScore(6);
+        int currentLine = 2;
 
         if(currentPosition == 4 || currentPosition == 5) {
             positions[3].setSuffix(players.get(3).getName());
-            gameObjective.getScore("#4 ").setScore(6);
+            gameObjective.getScore("#4 ").setScore(currentLine++);
             scoreboard.resetScores("...");
-            gameObjective.getScore("    ").setScore(7);
             if(playerCount >= 5) {
                 positions[4].setSuffix(players.get(4).getName());
-                positions[4].setPrefix("#5 ");
-                gameObjective.getScore(" ").setScore(7);
-                gameObjective.getScore("    ").setScore(8);
+                positions[4].setPrefix("#5");
+                gameObjective.getScore(" ").setScore(currentLine++);
             }
-        } else if(currentPosition > 5) {
-            gameObjective.getScore("...").setScore(6);
+        }
+
+        if(currentPosition > 5) {
+            gameObjective.getScore("...").setScore(currentLine++);
             scoreboard.resetScores("#4 ");
 
             positions[4].setSuffix(player.getName());
-            positions[4].setPrefix("#" + currentPosition + " ");
-            gameObjective.getScore("    ").setScore(8);
+            positions[4].setPrefix("#" + currentPosition);
+            gameObjective.getScore(" ").setScore(currentLine++);
+
         }
 
+        if(playerCount >= 3) {
+            positions[2].setSuffix(players.get(2).getName());
+            gameObjective.getScore("#3 ").setScore(currentLine++);
+        }
+
+        positions[1].setSuffix(players.get(1).getName());
+        gameObjective.getScore("#2 ").setScore(currentLine++);
+
+        positions[0].setSuffix(players.get(0).getName());
+        gameObjective.getScore("#1 ").setScore(currentLine++);
+
+
+        gameObjective.getScore("  ").setScore(currentLine++);
+
+        raceTime.setSuffix((time/60) + ":" + (time%60));
+        gameObjective.getScore("Time: ").setScore(currentLine++);
+
+        gameObjective.getScore("   ").setScore(currentLine);
     }
 
 }
