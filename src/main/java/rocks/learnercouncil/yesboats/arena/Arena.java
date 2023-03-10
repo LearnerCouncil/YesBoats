@@ -49,7 +49,7 @@ public class Arena implements ConfigurationSerializable {
     }
 
     //unserialized feilds
-    private final List<Player> players = new ArrayList<>();
+    private List<Player> players = new ArrayList<>();
     private final Set<ArmorStand> queueStands = new HashSet<>();
     public BukkitTask queueTimer;
     private BukkitTask mainLoop;
@@ -180,7 +180,6 @@ public class Arena implements ConfigurationSerializable {
         queueStands.clear();
         players.forEach(p -> p.getInventory().clear());
         final Iterator<Location> lightsIterator = lightLocations.iterator();
-        //TODO game logic
         mainLoop = new BukkitRunnable() {
             int prestartTimer = 0;
             @Override
@@ -204,11 +203,18 @@ public class Arena implements ConfigurationSerializable {
                         prestartTimer = -1;
                     }
                 }
-                players.forEach(p -> deathBarriers.forEach(b -> {
-                    if(b.contains(p.getLocation().toVector()))
-                        respawn(p);
-                }));
-                players.forEach(p -> updateCheckpoint(p));
+                players.forEach(player -> {
+                    updateCheckpoint(player);
+                    deathBarriers.forEach(deathBarrier -> {
+                        if(deathBarrier.contains(player.getLocation().toVector()))
+                            respawn(player);
+                    });
+                });
+                updatePlaces();
+                players.forEach(player -> {
+                GameData data = gameData.get(player);
+                data.scoreboard.update(++data.time, players);
+                });
             }
         }.runTaskTimer(plugin, 0, 1);
 
@@ -230,8 +236,6 @@ public class Arena implements ConfigurationSerializable {
         playerArenaMap.clear();
         gameData.clear();
         startLineActivator.getBlock().setType(Material.REDSTONE_BLOCK);
-
-        //todo game stop logic
     }
 
     private void updateCheckpoint(Player player) {
@@ -248,6 +252,16 @@ public class Arena implements ConfigurationSerializable {
                 gameData.get(player).checkpoint = currentCheckpoint;
             }
         }
+    }
+
+    private void updatePlaces() {
+        players.sort((player1, player2) -> {
+            GameData data1 = gameData.get(player1);
+            GameData data2 = gameData.get(player2);
+            int result1 = (data1.lap * 10000) + (data1.checkpoint * 1000) - ((int) player1.getLocation().distance(checkpointSpawns.get(data1.checkpoint)));
+            int result2 = (data2.lap * 10000) + (data2.checkpoint * 1000) - ((int) player2.getLocation().distance(checkpointSpawns.get(data2.checkpoint)));
+            return result1 - result2;
+        });
     }
 
     /**
@@ -510,5 +524,7 @@ public class Arena implements ConfigurationSerializable {
     private static class GameData {
         int checkpoint = 0;
         int lap = 0;
+        int time = 0;
+        ArenaScoreboard scoreboard;
     }
 }
