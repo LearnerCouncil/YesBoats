@@ -8,6 +8,7 @@ import rocks.learnercouncil.yesboats.arena.Arena;
 import rocks.learnercouncil.yesboats.arena.ArenaEditor;
 import rocks.learnercouncil.yesboats.arena.ArenaSign;
 import rocks.learnercouncil.yesboats.commands.YesBoatsCmd;
+import rocks.learnercouncil.yesboats.events.SpectatorTeleport;
 import rocks.learnercouncil.yesboats.events.VehicleExit;
 
 import java.util.ArrayList;
@@ -54,6 +55,7 @@ public final class YesBoats extends JavaPlugin {
 
         registerEvents(
                 new VehicleExit(),
+                new SpectatorTeleport(),
                 new ArenaEditor.Events(),
                 new ArenaSign.Events(),
                 new PlayerManager.Events()

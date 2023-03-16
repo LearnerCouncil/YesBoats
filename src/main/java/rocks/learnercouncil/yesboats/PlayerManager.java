@@ -32,6 +32,7 @@ public class PlayerManager {
         player.setExp(0f);
         playerData.level = player.getLevel();
         player.setLevel(0);
+        playerData.invulnerable = player.isInvulnerable();
         player.setInvulnerable(true);
     }
 
@@ -82,7 +83,7 @@ public class PlayerManager {
         p.setGameMode(playerData.gameMode);
         p.setExp(playerData.xp);
         p.setLevel(playerData.level);
-        p.setInvulnerable(false);
+        p.setInvulnerable(playerData.invulnerable);
     }
     
     private static class PlayerData {
@@ -90,6 +91,7 @@ public class PlayerManager {
         public GameMode gameMode;
         public float xp;
         public int level;
+        public boolean invulnerable;
     }
 
     public static class Events implements Listener {

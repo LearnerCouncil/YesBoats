@@ -13,6 +13,7 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -92,25 +93,37 @@ public class ArenaEditor {
                 DARK_AQUA + "Click to set the selected",
                 DARK_AQUA + "bouding box to a checkpoint"));
 
-        inv.setItem(3, getItem(Material.RED_CARPET,
+        inv.setItem(30, getItem(Material.RED_CARPET,
                 BOLD.toString() + RED + "Minimum Players",
                 YELLOW + "Left click to increase",
                 YELLOW + "Right click to decrease"));
-        inv.getItem(3).setAmount(arena.minPlayers);
+        inv.getItem(30).setAmount(arena.minPlayers);
 
-        inv.setItem(4, getItem(Material.OAK_BOAT,
+        inv.setItem(31, getItem(Material.SPECTRAL_ARROW,
+                BOLD.toString() + GOLD + "Laps",
+                YELLOW + "Left click to increase",
+                YELLOW + "Right click to decrease"));
+        inv.getItem(31).setAmount(arena.laps);
+
+        inv.setItem(32, getItem(Material.CLOCK,
+                BOLD.toString() + GOLD + "Time: " + (arena.time / 60) + ":" + (arena.time % 60),
+                AQUA + "Time: " + (arena.time / 60) + ":" + (arena.time % 60),
+                YELLOW + "Left click to increase by 30 seconds",
+                YELLOW + "Right click to decrease by 30 seconds"));
+
+        inv.setItem(3, getItem(Material.OAK_BOAT,
                 BOLD.toString() + YELLOW + "Add start location",
                 GOLD + "Place to add a start location"));
 
-        inv.setItem(5, getItem(Material.ENDER_PEARL,
+        inv.setItem(4, getItem(Material.ENDER_PEARL,
                 BOLD.toString() + YELLOW + "Set lobby Location",
                 GOLD + "Click to set the Lobby Location"));
 
-        inv.setItem(6, getItem(Material.REDSTONE_BLOCK,
+        inv.setItem(5, getItem(Material.REDSTONE_BLOCK,
                 BOLD.toString() + RED + "Start Line Activator.",
                 YELLOW + "Click a block to set that block as the start line activator"));
 
-        inv.setItem(7, getItem(Material.REDSTONE_LAMP,
+        inv.setItem(6, getItem(Material.REDSTONE_LAMP,
                 BOLD.toString() + YELLOW + "Add Light Location",
                 GOLD + "Click a block to add a light there,",
                 GOLD + "Lights are turned on in the order they were placed"));
@@ -303,6 +316,7 @@ public class ArenaEditor {
     private String validate() {
         StringBuilder result = new StringBuilder();
         if(arena.minPlayers < 1) result.append("minPlayers, ");
+        if(arena.laps < 1) result.append("laps, ");
         if(arena.lobbyLocation == null) result.append("lobbyLoation, ");
         if(arena.startWorld == null) result.append("startWorld, ");
         if(arena.startLineActivator == null) result.append("startLineActivator, ");
@@ -356,10 +370,24 @@ public class ArenaEditor {
             ArenaEditor editor = editors.get((Player) event.getWhoClicked());
             if(event.getCurrentItem() == null) return;
             if(!editor.editorItems.contains(event.getCurrentItem())) return;
+            ClickType action = event.getClick();
+            Arena arena = editor.arena;
 
+            switch (event.getCurrentItem().getType()) {
+                case RED_CONCRETE:
+                    editor.restore(false);
+                    break;
+                case LIME_CONCRETE:
+                    editor.restore(true);
+                    break;
+                case RED_CARPET:
+                    handleMinPlayers(event, action, editor, arena);
+                    break;
+                case SPECTRAL_ARROW:
+                    handleLaps(event, action, editor, arena);
+                    break;
+            }
             event.setCancelled(true);
-            if(event.getCurrentItem().getType() == Material.RED_CONCRETE) editor.restore(false);
-            if(event.getCurrentItem().getType() == Material.LIME_CONCRETE) editor.restore(true);
         }
 
         @EventHandler
@@ -381,9 +409,6 @@ public class ArenaEditor {
                     break;
                 case LIGHT_BLUE_BANNER:
                     handleCheckpoint(event, action, player, editor, arena);
-                    break;
-                case RED_CARPET:
-                    handleMinPlayers(event, action, editor, arena);
                     break;
                 case OAK_BOAT:
                     handleStartLocations(event, action, player, editor, arena);
@@ -448,25 +473,65 @@ public class ArenaEditor {
             e.setCancelled(true);
         }
 
-        private void handleMinPlayers(PlayerInteractEvent e, Action action, ArenaEditor editor, Arena arena) {
-            ItemStack minPlayers = e.getItem();
+        private void handleMinPlayers(InventoryClickEvent e, ClickType action, ArenaEditor editor, Arena arena) {
+            ItemStack minPlayers = e.getCurrentItem();
             if(minPlayers == null) return;
             int index = editor.editorItems.indexOf(minPlayers);
             if(index == -1) return;
-            if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
+            if(action == ClickType.RIGHT) {
                 if(arena.minPlayers > 1) {
                     arena.minPlayers--;
                     minPlayers.setAmount(arena.minPlayers);
                 }
-                e.setCancelled(true);
-            } else if(action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
+            } else if(action == ClickType.LEFT) {
                 if(arena.minPlayers < arena.startLocations.size()) {
                     arena.minPlayers++;
                     minPlayers.setAmount(arena.minPlayers);
                 }
                 editor.editorItems.set(index, minPlayers);
-                e.setCancelled(true);
             }
+        }
+
+        private void handleLaps(InventoryClickEvent e, ClickType action, ArenaEditor editor, Arena arena) {
+            ItemStack laps = e.getCurrentItem();
+            if(laps == null) return;
+            int index = editor.editorItems.indexOf(laps);
+            if(index == -1) return;
+            if(action == ClickType.RIGHT) {
+                if(arena.laps > 1) {
+                    arena.laps--;
+                    laps.setAmount(arena.laps);
+                }
+            } else if(action == ClickType.LEFT) {
+                if(arena.laps < 10) {
+                    arena.laps++;
+                    laps.setAmount(arena.laps);
+                }
+                editor.editorItems.set(index, laps);
+            }
+        }
+
+        private void handleTime(InventoryClickEvent e, ClickType action, ArenaEditor editor, Arena arena) {
+            ItemStack time = e.getCurrentItem();
+            if(time == null) return;
+            ItemMeta meta = time.getItemMeta();
+            if(meta == null) return;
+            int index = editor.editorItems.indexOf(time);
+            if(index == -1) return;
+            if(action == ClickType.RIGHT) {
+                if(arena.time > 30) {
+                    arena.time -= 30;
+                    meta.setDisplayName(BOLD.toString() + GOLD + "Time: " + (arena.time / 60) + ":" + (arena.time % 60));
+                }
+            } else if(action == ClickType.LEFT) {
+                if(arena.time < 3600) {
+                    arena.time += 30;
+                    time.setAmount(arena.time);
+                }
+                meta.setDisplayName(BOLD.toString() + GOLD + "Time: " + (arena.time / 60) + ":" + (arena.time % 60));
+            }
+            time.setItemMeta(meta);
+            editor.editorItems.set(index, time);
         }
 
         private void handleStartLocations(PlayerInteractEvent e, Action action, Player player, ArenaEditor editor, Arena arena) {
