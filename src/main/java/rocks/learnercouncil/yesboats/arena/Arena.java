@@ -8,6 +8,8 @@ import org.bukkit.entity.*;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.util.BoundingBox;
 import rocks.learnercouncil.yesboats.PlayerManager;
 import rocks.learnercouncil.yesboats.YesBoats;
@@ -45,6 +47,23 @@ public class Arena implements ConfigurationSerializable {
      */
     public static Optional<Arena> get(Player player) {
         return Optional.ofNullable(playerArenaMap.get(player));
+    }
+
+    public static Arena copy(Arena other) {
+        Arena copy = new Arena(other.name);
+        copy.minPlayers = other.minPlayers;
+        copy.laps = other.laps;
+        copy.time = other.time;
+        copy.lobbyLocation = other.lobbyLocation;
+        copy.startLineActivator = other.startLineActivator;
+        copy.startWorld = other.startWorld;
+        copy.startLocations = other.startLocations;
+        copy.lightLocations = other.lightLocations;
+        copy.deathBarriers = other.deathBarriers;
+        copy.checkpointBoxes = other.checkpointBoxes;
+        copy.checkpointSpawns = other.checkpointSpawns;
+        copy.signs = other.signs;
+        return copy;
     }
 
     //unserialized feilds
@@ -98,6 +117,8 @@ public class Arena implements ConfigurationSerializable {
      * @param join 'true' to add the player to the arena, 'false' to remove them.
      */
     public void setGameStatus(Player player, boolean join) {
+        ScoreboardManager scoreboardManager = plugin.getServer().getScoreboardManager();
+        assert scoreboardManager != null;
         if(join) {
             //failsafe
             if(players.size() == startLocations.size()) return;
@@ -109,11 +130,11 @@ public class Arena implements ConfigurationSerializable {
 
             players.add(player);
             playerArenaMap.put(player, this);
-            gameData.put(player, new GameData());
+            gameData.put(player, new GameData(player, scoreboardManager.getNewScoreboard()));
             PlayerManager.set(player);
+            updateSigns();
 
             spawnQueueStand(location).addPassenger(boat);
-            System.out.println("Adding player " + player.getName() + " to boat.");
             boat.addPassenger(player);
 
             if(players.size() <= minPlayers) startQueueTimer();
@@ -129,10 +150,13 @@ public class Arena implements ConfigurationSerializable {
             players.remove(player);
             playerArenaMap.remove(player);
             gameData.remove(player);
+            player.setScoreboard(scoreboardManager.getMainScoreboard());
+            updateSigns();
 
             if(state == State.IN_QUEUE) {
                 if(players.size() < minPlayers) {
                     queueTimer.cancel();
+                    players.forEach(p -> gameData.get(p).scoreboard.updateScores(-1));
                 }
             }
             if(state == State.RUNNING)
@@ -165,6 +189,7 @@ public class Arena implements ConfigurationSerializable {
 
     public void startQueueTimer() {
         state = State.IN_QUEUE;
+        players.forEach(player -> gameData.get(player).scoreboard.updateScores(-1));
         queueTimer = new BukkitRunnable() {
             int timeLeft = queueTime;
             @Override
@@ -174,6 +199,7 @@ public class Arena implements ConfigurationSerializable {
                     cancel();
                 }
                 timeLeft--;
+                players.forEach(player -> gameData.get(player).scoreboard.updateScores(timeLeft));
             }
         }.runTaskTimer(plugin, 0, 20);
     }
@@ -187,7 +213,9 @@ public class Arena implements ConfigurationSerializable {
         queueStands.forEach(Entity::remove);
         queueStands.clear();
         players.forEach(p -> {
-            gameData.get(p).time = System.currentTimeMillis();
+            GameData playerData = gameData.get(p);
+            playerData.time = System.currentTimeMillis();
+            playerData.scoreboard.updateScores(time, playerData.lap, laps);
             p.getInventory().clear();
         });
         final Iterator<Location> lightsIterator = lightLocations.iterator();
@@ -218,7 +246,9 @@ public class Arena implements ConfigurationSerializable {
                     }
                 }
                 players.forEach(player -> {
-                    if(gameData.get(player).spectator) return;
+                    GameData playerData = gameData.get(player);
+                    if(playerData.spectator) return;
+                    playerData.scoreboard.updateScores(timeLeft, playerData.lap, laps);
                     updateCheckpoint(player);
                     deathBarriers.forEach(deathBarrier -> {
                         if(deathBarrier.contains(player.getLocation().toVector()))
@@ -227,7 +257,6 @@ public class Arena implements ConfigurationSerializable {
                 });
 
                 if(secondCounter == 20) {
-                    System.out.println("timeLeft: " + timeLeft);
                     if(timeLeft <= 0) stopGame();
                     timeLeft--;
                 }
@@ -259,10 +288,9 @@ public class Arena implements ConfigurationSerializable {
             if(currentCheckpoint == previousCheckpoint + 1)
                 playerData.checkpoint = currentCheckpoint;
             if(currentCheckpoint == 0 && previousCheckpoint == checkpointBoxes.size() - 1) {
-                if(playerData.lap > laps) setSpectator(player);
+                if(playerData.lap >= laps) setSpectator(player);
                 playerData.lap += 1;
                 playerData.checkpoint = currentCheckpoint;
-                System.out.println("Lap: " + playerData.lap);
             }
         }
     }
@@ -310,9 +338,8 @@ public class Arena implements ConfigurationSerializable {
                 + ChatColor.YELLOW + "/yb leave"
                 + ChatColor.AQUA + " to return to the lobby.");
         currentPlace++;
-        System.out.println("CurrentPlace: " + currentPlace + ", players.size(): " + players.size());
         if(currentPlace > players.size()) {
-            System.out.println("End Scheduled.");
+            players.forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] " + ChatColor.AQUA + "All Players have finished. Returning to lobby in 5 seconds."));
             new BukkitRunnable() {
                 @Override
                 public void run() {
@@ -533,8 +560,13 @@ public class Arena implements ConfigurationSerializable {
     }
 
     private static class GameData {
+        public GameData(Player player, Scoreboard scoreboard) {
+            this.scoreboard = new ArenaScoreboard(player, scoreboard);
+        }
+
+        final ArenaScoreboard scoreboard;
         int checkpoint = 0;
-        int lap = 0;
+        int lap = 1;
         long time = 0;
         boolean spectator = false;
     }

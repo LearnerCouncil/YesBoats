@@ -13,8 +13,7 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.inventory.ClickType;
-import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCreativeEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
@@ -72,68 +71,72 @@ public class ArenaEditor {
      * Initializes the player's inventory with all the items used for editing.
      */
     @SuppressWarnings("ConstantConditions")
-    private void initializeInventory() {
+    protected void initializeInventory() {
         player.getInventory().clear();
         editorItems.clear();
         Inventory inv = player.getInventory();
 
-        inv.setItem(0, getItem(Material.IRON_AXE,
+        inv.setItem(0, getItem(Material.ENDER_CHEST,
+                BOLD.toString() + DARK_AQUA + "Regenerate",
+                AQUA + "Click to regenerate all of the editor items."));
+
+        inv.setItem(1, getItem(Material.IRON_AXE,
                 BOLD.toString() + YELLOW + "Area Selector",
                 GOLD + "Left click a block to select the 1st corner",
                 GOLD + "Right click a block to select the 2nd corner",
                 GOLD + "Drop to remove selected bounding box"));
 
-        inv.setItem(1, getItem(Material.BARRIER,
+        inv.setItem(2, getItem(Material.BARRIER,
                 BOLD.toString() + RED + "Death Barrier",
                 DARK_RED + "Click to set the selected",
                 DARK_RED + "bouding box to a death barrier"));
 
-        inv.setItem(2, getItem(Material.LIGHT_BLUE_BANNER,
+        inv.setItem(3, getItem(Material.LIGHT_BLUE_BANNER,
                 BOLD.toString() + AQUA + "Checkpoint",
                 DARK_AQUA + "Click to set the selected",
                 DARK_AQUA + "bouding box to a checkpoint"));
 
-        inv.setItem(30, getItem(Material.RED_CARPET,
+        inv.setItem(27, getItem(Material.RED_CARPET,
                 BOLD.toString() + RED + "Minimum Players",
                 YELLOW + "Left click to increase",
                 YELLOW + "Right click to decrease"));
-        inv.getItem(30).setAmount(arena.minPlayers);
+        inv.getItem(27).setAmount(arena.minPlayers);
 
-        inv.setItem(31, getItem(Material.SPECTRAL_ARROW,
-                BOLD.toString() + GOLD + "Laps",
-                YELLOW + "Left click to increase",
-                YELLOW + "Right click to decrease"));
-        inv.getItem(31).setAmount(arena.laps);
+        inv.setItem(28, getItem(Material.SPECTRAL_ARROW,
+                BOLD.toString() + YELLOW + "Laps",
+                GOLD + "Left click to increase",
+                GOLD + "Right click to decrease"));
+        inv.getItem(28).setAmount(arena.laps);
 
-        inv.setItem(32, getItem(Material.CLOCK,
-                BOLD.toString() + GOLD + "Time: " + (arena.time / 60) + ":" + (arena.time % 60),
+        inv.setItem(29, getItem(Material.CLOCK,
+                BOLD.toString() + YELLOW + "Time: " + (arena.time / 60) + ":" + (arena.time % 60),
                 AQUA + "Time: " + (arena.time / 60) + ":" + (arena.time % 60),
-                YELLOW + "Left click to increase by 30 seconds",
-                YELLOW + "Right click to decrease by 30 seconds"));
+                GOLD + "Left click to increase by 30 seconds",
+                GOLD + "Right click to decrease by 30 seconds"));
 
-        inv.setItem(3, getItem(Material.OAK_BOAT,
+        inv.setItem(4, getItem(Material.OAK_BOAT,
                 BOLD.toString() + YELLOW + "Add start location",
                 GOLD + "Place to add a start location"));
 
-        inv.setItem(4, getItem(Material.ENDER_PEARL,
+        inv.setItem(5, getItem(Material.ENDER_PEARL,
                 BOLD.toString() + YELLOW + "Set lobby Location",
                 GOLD + "Click to set the Lobby Location"));
 
-        inv.setItem(5, getItem(Material.REDSTONE_BLOCK,
+        inv.setItem(6, getItem(Material.REDSTONE_BLOCK,
                 BOLD.toString() + RED + "Start Line Activator.",
                 YELLOW + "Click a block to set that block as the start line activator"));
 
-        inv.setItem(6, getItem(Material.REDSTONE_LAMP,
+        inv.setItem(7, getItem(Material.REDSTONE_LAMP,
                 BOLD.toString() + YELLOW + "Add Light Location",
                 GOLD + "Click a block to add a light there,",
                 GOLD + "Lights are turned on in the order they were placed"));
 
-        inv.setItem(20, getItem(Material.RED_CONCRETE,
+        inv.setItem(16, getItem(Material.RED_CONCRETE,
                 BOLD.toString() + DARK_RED + "Cancel",
                 RED + "Stops editing without saving. ",
                 RED + "(Cannot be undone)"));
 
-        inv.setItem(24, getItem(Material.LIME_CONCRETE,
+        inv.setItem(17, getItem(Material.LIME_CONCRETE,
                 BOLD.toString() + GREEN + "Save",
                 DARK_GREEN + "Stops editing, saving changes.",
                 DARK_GREEN + "(Arena must be valid)"));
@@ -178,7 +181,7 @@ public class ArenaEditor {
      */
     private void addBoundingBox(BoundingBoxType type) {
         if(selectedBox == null) {
-            player.sendMessage(DARK_RED + "[YesBoats] " + RED + "There is no bounding box selected");
+            player.sendMessage(DARK_AQUA + "[YesBoats] " + RED + "There is no bounding box selected");
             return;
         }
         BoundingBoxType selectedType = ((Supplier<BoundingBoxType>) () -> {
@@ -296,9 +299,16 @@ public class ArenaEditor {
                 player.sendMessage(DARK_AQUA + "[YesBoats] " + RED + "Arena validation failed. Validator found problems with the following fields: " + validate());
                 return;
             }
-            Arena.arenas.add(arena);
-        } else
+            Optional<Arena> arenaOptional = Arena.get(arena.name);
+            if(arenaOptional.isPresent())
+                Arena.arenas.add(Arena.arenas.indexOf(arenaOptional.get()), arena);
+            else
+                Arena.arenas.add(arena);
+            player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + "Arena saved; exiting editor.");
+        } else {
             oldLightMaterials.forEach(Block::setType);
+            player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + "Discarding changes; exiting editor.");
+        }
         player.getInventory().setContents(playerInv);
         player.setItemOnCursor(null);
         displayTask.cancel();
@@ -317,14 +327,14 @@ public class ArenaEditor {
         StringBuilder result = new StringBuilder();
         if(arena.minPlayers < 1) result.append("minPlayers, ");
         if(arena.laps < 1) result.append("laps, ");
+        if(arena.time < 30 || arena.time > 3600) result.append("time, ");
         if(arena.lobbyLocation == null) result.append("lobbyLoation, ");
         if(arena.startWorld == null) result.append("startWorld, ");
         if(arena.startLineActivator == null) result.append("startLineActivator, ");
         if(arena.startLocations == null || arena.startLocations.isEmpty()) result.append("startLocations, ");
         if(arena.lightLocations == null || arena.lightLocations.isEmpty()) result.append("lightLocations, ");
-        if(arena.deathBarriers == null || arena.deathBarriers.isEmpty()) result.append("deathBarriers, ");
         if(arena.checkpointBoxes == null || arena.checkpointBoxes.isEmpty()) result.append("checkpointBoxes, ");
-        if(arena.checkpointSpawns == null || (arena.checkpointBoxes != null && arena.checkpointSpawns.size() != arena.checkpointBoxes.size())) result.append("checkpointSpawns, ");
+        else if(arena.checkpointSpawns == null || arena.checkpointSpawns.size() != arena.checkpointBoxes.size()) result.append("checkpointSpawns, ");
         return result.length() < 2 ? result.toString() : result.substring(0, result.length() - 2);
     }
 
@@ -365,27 +375,14 @@ public class ArenaEditor {
             if(item.getType() == Material.IRON_AXE) editor.addBoundingBox(BoundingBoxType.REMOVE);
         }
         @EventHandler
-        public void onInventoryClick(InventoryClickEvent event) {
+        public void onInventoryClick(InventoryCreativeEvent event) {
             if(!editors.containsKey((Player) event.getWhoClicked())) return;
             ArenaEditor editor = editors.get((Player) event.getWhoClicked());
             if(event.getCurrentItem() == null) return;
             if(!editor.editorItems.contains(event.getCurrentItem())) return;
-            ClickType action = event.getClick();
-            Arena arena = editor.arena;
 
-            switch (event.getCurrentItem().getType()) {
-                case RED_CONCRETE:
-                    editor.restore(false);
-                    break;
-                case LIME_CONCRETE:
-                    editor.restore(true);
-                    break;
-                case RED_CARPET:
-                    handleMinPlayers(event, action, editor, arena);
-                    break;
-                case SPECTRAL_ARROW:
-                    handleLaps(event, action, editor, arena);
-                    break;
+            if(event.getCurrentItem().getType() == Material.ENDER_CHEST) {
+                editor.initializeInventory();
             }
             event.setCancelled(true);
         }
@@ -400,27 +397,45 @@ public class ArenaEditor {
             if(event.getItem() == null) return;
             Arena arena = editor.arena;
 
+            event.setCancelled(true);
             switch (event.getItem().getType()) {
                 case IRON_AXE:
                     handleSelection(event, action, player, editor);
                     break;
                 case BARRIER:
-                    handleDeathBarrier(event, action, player, editor);
+                    handleDeathBarrier(action, player, editor);
                     break;
                 case LIGHT_BLUE_BANNER:
-                    handleCheckpoint(event, action, player, editor, arena);
+                    handleCheckpoint(action, player, editor, arena);
                     break;
                 case OAK_BOAT:
                     handleStartLocations(event, action, player, editor, arena);
                     break;
                 case ENDER_PEARL:
-                    handleLobbyLocation(event, player, arena);
+                    handleLobbyLocation(player, arena);
                     break;
                 case REDSTONE_BLOCK:
                     handleStartLineActivator(event, action, player, arena);
                     break;
                 case REDSTONE_LAMP:
                     handleLightLocations(event, action, editor, arena);
+                    break;
+                case RED_CONCRETE:
+                    editor.restore(false);
+                    break;
+                case LIME_CONCRETE:
+                    editor.restore(true);
+                    break;
+                case RED_CARPET:
+                    handleMinPlayers(event, action, editor, arena);
+                    break;
+                case SPECTRAL_ARROW:
+                    handleLaps(event, action, editor, arena);
+                    break;
+                case CLOCK:
+                    handleTime(event, action, editor, arena);
+                default:
+                    event.setCancelled(false);
             }
         }
         //Handler methods
@@ -433,7 +448,6 @@ public class ArenaEditor {
                         location.getBlockX() + ", " +
                         location.getBlockY() + ", " +
                         location.getBlockZ() + ")"));
-                e.setCancelled(true);
             }
             if(action == Action.RIGHT_CLICK_BLOCK) {
                 //noinspection ConstantConditions
@@ -443,18 +457,16 @@ public class ArenaEditor {
                         location.getBlockX() + ", " +
                         location.getBlockY() + ", " +
                         location.getBlockZ() + ")"));
-                e.setCancelled(true);
             }
         }
 
-        private void handleDeathBarrier(PlayerInteractEvent e, Action action, Player player, ArenaEditor editor) {
+        private void handleDeathBarrier(Action action, Player player, ArenaEditor editor) {
             if(action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
             editor.addBoundingBox(BoundingBoxType.DEATH_BARRIER);
             player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + "Death barrier added.");
-            e.setCancelled(true);
         }
 
-        private void handleCheckpoint(PlayerInteractEvent e, Action action, Player player, ArenaEditor editor, Arena arena) {
+        private void handleCheckpoint(Action action, Player player, ArenaEditor editor, Arena arena) {
             if(action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
             if(!settingCheckpoint.contains(player)) {
                 editor.addBoundingBox(BoundingBoxType.CHECKPOINT);
@@ -470,20 +482,19 @@ public class ArenaEditor {
                         playerLocation.getBlockZ() + ")");
                 settingCheckpoint.remove(player);
             }
-            e.setCancelled(true);
         }
 
-        private void handleMinPlayers(InventoryClickEvent e, ClickType action, ArenaEditor editor, Arena arena) {
-            ItemStack minPlayers = e.getCurrentItem();
+        private void handleMinPlayers(PlayerInteractEvent e, Action action, ArenaEditor editor, Arena arena) {
+            ItemStack minPlayers = e.getItem();
             if(minPlayers == null) return;
             int index = editor.editorItems.indexOf(minPlayers);
             if(index == -1) return;
-            if(action == ClickType.RIGHT) {
+            if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
                 if(arena.minPlayers > 1) {
                     arena.minPlayers--;
                     minPlayers.setAmount(arena.minPlayers);
                 }
-            } else if(action == ClickType.LEFT) {
+            } else if(action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
                 if(arena.minPlayers < arena.startLocations.size()) {
                     arena.minPlayers++;
                     minPlayers.setAmount(arena.minPlayers);
@@ -492,17 +503,17 @@ public class ArenaEditor {
             }
         }
 
-        private void handleLaps(InventoryClickEvent e, ClickType action, ArenaEditor editor, Arena arena) {
-            ItemStack laps = e.getCurrentItem();
+        private void handleLaps(PlayerInteractEvent e, Action action, ArenaEditor editor, Arena arena) {
+            ItemStack laps = e.getItem();
             if(laps == null) return;
             int index = editor.editorItems.indexOf(laps);
             if(index == -1) return;
-            if(action == ClickType.RIGHT) {
+            if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
                 if(arena.laps > 1) {
                     arena.laps--;
                     laps.setAmount(arena.laps);
                 }
-            } else if(action == ClickType.LEFT) {
+            } else if(action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
                 if(arena.laps < 10) {
                     arena.laps++;
                     laps.setAmount(arena.laps);
@@ -511,19 +522,19 @@ public class ArenaEditor {
             }
         }
 
-        private void handleTime(InventoryClickEvent e, ClickType action, ArenaEditor editor, Arena arena) {
-            ItemStack time = e.getCurrentItem();
+        private void handleTime(PlayerInteractEvent e, Action action, ArenaEditor editor, Arena arena) {
+            ItemStack time = e.getItem();
             if(time == null) return;
             ItemMeta meta = time.getItemMeta();
             if(meta == null) return;
             int index = editor.editorItems.indexOf(time);
             if(index == -1) return;
-            if(action == ClickType.RIGHT) {
+            if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
                 if(arena.time > 30) {
                     arena.time -= 30;
                     meta.setDisplayName(BOLD.toString() + GOLD + "Time: " + (arena.time / 60) + ":" + (arena.time % 60));
                 }
-            } else if(action == ClickType.LEFT) {
+            } else if(action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
                 if(arena.time < 3600) {
                     arena.time += 30;
                     time.setAmount(arena.time);
@@ -548,16 +559,14 @@ public class ArenaEditor {
             arena.startLocations.add(boat.getLocation());
             arena.startWorld = boat.getWorld();
             stand.addPassenger(boat);
-            e.setCancelled(true);
         }
 
-        private void handleLobbyLocation(PlayerInteractEvent e, Player player, Arena arena) {
+        private void handleLobbyLocation(Player player, Arena arena) {
             arena.lobbyLocation = player.getLocation();
             player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + " Set lobby location. (" +
                     player.getLocation().getBlockX() + ", " +
                     player.getLocation().getBlockY() + ", " +
                     player.getLocation().getBlockZ() + ")");
-            e.setCancelled(true);
         }
 
         private void handleStartLineActivator(PlayerInteractEvent e, Action action, Player player, Arena arena) {
@@ -569,7 +578,6 @@ public class ArenaEditor {
                     blockLocation.getBlockX() + ", " +
                     blockLocation.getBlockY() + ", " +
                     blockLocation.getBlockZ() + ")");
-            e.setCancelled(true);
         }
 
         private void handleLightLocations(PlayerInteractEvent e, Action action, ArenaEditor editor, Arena arena) {
@@ -580,7 +588,6 @@ public class ArenaEditor {
             block.setType(Material.REDSTONE_LAMP);
             ((Lightable) block.getBlockData()).setLit(true);
             arena.lightLocations.add(block.getLocation());
-            e.setCancelled(true);
         }
     }
 }

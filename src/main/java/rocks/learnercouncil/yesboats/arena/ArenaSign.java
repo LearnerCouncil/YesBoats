@@ -23,9 +23,6 @@ public class ArenaSign {
     private final Sign sign;
     private final Arena arena;
 
-    protected int players;
-    protected int maxPlayers;
-
     public ArenaSign(Sign sign, Arena arena) {
         this.sign = sign;
         this.arena = arena;
@@ -36,8 +33,6 @@ public class ArenaSign {
     }
 
     public void update(int players, int maxPlayers) {
-        this.players = players;
-        this.maxPlayers = maxPlayers;
         ChatColor signColor = ChatColor.BLACK;
         Arena.State state = arena.getState();
         switch (state) {
@@ -98,8 +93,9 @@ public class ArenaSign {
         return signs.stream().filter(s -> s.sign.equals(sign) || s.sign.getLocation().equals(sign.getLocation())).findFirst();
     }
 
-    public static boolean isValid(String[] text) {
-        return text[0].equalsIgnoreCase("[YesBoats]") && Arena.get(text[1]).isPresent();
+    public static boolean isInvalid(String[] text) {
+        return !text[0].equalsIgnoreCase("[YesBoats]")
+                || !Arena.get(text[1]).isPresent();
     }
 
     public static class Events implements Listener {
@@ -108,10 +104,10 @@ public class ArenaSign {
         public void onClick(PlayerInteractEvent event) {
             if(event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
             if(!(event.getClickedBlock() instanceof Sign)) return;
-            Sign sign = (Sign) event.getClickedBlock();
+            Sign sign = (Sign) event.getClickedBlock().getState();
             String[] text = Arrays.stream(sign.getLines()).map(ChatColor::stripColor).toArray(String[]::new);
-            if(!text[0].equalsIgnoreCase("[YesBoats]")) return;
-            if(!Arena.get(text[1]).isPresent()) return;
+            if(ArenaSign.isInvalid(text)) return;
+            //noinspection OptionalGetWithoutIsPresent
             if(!ArenaSign.contains(Arena.get(text[1]).get().signs, sign)) return;
 
             plugin.getServer().dispatchCommand(event.getPlayer(), "yesboats join " + text[1]);
@@ -119,11 +115,11 @@ public class ArenaSign {
 
         @EventHandler
         public void onSignEdit(SignChangeEvent event) {
-            if (!ArenaSign.isValid(event.getLines())) return;
+            if (ArenaSign.isInvalid(event.getLines())) return;
 
             Optional<Arena> arenaOptional = Arena.get(event.getLine(1));
             assert arenaOptional.isPresent();
-            arenaOptional.get().signs.add(new ArenaSign((Sign) event.getBlock(), arenaOptional.get()));
+            arenaOptional.get().signs.add(new ArenaSign((Sign) event.getBlock().getState(), arenaOptional.get()));
         }
 
         @EventHandler
@@ -131,9 +127,9 @@ public class ArenaSign {
             if(!(event.getBlock() instanceof Sign)) return;
             Sign sign = (Sign) event.getBlock();
             String[] text = Arrays.stream(sign.getLines()).map(ChatColor::stripColor).toArray(String[]::new);
-            if(!text[0].equalsIgnoreCase("[YesBoats]")) return;
-            if(!Arena.get(text[1]).isPresent()) return;
+            if(ArenaSign.isInvalid(text)) return;
 
+            //noinspection OptionalGetWithoutIsPresent
             Arena arena = Arena.get(text[1]).get();
             ArenaSign.get(arena.signs, sign).ifPresent(arena.signs::remove);
         }
