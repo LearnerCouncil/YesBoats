@@ -132,7 +132,6 @@ public class Arena implements ConfigurationSerializable {
             playerArenaMap.put(player, this);
             gameData.put(player, new GameData(player, scoreboardManager.getNewScoreboard()));
             PlayerManager.set(player);
-            updateSigns();
 
             spawnQueueStand(location).addPassenger(boat);
             boat.addPassenger(player);
@@ -151,7 +150,6 @@ public class Arena implements ConfigurationSerializable {
             playerArenaMap.remove(player);
             gameData.remove(player);
             player.setScoreboard(scoreboardManager.getMainScoreboard());
-            updateSigns();
 
             if(state == State.IN_QUEUE) {
                 if(players.size() < minPlayers) {
@@ -163,6 +161,7 @@ public class Arena implements ConfigurationSerializable {
             if(state == State.RUNNING)
                 if(players.size() == 0) stopGame();
         }
+        updateSigns();
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -270,8 +269,9 @@ public class Arena implements ConfigurationSerializable {
      * Stops the game.
      */
     public void stopGame() {
+        if(state == State.RUNNING) mainLoop.cancel();
+        if(state == State.IN_QUEUE) queueTimer.cancel();
         state = State.WAITING;
-        mainLoop.cancel();
         List<Player> playersCopy = new ArrayList<>(players);
         for (Player p : playersCopy) setGameStatus(p, false);
         startLineActivator.getBlock().setType(Material.REDSTONE_BLOCK);
@@ -311,29 +311,22 @@ public class Arena implements ConfigurationSerializable {
         double totalSeconds = ((double) (System.currentTimeMillis() - playerData.time)) / 1000;
         int minutes = (int) totalSeconds / 60;
         double seconds = totalSeconds % 60;
-        String place;
-        switch (currentPlace) {
-            case 21:
-            case 1:
-                place = "1st";
-                break;
-            case 22:
-            case 2:
-                place = "2nd";
-                break;
-            case 23:
-            case 3:
-                place = "3rd";
-                break;
-            default:
-                place = currentPlace + "th";
-        }
+        String suffix;
+        int lastDigit = currentPlace % 10;
+            if(lastDigit == 1 && currentPlace != 11)
+                suffix = "st";
+            else if(lastDigit == 2 && currentPlace != 12)
+                suffix = "nd";
+            else if(lastDigit == 3 && currentPlace != 13)
+                suffix = currentPlace + "rd";
+            else
+                suffix = currentPlace + "th";
 
         player.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
-                + ChatColor.AQUA + "You have completed the race with a time of "
+                + ChatColor.AQUA + "You have completed the race with in "
                 + ChatColor.YELLOW + minutes + ":" + seconds
                 + ChatColor.AQUA + ". That puts you in "
-                + ChatColor.YELLOW + place
+                + ChatColor.YELLOW + currentPlace + suffix
                 + ChatColor.AQUA + " place."
                 + "\nYou can now spectate the other players or type "
                 + ChatColor.YELLOW + "/yb leave"
@@ -394,7 +387,7 @@ public class Arena implements ConfigurationSerializable {
         checkpointBoxes = stringToBoxList((List<String>) m.get("checkpointBoxes"));
         checkpointSpawns = stringToLocList((List<String>) m.get("checkpointSpawns"), startWorld);
 
-        signs = ArenaSign.deserialize(this, (List<String>) m.get("signs"));
+        signs = ArenaSign.deserialize((List<String>) m.get("signs"));
     }
 
     //Methods to change locations to and from their string representations

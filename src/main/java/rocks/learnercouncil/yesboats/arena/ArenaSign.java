@@ -22,15 +22,19 @@ public class ArenaSign {
 
     private final Sign sign;
 
-    public ArenaSign(Sign sign, Arena arena) {
+    public ArenaSign(Sign sign) {
         this.sign = sign;
+    }
 
-        this.sign.setLine(0, ChatColor.DARK_AQUA + "[YesBoats]");
-        this.sign.setLine(1, ChatColor.AQUA + arena.name);
-        arena.updateSigns();
+    public void initializeText(String arenaName) {
+        System.out.println("Initializing Sign text...");
+        sign.setLine(0, ChatColor.DARK_AQUA + "[YesBoats]");
+        sign.setLine(1, ChatColor.AQUA + arenaName);
+        sign.update();
     }
 
     public void update(Arena.State state, int players, int maxPlayers) {
+        System.out.println("Updating sign text...");
         ChatColor signColor = ChatColor.BLACK;
         switch (state) {
             case WAITING:
@@ -40,9 +44,11 @@ public class ArenaSign {
             case IN_QUEUE:
                 signColor = ChatColor.YELLOW;
                 sign.setLine(2, signColor + "Starting...");
+                break;
             case RUNNING:
                 signColor = ChatColor.RED;
                 sign.setLine(2, signColor + "Running");
+                break;
         }
         sign.setLine(3, signColor + "[" + players + "/" + maxPlayers + "]");
         sign.update();
@@ -55,10 +61,10 @@ public class ArenaSign {
         }).collect(Collectors.toList());
     }
 
-    public static Set<ArenaSign> deserialize(Arena arena, Collection<String> serializedSigns) {
+    public static Set<ArenaSign> deserialize(Collection<String> serializedSigns) {
         HashSet<ArenaSign> result = new HashSet<>();
         serializedSigns.forEach(sign -> {
-            Optional<ArenaSign> signOptional = ArenaSign.deserializeSingle(arena, sign);
+            Optional<ArenaSign> signOptional = ArenaSign.deserializeSingle(sign);
             if(!signOptional.isPresent()) {
                 plugin.getLogger().warning("Arena Sign '" + sign + "' failed to deserialize.");
                 return;
@@ -68,15 +74,15 @@ public class ArenaSign {
         return result;
     }
 
-    private static Optional<ArenaSign> deserializeSingle(Arena arena, String serializedSign) {
+    private static Optional<ArenaSign> deserializeSingle(String serializedSign) {
         String[] segments = serializedSign.split(",");
         if(segments.length != 4) return Optional.empty();
-        World world = plugin.getServer().getWorld(segments[1]);
+        World world = plugin.getServer().getWorld(segments[0]);
         if(world == null) return Optional.empty();
         try {
             Block block = world.getBlockAt(Integer.parseInt(segments[1]), Integer.parseInt(segments[2]), Integer.parseInt(segments[3]));
-            if(!(block instanceof Sign)) return Optional.empty();
-            return Optional.of(new ArenaSign((Sign) block, arena));
+            if(!(block.getState() instanceof Sign)) return Optional.empty();
+            return Optional.of(new ArenaSign((Sign) block.getState()));
         } catch (NumberFormatException ignored) {
             return Optional.empty();
         }
@@ -100,7 +106,7 @@ public class ArenaSign {
         @EventHandler
         public void onClick(PlayerInteractEvent event) {
             if(event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-            if(!(event.getClickedBlock() instanceof Sign)) return;
+            if(!(Objects.requireNonNull(event.getClickedBlock()).getState() instanceof Sign)) return;
             Sign sign = (Sign) event.getClickedBlock().getState();
             String[] text = Arrays.stream(sign.getLines()).map(ChatColor::stripColor).toArray(String[]::new);
             if(ArenaSign.isInvalid(text)) return;
@@ -117,13 +123,18 @@ public class ArenaSign {
 
             Optional<Arena> arenaOptional = Arena.get(event.getLine(1));
             assert arenaOptional.isPresent();
-            arenaOptional.get().signs.add(new ArenaSign((Sign) event.getBlock().getState(), arenaOptional.get()));
+            ArenaSign sign = new ArenaSign((Sign) event.getBlock().getState());
+            Arena arena = arenaOptional.get();
+            arena.signs.add(sign);
+            sign.initializeText(arena.name);
+            arena.updateSigns();
+            event.setCancelled(true);
         }
 
         @EventHandler
         public void onBlockBreak(BlockBreakEvent event) {
-            if(!(event.getBlock() instanceof Sign)) return;
-            Sign sign = (Sign) event.getBlock();
+            if(!(event.getBlock().getState() instanceof Sign)) return;
+            Sign sign = (Sign) event.getBlock().getState();
             String[] text = Arrays.stream(sign.getLines()).map(ChatColor::stripColor).toArray(String[]::new);
             if(ArenaSign.isInvalid(text)) return;
 

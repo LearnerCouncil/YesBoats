@@ -30,7 +30,7 @@ public class RemoveArg implements CommandArgument {
     public List<String> tabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
         if(args.length == 1)
             return Collections.singletonList("remove");
-        if(args.length == 2)
+        if(args.length == 2 && args[0].equalsIgnoreCase("remove"))
             return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
         return new ArrayList<>();
     }

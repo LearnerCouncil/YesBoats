@@ -27,7 +27,7 @@ public class CommandResult {
         return prefix + AQUA + "Added " + name + " to the game";
     }
     public static String leftOther(String name) {
-        return prefix + AQUA + "Added " + name + " to the game";
+        return prefix + AQUA + "Removed " + name + " from the game";
     }
 
     //Results
@@ -35,7 +35,7 @@ public class CommandResult {
             CREATED = prefix + AQUA + "Arena successfully created. Now editing.",
             REMOVED = prefix + AQUA + "Arena successfully removed.",
             JOINED = prefix + AQUA + "Joined the game.",
-            LEFT = prefix + AQUA + "Joined the game.",
+            LEFT = prefix + AQUA + "Left the game.",
             EDITING = prefix + AQUA + "Now editing.",
             STARTED = prefix + AQUA + "Started the game.",
             STOPPED = prefix + AQUA + "Stopped the game.";

@@ -57,6 +57,16 @@ public class ArenaEditor {
         this.arena = arena;
         initializeInventory();
         startBoxDisplay();
+        spawnStartBoats();
+    }
+
+    protected void spawnStartBoats() {
+        startBoats.forEach(boat -> {
+            if(boat.isInsideVehicle())
+                Objects.requireNonNull(boat.getVehicle()).remove();
+            boat.remove();
+        });
+        startBoats.clear();
         arena.startLocations.forEach(location -> {
             ArmorStand stand = (ArmorStand) arena.startWorld.spawnEntity(location, EntityType.ARMOR_STAND);
             stand.setInvisible(true);
@@ -316,6 +326,7 @@ public class ArenaEditor {
         player.getInventory().setContents(playerInv);
         player.setItemOnCursor(null);
         displayTask.cancel();
+        editors.remove(player);
         boxCorner1 = null;
         boxCorner2 = null;
         selectedBox = null;
@@ -444,6 +455,7 @@ public class ArenaEditor {
                     break;
                 case ENDER_CHEST:
                     editor.initializeInventory();
+                    editor.spawnStartBoats();
                     break;
                 default:
                     event.setCancelled(false);

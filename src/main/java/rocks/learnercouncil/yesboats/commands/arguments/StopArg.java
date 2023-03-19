@@ -33,8 +33,8 @@ public class StopArg implements CommandArgument {
             arena = arenaOptional.get();
         }
         if(arena.getState() == Arena.State.WAITING) return NOT_RUNNING;
-        if(arena.getState() == Arena.State.IN_QUEUE) arena.queueTimer.cancel();
-        if(arena.getState() == Arena.State.RUNNING) arena.stopGame();
+        if(arena.getState() == Arena.State.IN_QUEUE
+                || arena.getState() == Arena.State.RUNNING) arena.stopGame();
         return STOPPED;
     }
 
