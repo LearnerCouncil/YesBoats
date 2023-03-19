@@ -70,7 +70,6 @@ public class ArenaEditor {
     /**
      * Initializes the player's inventory with all the items used for editing.
      */
-    @SuppressWarnings("ConstantConditions")
     protected void initializeInventory() {
         player.getInventory().clear();
         editorItems.clear();
@@ -96,21 +95,18 @@ public class ArenaEditor {
                 DARK_AQUA + "Click to set the selected",
                 DARK_AQUA + "bouding box to a checkpoint"));
 
-        inv.setItem(27, getItem(Material.RED_CARPET,
+        inv.setItem(27, getItem(Material.RED_CARPET, arena.minPlayers,
                 BOLD.toString() + RED + "Minimum Players",
                 YELLOW + "Left click to increase",
                 YELLOW + "Right click to decrease"));
-        inv.getItem(27).setAmount(arena.minPlayers);
 
-        inv.setItem(28, getItem(Material.SPECTRAL_ARROW,
+        inv.setItem(28, getItem(Material.SPECTRAL_ARROW, arena.laps,
                 BOLD.toString() + YELLOW + "Laps",
                 GOLD + "Left click to increase",
                 GOLD + "Right click to decrease"));
-        inv.getItem(28).setAmount(arena.laps);
 
         inv.setItem(29, getItem(Material.CLOCK,
-                BOLD.toString() + YELLOW + "Time: " + (arena.time / 60) + ":" + (arena.time % 60),
-                AQUA + "Time: " + (arena.time / 60) + ":" + (arena.time % 60),
+                BOLD.toString() + YELLOW + "Time: " + (arena.time / 60) + ":" + ((arena.time%60) == 0 ? "00" : "30"),
                 GOLD + "Left click to increase by 30 seconds",
                 GOLD + "Right click to decrease by 30 seconds"));
 
@@ -142,6 +138,10 @@ public class ArenaEditor {
                 DARK_GREEN + "(Arena must be valid)"));
     }
 
+
+    private ItemStack getItem(Material material, String name, String... lore) {
+        return getItem(material, 1, name, lore);
+    }
     /**
      * Gets an {@link ItemStack} from a {@link Material}, name, and lore.
      * @param material The material of the item.
@@ -149,8 +149,8 @@ public class ArenaEditor {
      * @param lore The lore of the Item.
      * @return The ItemStack
      */
-    private ItemStack getItem(Material material, String name, String... lore) {
-        ItemStack item = new ItemStack(material, 1);
+    private ItemStack getItem(Material material, int amount, String name, String... lore) {
+        ItemStack item = new ItemStack(material, amount);
         ItemMeta meta = item.getItemMeta();
         if(meta == null) return item;
         meta.setDisplayName(name);
@@ -201,11 +201,17 @@ public class ArenaEditor {
                 arena.checkpointBoxes.add(selectedBox.clone());
                 break;
             case DEATH_BARRIER:
-                if(selectedType == BoundingBoxType.CHECKPOINT) arena.checkpointBoxes.remove(selectedBox);
+                if(selectedType == BoundingBoxType.CHECKPOINT) {
+                    arena.checkpointSpawns.remove(arena.checkpointBoxes.indexOf(selectedBox));
+                    arena.checkpointBoxes.remove(selectedBox);
+                }
                 arena.deathBarriers.add(selectedBox.clone());
                 break;
             case REMOVE:
-                if(selectedType == BoundingBoxType.CHECKPOINT) arena.checkpointBoxes.remove(selectedBox);
+                if(selectedType == BoundingBoxType.CHECKPOINT) {
+                    arena.checkpointSpawns.remove(arena.checkpointBoxes.indexOf(selectedBox));
+                    arena.checkpointBoxes.remove(selectedBox);
+                }
                 if(selectedType == BoundingBoxType.DEATH_BARRIER) arena.deathBarriers.remove(selectedBox);
                 break;
         }
@@ -300,10 +306,8 @@ public class ArenaEditor {
                 return;
             }
             Optional<Arena> arenaOptional = Arena.get(arena.name);
-            if(arenaOptional.isPresent())
-                Arena.arenas.add(Arena.arenas.indexOf(arenaOptional.get()), arena);
-            else
-                Arena.arenas.add(arena);
+            arenaOptional.ifPresent(Arena.arenas::remove);
+            Arena.arenas.add(arena);
             player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + "Arena saved; exiting editor.");
         } else {
             oldLightMaterials.forEach(Block::setType);
@@ -334,7 +338,10 @@ public class ArenaEditor {
         if(arena.startLocations == null || arena.startLocations.isEmpty()) result.append("startLocations, ");
         if(arena.lightLocations == null || arena.lightLocations.isEmpty()) result.append("lightLocations, ");
         if(arena.checkpointBoxes == null || arena.checkpointBoxes.isEmpty()) result.append("checkpointBoxes, ");
-        else if(arena.checkpointSpawns == null || arena.checkpointSpawns.size() != arena.checkpointBoxes.size()) result.append("checkpointSpawns, ");
+        else if(arena.checkpointSpawns == null || arena.checkpointSpawns.size() != arena.checkpointBoxes.size()) {
+            result.append("checkpointSpawns, ");
+            System.out.println(arena.checkpointBoxes + "\n\n" + arena.checkpointSpawns);
+        }
         return result.length() < 2 ? result.toString() : result.substring(0, result.length() - 2);
     }
 
@@ -383,8 +390,8 @@ public class ArenaEditor {
 
             if(event.getCurrentItem().getType() == Material.ENDER_CHEST) {
                 editor.initializeInventory();
+                event.setCancelled(true);
             }
-            event.setCancelled(true);
         }
 
         @EventHandler
@@ -434,6 +441,10 @@ public class ArenaEditor {
                     break;
                 case CLOCK:
                     handleTime(event, action, editor, arena);
+                    break;
+                case ENDER_CHEST:
+                    editor.initializeInventory();
+                    break;
                 default:
                     event.setCancelled(false);
             }
@@ -499,8 +510,8 @@ public class ArenaEditor {
                     arena.minPlayers++;
                     minPlayers.setAmount(arena.minPlayers);
                 }
-                editor.editorItems.set(index, minPlayers);
             }
+            editor.editorItems.set(index, minPlayers);
         }
 
         private void handleLaps(PlayerInteractEvent e, Action action, ArenaEditor editor, Arena arena) {
@@ -518,8 +529,8 @@ public class ArenaEditor {
                     arena.laps++;
                     laps.setAmount(arena.laps);
                 }
-                editor.editorItems.set(index, laps);
             }
+            editor.editorItems.set(index, laps);
         }
 
         private void handleTime(PlayerInteractEvent e, Action action, ArenaEditor editor, Arena arena) {
@@ -532,14 +543,14 @@ public class ArenaEditor {
             if(action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
                 if(arena.time > 30) {
                     arena.time -= 30;
-                    meta.setDisplayName(BOLD.toString() + GOLD + "Time: " + (arena.time / 60) + ":" + (arena.time % 60));
+                    meta.setDisplayName(BOLD.toString() + GOLD + "Time: " + (arena.time / 60) + ":" + (arena.time % 60 == 0 ? "00" : "30"));
                 }
             } else if(action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
                 if(arena.time < 3600) {
                     arena.time += 30;
-                    time.setAmount(arena.time);
+                    meta.setDisplayName(BOLD.toString() + GOLD + "Time: " + (arena.time / 60) + ":" + (arena.time % 60 == 0 ? "00" : "30"));
                 }
-                meta.setDisplayName(BOLD.toString() + GOLD + "Time: " + (arena.time / 60) + ":" + (arena.time % 60));
+
             }
             time.setItemMeta(meta);
             editor.editorItems.set(index, time);

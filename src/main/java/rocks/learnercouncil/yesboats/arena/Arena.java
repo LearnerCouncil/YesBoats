@@ -108,7 +108,7 @@ public class Arena implements ConfigurationSerializable {
      * Updates arena signs
      */
     public void updateSigns() {
-        signs.forEach(s -> s.update(players.size(), startLocations.size()));
+        signs.forEach(s -> s.update(state, players.size(), startLocations.size()));
     }
 
     /**
@@ -157,6 +157,7 @@ public class Arena implements ConfigurationSerializable {
                 if(players.size() < minPlayers) {
                     queueTimer.cancel();
                     players.forEach(p -> gameData.get(p).scoreboard.updateScores(-1));
+                    state = State.WAITING;
                 }
             }
             if(state == State.RUNNING)

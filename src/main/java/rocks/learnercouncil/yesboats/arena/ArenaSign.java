@@ -21,20 +21,17 @@ public class ArenaSign {
     private static final YesBoats plugin = YesBoats.getInstance();
 
     private final Sign sign;
-    private final Arena arena;
 
     public ArenaSign(Sign sign, Arena arena) {
         this.sign = sign;
-        this.arena = arena;
 
         this.sign.setLine(0, ChatColor.DARK_AQUA + "[YesBoats]");
         this.sign.setLine(1, ChatColor.AQUA + arena.name);
         arena.updateSigns();
     }
 
-    public void update(int players, int maxPlayers) {
+    public void update(Arena.State state, int players, int maxPlayers) {
         ChatColor signColor = ChatColor.BLACK;
-        Arena.State state = arena.getState();
         switch (state) {
             case WAITING:
                 signColor = ChatColor.GREEN;
@@ -47,7 +44,7 @@ public class ArenaSign {
                 signColor = ChatColor.RED;
                 sign.setLine(2, signColor + "Running");
         }
-        sign.setLine(3, signColor + "(" + players + "/" + maxPlayers + ")");
+        sign.setLine(3, signColor + "[" + players + "/" + maxPlayers + "]");
         sign.update();
     }
 
@@ -107,7 +104,8 @@ public class ArenaSign {
             Sign sign = (Sign) event.getClickedBlock().getState();
             String[] text = Arrays.stream(sign.getLines()).map(ChatColor::stripColor).toArray(String[]::new);
             if(ArenaSign.isInvalid(text)) return;
-            //noinspection OptionalGetWithoutIsPresent
+
+            assert Arena.get(text[1]).isPresent();
             if(!ArenaSign.contains(Arena.get(text[1]).get().signs, sign)) return;
 
             plugin.getServer().dispatchCommand(event.getPlayer(), "yesboats join " + text[1]);
@@ -129,7 +127,7 @@ public class ArenaSign {
             String[] text = Arrays.stream(sign.getLines()).map(ChatColor::stripColor).toArray(String[]::new);
             if(ArenaSign.isInvalid(text)) return;
 
-            //noinspection OptionalGetWithoutIsPresent
+            assert Arena.get(text[1]).isPresent();
             Arena arena = Arena.get(text[1]).get();
             ArenaSign.get(arena.signs, sign).ifPresent(arena.signs::remove);
         }
