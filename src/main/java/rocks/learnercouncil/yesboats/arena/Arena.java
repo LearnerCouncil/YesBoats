@@ -213,6 +213,7 @@ public class Arena implements ConfigurationSerializable {
         queueStands.forEach(Entity::remove);
         queueStands.clear();
         players.forEach(p -> {
+            p.playSound(p.getLocation(), Sound.BLOCK_TRIPWIRE_ATTACH, 1, 1);
             GameData playerData = gameData.get(p);
             playerData.time = System.currentTimeMillis();
             playerData.scoreboard.updateScores(time, playerData.lap, laps);
@@ -235,11 +236,13 @@ public class Arena implements ConfigurationSerializable {
                         Lightable blockData = (Lightable) block.getBlockData();
                         blockData.setLit(true);
                         block.setBlockData(blockData);
+                        players.forEach(p -> p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1));
                     } else {
                         lightLocations.forEach(location -> {
                             Lightable locationBlockData = (Lightable) location.getBlock().getBlockData();
                             locationBlockData.setLit(false);
                             location.getBlock().setBlockData(locationBlockData);
+                            players.forEach(p -> p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 2));
                         });
                         startLineActivator.getBlock().setType(Material.RED_CONCRETE);
                         prestartTimer = -1;
@@ -251,13 +254,16 @@ public class Arena implements ConfigurationSerializable {
                     playerData.scoreboard.updateScores(timeLeft, playerData.lap, laps);
                     updateCheckpoint(player);
                     deathBarriers.forEach(deathBarrier -> {
-                        if(deathBarrier.contains(player.getLocation().toVector()))
+                        if(deathBarrier.contains(player.getLocation().add(0, -0.55, 0).toVector()))
                             respawn(player);
                     });
                 });
 
-                if(secondCounter == 20) {
-                    if(timeLeft <= 0) stopGame();
+                if(secondCounter == 20 && prestartTimer == -1) {
+                    if(timeLeft <= 0) {
+                        stopGame();
+                        players.forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] " + ChatColor.AQUA + "The timer has run out. Returning to the lobby."));
+                    }
                     timeLeft--;
                 }
             }
@@ -356,8 +362,10 @@ public class Arena implements ConfigurationSerializable {
         Boat newBoat = (Boat) startWorld.spawnEntity(checkpointSpawns.get(gameData.get(player).checkpoint), EntityType.BOAT);
         vehicle.removePassenger(player);
         player.teleport(checkpointSpawns.get(gameData.get(player).checkpoint));
+        player.setFireTicks(-1);
         newBoat.setWoodType(vehicle.getWoodType());
         newBoat.addPassenger(player);
+        newBoat.setInvulnerable(true);
         passengers.forEach(p -> {
             vehicle.removePassenger(p);
             newBoat.addPassenger(p);
