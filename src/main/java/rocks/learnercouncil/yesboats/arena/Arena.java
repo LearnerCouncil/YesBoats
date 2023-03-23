@@ -122,7 +122,7 @@ public class Arena implements ConfigurationSerializable {
         if(join) {
             //failsafe
             if(players.size() == startLocations.size()) return;
-
+            System.out.println("World: " + startWorld);
             Location location = startLocations.get(players.size());
             player.teleport(location);
             Boat boat = (Boat) startWorld.spawnEntity(location, EntityType.BOAT);
@@ -136,7 +136,7 @@ public class Arena implements ConfigurationSerializable {
             spawnQueueStand(location).addPassenger(boat);
             boat.addPassenger(player);
 
-            if(players.size() <= minPlayers) startQueueTimer();
+            if(players.size() >= minPlayers && state != State.IN_QUEUE ) startQueueTimer();
         } else {
             //failsafe
             if(!Arena.get(player).isPresent()) return;
@@ -210,6 +210,7 @@ public class Arena implements ConfigurationSerializable {
      */
     public void startGame() {
         state = State.RUNNING;
+        currentPlace = 0;
         queueStands.forEach(Entity::remove);
         queueStands.clear();
         players.forEach(p -> {
@@ -316,7 +317,7 @@ public class Arena implements ConfigurationSerializable {
 
         double totalSeconds = ((double) (System.currentTimeMillis() - playerData.time)) / 1000;
         int minutes = (int) totalSeconds / 60;
-        double seconds = totalSeconds % 60;
+        int seconds = (int) totalSeconds % 60;
         String suffix;
         int lastDigit = currentPlace % 10;
             if(lastDigit == 1 && currentPlace != 11)
@@ -324,9 +325,9 @@ public class Arena implements ConfigurationSerializable {
             else if(lastDigit == 2 && currentPlace != 12)
                 suffix = "nd";
             else if(lastDigit == 3 && currentPlace != 13)
-                suffix = currentPlace + "rd";
+                suffix = "rd";
             else
-                suffix = currentPlace + "th";
+                suffix = "th";
 
         player.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
                 + ChatColor.AQUA + "You have completed the race with in "
@@ -379,6 +380,7 @@ public class Arena implements ConfigurationSerializable {
         name = (String) m.get("name");
 
         startWorld = plugin.getServer().getWorld((String) m.get("startWorld"));
+        System.out.println("World Loaded: " + startWorld);
 
         minPlayers = (int) m.get("minPlayers");
         laps = (int) m.get("laps");

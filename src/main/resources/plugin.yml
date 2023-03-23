@@ -2,6 +2,8 @@ name: Yesboats
 version: '${project.version}'
 main: rocks.learnercouncil.yesboats.YesBoats
 api-version: 1.17
+load: POSTWORLD
+softdepend: [ Multiverse-Core ]
 authors: [ h2ofiremaster ]
 description: A simple iceboat racing plugin
 commands:

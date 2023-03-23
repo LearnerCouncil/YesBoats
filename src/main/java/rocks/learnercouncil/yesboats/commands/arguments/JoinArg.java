@@ -24,7 +24,7 @@ public class JoinArg implements CommandArgument {
     @Override
     public String execute(CommandSender sender, Command cmd, String label, String[] args) {
         if(!args[0].equalsIgnoreCase("join")) return "";
-        if(!sender.hasPermission("yesboats.commmands.yesboats.user")) return CommandResult.NO_PERMISSION;
+        if(!sender.hasPermission("yesboats.commands.yesboats.user")) return CommandResult.NO_PERMISSION;
         if(args.length < 2) return TOO_FEW_ARGS;
         boolean isAdmin = sender.hasPermission("yesboats.commands.yesboats.admin");
         if(args.length > (isAdmin ? 3 : 2)) return TOO_MANY_ARGS;

@@ -18,7 +18,7 @@ public class StartArg implements CommandArgument {
     @Override
     public String execute(CommandSender sender, Command cmd, String label, String[] args) {
         if(!args[0].equalsIgnoreCase("start")) return "";
-        if(!sender.hasPermission("yesboats.commmands.yesboats.admin")) return NO_PERMISSION;
+        if(!sender.hasPermission("yesboats.commands.yesboats.admin")) return NO_PERMISSION;
         if(args.length > 2) return TOO_MANY_ARGS;
 
         Arena arena = null;

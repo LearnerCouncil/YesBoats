@@ -24,7 +24,7 @@ public class LeaveArg implements CommandArgument {
     @Override
     public String execute(CommandSender sender, Command cmd, String label, String[] args) {
         if(!args[0].equalsIgnoreCase("leave")) return "";
-        if(!sender.hasPermission("yesboats.commmands.yesboats.user")) return CommandResult.NO_PERMISSION;
+        if(!sender.hasPermission("yesboats.commands.yesboats.user")) return CommandResult.NO_PERMISSION;
         boolean isAdmin = sender.hasPermission("yesboats.commands.yesboats.admin");
         if(args.length > (isAdmin ? 2 : 1)) return TOO_MANY_ARGS;
 
