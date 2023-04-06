@@ -5,6 +5,11 @@ import org.bukkit.block.Block;
 import org.bukkit.block.data.Lightable;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.*;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.vehicle.VehicleEnterEvent;
+import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -66,7 +71,22 @@ public class Arena implements ConfigurationSerializable {
         return copy;
     }
 
-    //unserialized feilds
+    //serialized fields
+    public final String name;
+    protected int minPlayers = 1;
+    protected int laps = 1;
+    protected int time = 300;
+    protected Location lobbyLocation;
+    protected Location startLineActivator;
+    protected World startWorld;
+    protected List<Location> startLocations = new ArrayList<>();
+    protected List<Location> lightLocations = new ArrayList<>();
+    protected List<BoundingBox> deathBarriers = new ArrayList<>();
+    protected List<BoundingBox> checkpointBoxes = new ArrayList<>();
+    protected List<Location> checkpointSpawns = new ArrayList<>();
+    protected Set<ArenaSign> signs = new HashSet<>();
+
+    //non-serialized fields
     private final List<Player> players = new ArrayList<>();
     public List<Player> getPlayers() {
         return players;
@@ -85,20 +105,6 @@ public class Arena implements ConfigurationSerializable {
         WAITING, IN_QUEUE, RUNNING
     }
 
-    //serialized feilds
-    public final String name;
-    protected int minPlayers = 1;
-    protected int laps = 1;
-    protected int time = 300;
-    protected Location lobbyLocation;
-    protected Location startLineActivator;
-    protected World startWorld;
-    protected List<Location> startLocations = new ArrayList<>();
-    protected List<Location> lightLocations = new ArrayList<>();
-    protected List<BoundingBox> deathBarriers = new ArrayList<>();
-    protected List<BoundingBox> checkpointBoxes = new ArrayList<>();
-    protected List<Location> checkpointSpawns = new ArrayList<>();
-    protected Set<ArenaSign> signs = new HashSet<>();
 
     public Arena(String name) {
         this.name = name;
@@ -122,10 +128,11 @@ public class Arena implements ConfigurationSerializable {
         if(join) {
             //failsafe
             if(players.size() == startLocations.size()) return;
-            System.out.println("World: " + startWorld);
-            Location location = startLocations.get(players.size());
-            player.teleport(location);
-            Boat boat = (Boat) startWorld.spawnEntity(location, EntityType.BOAT);
+            if(!getStartLocation().isPresent()) return;
+
+            Location startLocation = getStartLocation().get();
+            player.teleport(startLocation);
+            Boat boat = (Boat) startWorld.spawnEntity(startLocation, EntityType.BOAT);
             boat.setInvulnerable(true);
 
             players.add(player);
@@ -133,10 +140,11 @@ public class Arena implements ConfigurationSerializable {
             gameData.put(player, new GameData(player, scoreboardManager.getNewScoreboard()));
             PlayerManager.set(player);
 
-            spawnQueueStand(location).addPassenger(boat);
+            spawnQueueStand(startLocation).addPassenger(boat);
             boat.addPassenger(player);
 
-            if(players.size() >= minPlayers && state != State.IN_QUEUE ) startQueueTimer();
+            gameData.get(player).canEnterBoat = false;
+            if(players.size() >= minPlayers && state == State.WAITING) startQueueTimer();
         } else {
             //failsafe
             if(!Arena.get(player).isPresent()) return;
@@ -159,9 +167,13 @@ public class Arena implements ConfigurationSerializable {
                 }
             }
             if(state == State.RUNNING)
-                if(players.size() == 0) stopGame();
+                if(players.size() <= 0) stopGame();
         }
         updateSigns();
+    }
+
+    private Optional<Location> getStartLocation() {
+        return startLocations.stream().filter(l -> !queueStands.stream().map(Entity::getLocation).collect(Collectors.toList()).contains(l)).findFirst();
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -210,7 +222,7 @@ public class Arena implements ConfigurationSerializable {
      */
     public void startGame() {
         state = State.RUNNING;
-        currentPlace = 0;
+        currentPlace = 1;
         queueStands.forEach(Entity::remove);
         queueStands.clear();
         players.forEach(p -> {
@@ -357,21 +369,30 @@ public class Arena implements ConfigurationSerializable {
     private void respawn(Player player) {
         if(player.getVehicle() == null) return;
         if(player.getVehicle().getType() != EntityType.BOAT) return;
-        Boat vehicle = (Boat) player.getVehicle();
+        Boat oldBoat = (Boat) player.getVehicle();
+        GameData playerData = this.gameData.get(player);
 
-        List<Entity> passengers = vehicle.getPassengers().stream().filter(e -> e.getType() != EntityType.PLAYER).collect(Collectors.toList());
-        Boat newBoat = (Boat) startWorld.spawnEntity(checkpointSpawns.get(gameData.get(player).checkpoint), EntityType.BOAT);
-        vehicle.removePassenger(player);
-        player.teleport(checkpointSpawns.get(gameData.get(player).checkpoint));
+        List<Entity> passengers = oldBoat.getPassengers().stream().filter(e -> e.getType() != EntityType.PLAYER).collect(Collectors.toList());
+        Boat newBoat = (Boat) startWorld.spawnEntity(checkpointSpawns.get(playerData.checkpoint), EntityType.BOAT);
+
+        playerData.canExitBoat = true;
+        oldBoat.removePassenger(player);
+
+        player.teleport(checkpointSpawns.get(playerData.checkpoint));
         player.setFireTicks(-1);
-        newBoat.setWoodType(vehicle.getWoodType());
+        newBoat.setWoodType(oldBoat.getWoodType());
+
+        playerData.canExitBoat = false;
+        playerData.canEnterBoat = true;
         newBoat.addPassenger(player);
+        playerData.canEnterBoat = false;
+
         newBoat.setInvulnerable(true);
         passengers.forEach(p -> {
-            vehicle.removePassenger(p);
+            oldBoat.removePassenger(p);
             newBoat.addPassenger(p);
         });
-        vehicle.remove();
+        oldBoat.remove();
     }
 
 
@@ -380,7 +401,6 @@ public class Arena implements ConfigurationSerializable {
         name = (String) m.get("name");
 
         startWorld = plugin.getServer().getWorld((String) m.get("startWorld"));
-        System.out.println("World Loaded: " + startWorld);
 
         minPlayers = (int) m.get("minPlayers");
         laps = (int) m.get("laps");
@@ -437,20 +457,20 @@ public class Arena implements ConfigurationSerializable {
     /**
      * Functionally identical to {@link Arena#locToString(Location)} except it works on a List of Locations.
      * @see Arena#stringToLocList(List, World)
-     * @param locs The list of Locations
+     * @param locations The list of Locations
      * @return The list of strings
      */
-    private static List<String> locToStringList(List<Location> locs) {
-        return locs.stream().map(Arena::locToString).collect(Collectors.toList());
+    private static List<String> locToStringList(List<Location> locations) {
+        return locations.stream().map(Arena::locToString).collect(Collectors.toList());
     }
     /**
      * Functionally identical to {@link Arena#stringToLoc(String, World)} except it works on a List of Strings.
      * @see Arena#locToStringList(List)
-     * @param strs The list of strings
+     * @param strings The list of strings
      * @return The list of Locations
      */
-    private static List<Location> stringToLocList(List<String> strs, World world) {
-        return strs.stream().map(s -> stringToLoc(s, world)).collect(Collectors.toList());
+    private static List<Location> stringToLocList(List<String> strings, World world) {
+        return strings.stream().map(s -> stringToLoc(s, world)).collect(Collectors.toList());
     }
 
     /**
@@ -482,21 +502,21 @@ public class Arena implements ConfigurationSerializable {
     /**
      * Functionally identical to {@link Arena#locToVectorString(Location)} except it works on a List of Locations.
      * @see Arena#vectorStringToLocList(List, World)
-     * @param locs The list of Locations
+     * @param locations The list of Locations
      * @return The list of strings
      */
-    private static List<String> locToVectorStringList(List<Location> locs) {
-        return locs.stream().map(Arena::locToVectorString).collect(Collectors.toList());
+    private static List<String> locToVectorStringList(List<Location> locations) {
+        return locations.stream().map(Arena::locToVectorString).collect(Collectors.toList());
     }
     /**
      * Functionally identical to {@link Arena#vectorStringToLoc(String, World)} except it works on a List of Strings.
      * @see Arena#locToVectorStringList(List)
-     * @param strs The list of strings
+     * @param strings The list of strings
      * @param world The world
      * @return The list of Locations
      */
-    private static List<Location> vectorStringToLocList(List<String> strs, World world) {
-        return strs.stream().map(s -> vectorStringToLoc(s, world)).collect(Collectors.toList());
+    private static List<Location> vectorStringToLocList(List<String> strings, World world) {
+        return strings.stream().map(s -> vectorStringToLoc(s, world)).collect(Collectors.toList());
     }
 
     /**
@@ -518,11 +538,11 @@ public class Arena implements ConfigurationSerializable {
     /**
      * Turns a list of strings representing bounding boxes into the {@link BoundingBox} objects.
      * @see Arena#boxToStringList(List)
-     * @param strs The list of strings
+     * @param strings The list of strings
      * @return The list of bounding boxes
      */
-    private static List<BoundingBox> stringToBoxList(List<String> strs) {
-        return strs.stream()
+    private static List<BoundingBox> stringToBoxList(List<String> strings) {
+        return strings.stream()
                 .map(s -> {
                     String[] segments = s.split(",");
                     return new BoundingBox(
@@ -573,6 +593,8 @@ public class Arena implements ConfigurationSerializable {
         int lap = 1;
         long time = 0;
         boolean spectator = false;
+        boolean canEnterBoat = true;
+        boolean canExitBoat = false;
     }
 
     @Override
@@ -581,5 +603,51 @@ public class Arena implements ConfigurationSerializable {
         if (o == null || getClass() != o.getClass()) return false;
         Arena arena = (Arena) o;
         return name.equals(arena.name);
+    }
+
+    public static class Events implements Listener {
+
+        @EventHandler
+        public void onSpectatorTeleport(PlayerTeleportEvent event) {
+            if(event.getCause() != PlayerTeleportEvent.TeleportCause.SPECTATE) return;
+            if(event.getPlayer().hasPermission("yesboats.spectatortp")) return;
+            Optional<Arena> arenaOptional = Arena.get(event.getPlayer());
+            if(!arenaOptional.isPresent()) return;
+            Optional<Player> targetOptional = arenaOptional.get().getPlayers().stream().filter(p -> p.getLocation().equals(event.getTo())).findAny();
+            if(!targetOptional.isPresent()) {
+                event.setCancelled(true);
+                return;
+            }
+            Player target = targetOptional.get();
+            Optional<Arena> targetArenaOptional = Arena.get(target);
+            if (!targetArenaOptional.isPresent() || !targetArenaOptional.get().equals(arenaOptional.get()))
+                event.setCancelled(true);
+
+
+        }
+
+        @EventHandler
+        public void onVehicleEnter(VehicleEnterEvent event) {
+            if(!(event.getEntered() instanceof Player)) return;
+            Player player = (Player) event.getEntered();
+            if(!Arena.get(player).isPresent()) return;
+            Arena arena = Arena.get(player).get();
+            if(arena.gameData.get(player).canEnterBoat) return;
+
+            System.out.println(player.getName() + " was blocked from entering a boat.");
+            event.setCancelled(true);
+        }
+
+        @EventHandler
+        public void onVehicleExit(VehicleExitEvent event) {
+            if(!(event.getExited() instanceof Player)) return;
+            Player player = (Player) event.getExited();
+            if(!Arena.get(player).isPresent()) return;
+            Arena arena = Arena.get(player).get();
+            if(arena.gameData.get(player).canExitBoat) return;
+
+            System.out.println(player.getName() + " was blocked from exiting a boat.");
+            event.setCancelled(true);
+        }
     }
 }

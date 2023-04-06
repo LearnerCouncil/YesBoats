@@ -12,7 +12,7 @@ public class CommandResult {
             TOO_FEW_ARGS = prefix + RED + "Too few arguments.",
             TOO_MANY_ARGS = prefix + RED + "Too many arguments",
             ARENA_EXISTS = prefix + RED + "That arena already exists.",
-            ARENA_NOT_EXIST = prefix + RED + "That arena doesn't exsist.",
+            ARENA_NOT_EXIST = prefix + RED + "That arena doesn't exist.",
             PLAYER_NOT_FOUND = prefix + RED + "Player not found.",
             ALREADY_RUNNING = prefix + RED + "Arena already running.",
             NOT_RUNNING = prefix + RED + "Arena not running.",

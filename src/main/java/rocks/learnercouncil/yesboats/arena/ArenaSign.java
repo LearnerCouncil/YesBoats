@@ -27,14 +27,12 @@ public class ArenaSign {
     }
 
     public void initializeText(String arenaName) {
-        System.out.println("Initializing Sign text...");
         sign.setLine(0, ChatColor.DARK_AQUA + "[YesBoats]");
         sign.setLine(1, ChatColor.AQUA + arenaName);
         sign.update();
     }
 
     public void update(Arena.State state, int players, int maxPlayers) {
-        System.out.println("Updating sign text...");
         ChatColor signColor = ChatColor.BLACK;
         switch (state) {
             case WAITING:

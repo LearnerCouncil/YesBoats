@@ -351,7 +351,6 @@ public class ArenaEditor {
         if(arena.checkpointBoxes == null || arena.checkpointBoxes.isEmpty()) result.append("checkpointBoxes, ");
         else if(arena.checkpointSpawns == null || arena.checkpointSpawns.size() != arena.checkpointBoxes.size()) {
             result.append("checkpointSpawns, ");
-            System.out.println(arena.checkpointBoxes + "\n\n" + arena.checkpointSpawns);
         }
         return result.length() < 2 ? result.toString() : result.substring(0, result.length() - 2);
     }
