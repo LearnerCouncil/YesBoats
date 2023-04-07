@@ -8,8 +8,7 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerTeleportEvent;
-import org.bukkit.event.vehicle.VehicleEnterEvent;
-import org.bukkit.event.vehicle.VehicleExitEvent;
+import org.bukkit.event.vehicle.*;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -25,7 +24,7 @@ import java.util.stream.Collectors;
 /**
  * Represents an arena
  */
-public class Arena implements ConfigurationSerializable {
+public class Arena implements ConfigurationSerializable, Cloneable {
 
     /**
      * A list of all arenas, gets instantiated by 'arenas.yml' if it exists
@@ -54,20 +53,21 @@ public class Arena implements ConfigurationSerializable {
         return Optional.ofNullable(playerArenaMap.get(player));
     }
 
-    public static Arena copy(Arena other) {
-        Arena copy = new Arena(other.name);
-        copy.minPlayers = other.minPlayers;
-        copy.laps = other.laps;
-        copy.time = other.time;
-        copy.lobbyLocation = other.lobbyLocation;
-        copy.startLineActivator = other.startLineActivator;
-        copy.startWorld = other.startWorld;
-        copy.startLocations = other.startLocations;
-        copy.lightLocations = other.lightLocations;
-        copy.deathBarriers = other.deathBarriers;
-        copy.checkpointBoxes = other.checkpointBoxes;
-        copy.checkpointSpawns = other.checkpointSpawns;
-        copy.signs = other.signs;
+    @Override
+    public Arena clone() {
+        Arena copy = new Arena(this.name);
+        copy.minPlayers = this.minPlayers;
+        copy.laps = this.laps;
+        copy.time = this.time;
+        copy.lobbyLocation = this.lobbyLocation;
+        copy.startLineActivator = this.startLineActivator;
+        copy.startWorld = this.startWorld;
+        copy.startLocations = this.startLocations;
+        copy.lightLocations = this.lightLocations;
+        copy.deathBarriers = this.deathBarriers;
+        copy.checkpointBoxes = this.checkpointBoxes;
+        copy.checkpointSpawns = this.checkpointSpawns;
+        copy.signs = this.signs;
         return copy;
     }
 
@@ -142,6 +142,7 @@ public class Arena implements ConfigurationSerializable {
 
             spawnQueueStand(startLocation).addPassenger(boat);
             boat.addPassenger(player);
+            boat.addPassenger(spawnDummyStand(startLocation));
 
             gameData.get(player).canEnterBoat = false;
             if(players.size() >= minPlayers && state == State.WAITING) startQueueTimer();
@@ -179,13 +180,17 @@ public class Arena implements ConfigurationSerializable {
     @SuppressWarnings("ConstantConditions")
     private void removeVehicle(Player player) {
         if (!player.isInsideVehicle()) return;
-        Entity vehicle = player.getVehicle();
-        if (vehicle.isInsideVehicle())
-            vehicle.getVehicle().remove();
-        vehicle.getPassengers().forEach(passenger -> {
+        Entity boat = player.getVehicle();
+        if (boat.isInsideVehicle()) {
+            Entity queueStand = boat.getVehicle();
+            if (queueStand instanceof ArmorStand)
+                queueStands.remove(queueStand);
+            queueStand.remove();
+        }
+        boat.getPassengers().forEach(passenger -> {
             if(passenger.getType() != EntityType.PLAYER) passenger.remove();
         });
-        vehicle.remove();
+        boat.remove();
     }
 
     private ArmorStand spawnQueueStand(Location location) {
@@ -197,6 +202,16 @@ public class Arena implements ConfigurationSerializable {
         qs.setMarker(true);
         queueStands.add(qs);
         return qs;
+    }
+
+    private ArmorStand spawnDummyStand(Location location) {
+        if(location.getWorld() == null) throw new NullPointerException("dummyStand world is null.");
+        ArmorStand stand = (ArmorStand) location.getWorld().spawnEntity(location, EntityType.ARMOR_STAND);
+        stand.setInvulnerable(true);
+        stand.setInvisible(true);
+        stand.setSmall(true);
+        stand.setMarker(true);
+        return stand;
     }
 
     public void startQueueTimer() {
@@ -294,6 +309,12 @@ public class Arena implements ConfigurationSerializable {
         List<Player> playersCopy = new ArrayList<>(players);
         for (Player p : playersCopy) setGameStatus(p, false);
         startLineActivator.getBlock().setType(Material.REDSTONE_BLOCK);
+        lightLocations.forEach(l -> {
+            Lightable blockData = (Lightable) l.getBlock().getBlockData();
+            blockData.setLit(false);
+            l.getBlock().setBlockData(blockData);
+        });
+
     }
 
 
@@ -647,6 +668,19 @@ public class Arena implements ConfigurationSerializable {
             if(arena.gameData.get(player).canExitBoat) return;
 
             System.out.println(player.getName() + " was blocked from exiting a boat.");
+            event.setCancelled(true);
+        }
+
+        @EventHandler
+        public void onVehicleBreak(VehicleDestroyEvent event) {
+            Vehicle boat = event.getVehicle();
+            if(boat.getPassengers().isEmpty()) return;
+            if(!boat.getPassengers().stream().anyMatch(p -> p instanceof Player)) return;
+            Player player = (Player) boat.getPassengers().stream().filter(p -> p instanceof Player).findAny().orElseThrow(() -> new NullPointerException("Boat is empty."));
+            if(!Arena.get(player).isPresent()) return;
+            Arena arena = Arena.get(player).get();
+            if(arena.gameData.get(player).canExitBoat) return;
+
             event.setCancelled(true);
         }
     }
