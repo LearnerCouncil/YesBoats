@@ -68,10 +68,10 @@ public class ArenaEditor {
         });
         startBoats.clear();
         arena.startLocations.forEach(location -> {
-            ArmorStand stand = (ArmorStand) arena.startWorld.spawnEntity(location, EntityType.ARMOR_STAND);
+            ArmorStand stand = (ArmorStand) arena.world.spawnEntity(location, EntityType.ARMOR_STAND);
             stand.setInvisible(true);
             stand.setMarker(true);
-            Boat boat = (Boat) arena.startWorld.spawnEntity(location, EntityType.BOAT);
+            Boat boat = (Boat) arena.world.spawnEntity(location, EntityType.BOAT);
             stand.addPassenger(boat);
             startBoats.add(boat);
         });
@@ -344,7 +344,7 @@ public class ArenaEditor {
         if(arena.laps < 1) result.append("laps, ");
         if(arena.time < 30 || arena.time > 3600) result.append("time, ");
         if(arena.lobbyLocation == null) result.append("lobbyLoation, ");
-        if(arena.startWorld == null) result.append("startWorld, ");
+        if(arena.world == null) result.append("world, ");
         if(arena.startLineActivator == null) result.append("startLineActivator, ");
         if(arena.startLocations == null || arena.startLocations.isEmpty()) result.append("startLocations, ");
         if(arena.lightLocations == null || arena.lightLocations.isEmpty()) result.append("lightLocations, ");
@@ -579,7 +579,7 @@ public class ArenaEditor {
             boat.setRotation((float) ((Math.round(player.getLocation().getYaw() / 45)) * 45), 0);
             editor.startBoats.add((Boat) boat);
             arena.startLocations.add(boat.getLocation());
-            arena.startWorld = boat.getWorld();
+            arena.world = boat.getWorld();
             stand.addPassenger(boat);
         }
 

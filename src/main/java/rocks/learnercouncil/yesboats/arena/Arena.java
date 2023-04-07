@@ -61,7 +61,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         copy.time = this.time;
         copy.lobbyLocation = this.lobbyLocation;
         copy.startLineActivator = this.startLineActivator;
-        copy.startWorld = this.startWorld;
+        copy.world = this.world;
         copy.startLocations = this.startLocations;
         copy.lightLocations = this.lightLocations;
         copy.deathBarriers = this.deathBarriers;
@@ -78,7 +78,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     protected int time = 300;
     protected Location lobbyLocation;
     protected Location startLineActivator;
-    protected World startWorld;
+    protected World world;
     protected List<Location> startLocations = new ArrayList<>();
     protected List<Location> lightLocations = new ArrayList<>();
     protected List<BoundingBox> deathBarriers = new ArrayList<>();
@@ -132,7 +132,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
 
             Location startLocation = getStartLocation().get();
             player.teleport(startLocation);
-            Boat boat = (Boat) startWorld.spawnEntity(startLocation, EntityType.BOAT);
+            Boat boat = (Boat) world.spawnEntity(startLocation, EntityType.BOAT);
             boat.setInvulnerable(true);
 
             players.add(player);
@@ -140,9 +140,11 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             gameData.put(player, new GameData(player, scoreboardManager.getNewScoreboard()));
             PlayerManager.set(player);
 
-            spawnQueueStand(startLocation).addPassenger(boat);
+            ArmorStand queueStand = spawnArmorStand(startLocation);
+            queueStands.add(queueStand);
+            queueStand.addPassenger(boat);
             boat.addPassenger(player);
-            boat.addPassenger(spawnDummyStand(startLocation));
+            boat.addPassenger(spawnArmorStand(startLocation));
 
             gameData.get(player).canEnterBoat = false;
             if(players.size() >= minPlayers && state == State.WAITING) startQueueTimer();
@@ -193,20 +195,8 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         boat.remove();
     }
 
-    private ArmorStand spawnQueueStand(Location location) {
-        if(location.getWorld() == null) throw new NullPointerException("queueStand world is null.");
-        ArmorStand qs = (ArmorStand) location.getWorld().spawnEntity(location, EntityType.ARMOR_STAND);
-        qs.setInvulnerable(true);
-        qs.setInvisible(true);
-        qs.setSmall(true);
-        qs.setMarker(true);
-        queueStands.add(qs);
-        return qs;
-    }
-
-    private ArmorStand spawnDummyStand(Location location) {
-        if(location.getWorld() == null) throw new NullPointerException("dummyStand world is null.");
-        ArmorStand stand = (ArmorStand) location.getWorld().spawnEntity(location, EntityType.ARMOR_STAND);
+    private ArmorStand spawnArmorStand(Location location) {
+        ArmorStand stand = (ArmorStand) world.spawnEntity(location, EntityType.ARMOR_STAND);
         stand.setInvulnerable(true);
         stand.setInvisible(true);
         stand.setSmall(true);
@@ -342,7 +332,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         GameData playerData = this.gameData.get(player);
         playerData.spectator = true;
 
-        Firework firework = (Firework) startWorld.spawnEntity(player.getLocation(), EntityType.FIREWORK);
+        Firework firework = (Firework) world.spawnEntity(player.getLocation(), EntityType.FIREWORK);
         FireworkMeta meta = firework.getFireworkMeta();
         meta.addEffect(FireworkEffect.builder().withTrail().withColor(Color.AQUA).with(FireworkEffect.Type.BALL).build());
         firework.setFireworkMeta(meta);
@@ -394,7 +384,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         GameData playerData = this.gameData.get(player);
 
         List<Entity> passengers = oldBoat.getPassengers().stream().filter(e -> e.getType() != EntityType.PLAYER).collect(Collectors.toList());
-        Boat newBoat = (Boat) startWorld.spawnEntity(checkpointSpawns.get(playerData.checkpoint), EntityType.BOAT);
+        Boat newBoat = (Boat) world.spawnEntity(checkpointSpawns.get(playerData.checkpoint), EntityType.BOAT);
 
         playerData.canExitBoat = true;
         oldBoat.removePassenger(player);
@@ -421,22 +411,24 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     public Arena(Map<String, Object> m) {
         name = (String) m.get("name");
 
-        startWorld = plugin.getServer().getWorld((String) m.get("startWorld"));
+        world = plugin.getServer().getWorld((String) m.get("world"));
+        //for backwards compatability
+        if(world == null) world = plugin.getServer().getWorld((String) m.get("startWorld"));
 
         minPlayers = (int) m.get("minPlayers");
         laps = (int) m.get("laps");
         time = (int) m.get("time");
 
-        lobbyLocation = stringToLoc((String) m.get("lobbyLocation"), startWorld);
-        startLineActivator = vectorStringToLoc((String) m.get("startLineActivator"), startWorld);
+        lobbyLocation = stringToLoc((String) m.get("lobbyLocation"), world);
+        startLineActivator = vectorStringToLoc((String) m.get("startLineActivator"), world);
 
-        startLocations = stringToLocList((List<String>) m.get("startLocations"), startWorld);
-        lightLocations = vectorStringToLocList((List<String>) m.get("lightLocations"), startWorld);
+        startLocations = stringToLocList((List<String>) m.get("startLocations"), world);
+        lightLocations = vectorStringToLocList((List<String>) m.get("lightLocations"), world);
 
         deathBarriers = stringToBoxList((List<String>) m.get("deathBarriers"));
 
         checkpointBoxes = stringToBoxList((List<String>) m.get("checkpointBoxes"));
-        checkpointSpawns = stringToLocList((List<String>) m.get("checkpointSpawns"), startWorld);
+        checkpointSpawns = stringToLocList((List<String>) m.get("checkpointSpawns"), world);
 
         signs = ArenaSign.deserialize((List<String>) m.get("signs"));
     }
@@ -590,7 +582,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         m.put("lobbyLocation", locToString(lobbyLocation));
         m.put("startLineActivator", locToVectorString(startLineActivator));
 
-        m.put("startWorld", startWorld.getName());
+        m.put("world", world.getName());
         m.put("startLocations", locToStringList(startLocations));
 
         m.put("lightLocations", locToVectorStringList(lightLocations));
@@ -643,8 +635,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             Optional<Arena> targetArenaOptional = Arena.get(target);
             if (!targetArenaOptional.isPresent() || !targetArenaOptional.get().equals(arenaOptional.get()))
                 event.setCancelled(true);
-
-
         }
 
         @EventHandler
