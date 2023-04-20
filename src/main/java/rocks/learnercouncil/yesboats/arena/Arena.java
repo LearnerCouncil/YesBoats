@@ -7,6 +7,7 @@ import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.vehicle.*;
 import org.bukkit.inventory.meta.FireworkMeta;
@@ -34,21 +35,11 @@ public class Arena implements ConfigurationSerializable, Cloneable {
 
     public static int queueTime;
 
-    /**
-     * Gets an {@link Arena} object based on its name
-     * @param name the name of the arena
-     * @return An optional that contains the arena with the given name, if it exists
-     */
     public static Optional<Arena> get(String name) {
         return arenas.stream().filter(a -> a.name.equals(name)).findFirst();
     }
 
     private static final HashMap<Player, Arena> playerArenaMap = new HashMap<>();
-    /**
-     * Gets an {@link Arena} object based on a {@link Player}
-     * @param player the player
-     * @return An optional that contains the arena containing the given player, if it exists
-     */
     public static Optional<Arena> get(Player player) {
         return Optional.ofNullable(playerArenaMap.get(player));
     }
@@ -91,6 +82,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     public List<Player> getPlayers() {
         return players;
     }
+    private final Set<Player> spectators = new HashSet<>();
     private final Set<ArmorStand> queueStands = new HashSet<>();
     public BukkitTask queueTimer;
     private BukkitTask mainLoop;
@@ -110,9 +102,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         this.name = name;
     }
 
-    /**
-     * Updates arena signs
-     */
     public void updateSigns() {
         signs.forEach(s -> s.update(state, players.size(), startLocations.size()));
     }
@@ -124,7 +113,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
      */
     public void setGameStatus(Player player, boolean join) {
         ScoreboardManager scoreboardManager = plugin.getServer().getScoreboardManager();
-        assert scoreboardManager != null;
+        if(scoreboardManager == null) throw new NullPointerException("ScoreboardManager was assigned before the first world was loaded, and thus, is null.");
         if(join) {
             //failsafe
             if(players.size() == startLocations.size()) return;
@@ -140,6 +129,8 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             gameData.put(player, new GameData(player, scoreboardManager.getNewScoreboard()));
             PlayerManager.set(player);
 
+            spectators.forEach(s -> hidePlayer(s, player));
+
             ArmorStand queueStand = spawnArmorStand(startLocation);
             queueStands.add(queueStand);
             queueStand.addPassenger(boat);
@@ -153,6 +144,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             if(!Arena.get(player).isPresent()) return;
 
             removeVehicle(player);
+            gameData.get(player).hiddenPlayers.forEach(p -> player.showPlayer(plugin, p));
 
             player.teleport(lobbyLocation);
             PlayerManager.restore(player);
@@ -160,17 +152,15 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             players.remove(player);
             playerArenaMap.remove(player);
             gameData.remove(player);
+            spectators.remove(player);
             player.setScoreboard(scoreboardManager.getMainScoreboard());
 
-            if(state == State.IN_QUEUE) {
-                if(players.size() < minPlayers) {
-                    queueTimer.cancel();
-                    players.forEach(p -> gameData.get(p).scoreboard.updateScores(-1));
-                    state = State.WAITING;
-                }
+            if(state == State.IN_QUEUE && players.size() < minPlayers) {
+                queueTimer.cancel();
+                players.forEach(p -> gameData.get(p).scoreboard.updateScores(-1));
+                state = State.WAITING;
             }
-            if(state == State.RUNNING)
-                if(players.size() <= 0) stopGame();
+            if(state == State.RUNNING && players.size() <= 0) stopGame();
         }
         updateSigns();
     }
@@ -178,7 +168,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     private Optional<Location> getStartLocation() {
         return startLocations.stream().filter(l -> !queueStands.stream().map(Entity::getLocation).collect(Collectors.toList()).contains(l)).findFirst();
     }
-
     @SuppressWarnings("ConstantConditions")
     private void removeVehicle(Player player) {
         if (!player.isInsideVehicle()) return;
@@ -194,7 +183,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         });
         boat.remove();
     }
-
     private ArmorStand spawnArmorStand(Location location) {
         ArmorStand stand = (ArmorStand) world.spawnEntity(location, EntityType.ARMOR_STAND);
         stand.setInvulnerable(true);
@@ -222,9 +210,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     }
 
 
-    /**
-     * Starts the game
-     */
     public void startGame() {
         state = State.RUNNING;
         currentPlace = 1;
@@ -268,7 +253,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
                 }
                 players.forEach(player -> {
                     GameData playerData = gameData.get(player);
-                    if(playerData.spectator) return;
+                    if(spectators.contains(player)) return;
                     playerData.scoreboard.updateScores(timeLeft, playerData.lap, laps);
                     updateCheckpoint(player);
                     deathBarriers.forEach(deathBarrier -> {
@@ -289,9 +274,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
 
     }
 
-    /**
-     * Stops the game.
-     */
     public void stopGame() {
         if(state == State.RUNNING) mainLoop.cancel();
         if(state == State.IN_QUEUE) queueTimer.cancel();
@@ -304,7 +286,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             blockData.setLit(false);
             l.getBlock().setBlockData(blockData);
         });
-
     }
 
 
@@ -314,10 +295,11 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         for (BoundingBox b : checkpointBoxes) {
             int currentCheckpoint = checkpointBoxes.indexOf(b);
             if(!b.contains(player.getLocation().toVector())) continue;
-            if(currentCheckpoint == previousCheckpoint) continue;
+            if(currentCheckpoint == previousCheckpoint) continue;player.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] " + ChatColor.AQUA + "Passing Checkpoint: " + currentCheckpoint + "(Previous Checkpoint: " + previousCheckpoint + ")");
 
-            if(currentCheckpoint == previousCheckpoint + 1)
+            if(currentCheckpoint == previousCheckpoint + 1) {
                 playerData.checkpoint = currentCheckpoint;
+            }
             if(currentCheckpoint == 0 && previousCheckpoint == checkpointBoxes.size() - 1) {
                 if(playerData.lap >= laps) setSpectator(player);
                 playerData.lap += 1;
@@ -326,11 +308,16 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         }
     }
 
+    private void hidePlayer(Player toHide, Player hideFor) {
+        hideFor.hidePlayer(plugin, toHide);
+        gameData.get(hideFor).hiddenPlayers.add(toHide);
+    }
+
     private void setSpectator(Player player) {
         removeVehicle(player);
-        player.setGameMode(GameMode.SPECTATOR);
-        GameData playerData = this.gameData.get(player);
-        playerData.spectator = true;
+        player.setAllowFlight(true);
+        players.forEach(p -> hidePlayer(player, p));
+        spectators.add(player);
 
         Firework firework = (Firework) world.spawnEntity(player.getLocation(), EntityType.FIREWORK);
         FireworkMeta meta = firework.getFireworkMeta();
@@ -338,22 +325,21 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         firework.setFireworkMeta(meta);
         firework.detonate();
 
+        GameData playerData = gameData.get(player);
         double totalSeconds = ((double) (System.currentTimeMillis() - playerData.time)) / 1000;
         int minutes = (int) totalSeconds / 60;
         int seconds = (int) totalSeconds % 60;
-        String suffix;
+        String suffix = "th";
         int lastDigit = currentPlace % 10;
-            if(lastDigit == 1 && currentPlace != 11)
-                suffix = "st";
-            else if(lastDigit == 2 && currentPlace != 12)
-                suffix = "nd";
-            else if(lastDigit == 3 && currentPlace != 13)
-                suffix = "rd";
-            else
-                suffix = "th";
+        if(lastDigit == 1 && currentPlace != 11)
+            suffix = "st";
+        else if(lastDigit == 2 && currentPlace != 12)
+            suffix = "nd";
+        else if(lastDigit == 3 && currentPlace != 13)
+            suffix = "rd";
 
         player.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
-                + ChatColor.AQUA + "You have completed the race with in "
+                + ChatColor.AQUA + "You have completed the race with a time of "
                 + ChatColor.YELLOW + minutes + ":" + seconds
                 + ChatColor.AQUA + ". That puts you in "
                 + ChatColor.YELLOW + currentPlace + suffix
@@ -406,14 +392,88 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         oldBoat.remove();
     }
 
+    //Methods to change locations to and from their string representations
+    
+    private static String locToString(Location loc) {
+        return loc.getX() + ","
+                + loc.getY() + ","
+                + loc.getZ() + ","
+                + loc.getYaw() + ","
+                + loc.getPitch();
+    }
+    private static Location stringToLoc(String str, World world) {
+        String[] segments = str.split(",");
+        return new Location(
+                world,
+                Double.parseDouble(segments[0]),
+                Double.parseDouble(segments[1]),
+                Double.parseDouble(segments[2]),
+                Float.parseFloat(segments[3]),
+                Float.parseFloat(segments[4])
+        );
+    }
+
+    private static List<String> locToStringList(List<Location> locations) {
+        return locations.stream().map(Arena::locToString).collect(Collectors.toList());
+    }
+    private static List<Location> stringToLocList(List<String> strings, World world) {
+        return strings.stream().map(s -> stringToLoc(s, world)).collect(Collectors.toList());
+    }
+
+    private static String locToVectorString(Location loc) {
+        return loc.getBlockX() + ","
+                + loc.getBlockY() + ","
+                + loc.getBlockZ();
+    }
+    private static Location vectorStringToLoc(String str, World world) {
+        String[] segments = str.split(",");
+        return new Location(world,
+                Double.parseDouble(segments[0]),
+                Double.parseDouble(segments[1]),
+                Double.parseDouble(segments[2]));
+    }
+
+    private static List<String> locToVectorStringList(List<Location> locations) {
+        return locations.stream().map(Arena::locToVectorString).collect(Collectors.toList());
+    }
+    private static List<Location> vectorStringToLocList(List<String> strings, World world) {
+        return strings.stream().map(s -> vectorStringToLoc(s, world)).collect(Collectors.toList());
+    }
+
+    private static List<String> boxToStringList(List<BoundingBox> boxes) {
+        return boxes.stream()
+                .map(b -> ((int) b.getMinX()) + ","
+                        + ((int) b.getMinY()) + ","
+                        + ((int) b.getMinZ()) + ","
+                        + ((int) b.getMaxX()) + ","
+                        + ((int) b.getMaxY()) + ","
+                        + ((int) b.getMaxZ()))
+                .collect(Collectors.toList());
+    }
+    private static List<BoundingBox> stringToBoxList(List<String> strings) {
+        return strings.stream()
+                .map(s -> {
+                    String[] segments = s.split(",");
+                    return new BoundingBox(
+                            Double.parseDouble(segments[0]),
+                            Double.parseDouble(segments[1]),
+                            Double.parseDouble(segments[2]),
+                            Double.parseDouble(segments[3]),
+                            Double.parseDouble(segments[4]),
+                            Double.parseDouble(segments[5])
+                    );
+                }).collect(Collectors.toList());
+    }
 
     @SuppressWarnings({"unused", "unchecked"})
     public Arena(Map<String, Object> m) {
         name = (String) m.get("name");
 
-        world = plugin.getServer().getWorld((String) m.get("world"));
         //for backwards compatability
-        if(world == null) world = plugin.getServer().getWorld((String) m.get("startWorld"));
+        String worldName = (String) m.get("world");
+        if(worldName == null) worldName = (String) m.get("startWorld");
+
+        world = plugin.getServer().getWorld(worldName);
 
         minPlayers = (int) m.get("minPlayers");
         laps = (int) m.get("laps");
@@ -431,142 +491,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         checkpointSpawns = stringToLocList((List<String>) m.get("checkpointSpawns"), world);
 
         signs = ArenaSign.deserialize((List<String>) m.get("signs"));
-    }
-
-    //Methods to change locations to and from their string representations
-
-    /**
-     * Turns a {@link Location} into a String representing it.
-     * @param loc The location
-     * @return The string representation of that location
-     * @see Arena#stringToLoc(String, World)
-     */
-    private static String locToString(Location loc) {
-        return loc.getX() + ","
-                + loc.getY() + ","
-                + loc.getZ() + ","
-                + loc.getYaw() + ","
-                + loc.getPitch();
-    }
-    /**
-     * Turns a string representation of a {@link Location} into a Location object.
-     * @param str The String representing the location.
-     * @param world The world the location is supposed to be in.
-     * @return The location object.
-     * @see Arena#locToString(Location)
-     */
-    private static Location stringToLoc(String str, World world) {
-        String[] segments = str.split(",");
-        return new Location(
-                world,
-                Double.parseDouble(segments[0]),
-                Double.parseDouble(segments[1]),
-                Double.parseDouble(segments[2]),
-                Float.parseFloat(segments[3]),
-                Float.parseFloat(segments[4])
-        );
-    }
-
-    /**
-     * Functionally identical to {@link Arena#locToString(Location)} except it works on a List of Locations.
-     * @see Arena#stringToLocList(List, World)
-     * @param locations The list of Locations
-     * @return The list of strings
-     */
-    private static List<String> locToStringList(List<Location> locations) {
-        return locations.stream().map(Arena::locToString).collect(Collectors.toList());
-    }
-    /**
-     * Functionally identical to {@link Arena#stringToLoc(String, World)} except it works on a List of Strings.
-     * @see Arena#locToStringList(List)
-     * @param strings The list of strings
-     * @return The list of Locations
-     */
-    private static List<Location> stringToLocList(List<String> strings, World world) {
-        return strings.stream().map(s -> stringToLoc(s, world)).collect(Collectors.toList());
-    }
-
-    /**
-     * Turns a {@link Location} into a string representing only its x, y and z coordinates.
-     * @param loc The location
-     * @return The string representing it
-     * @see Arena#vectorStringToLoc(String, World)
-     */
-    private static String locToVectorString(Location loc) {
-        return loc.getBlockX() + ","
-                + loc.getBlockY() + ","
-                + loc.getBlockZ();
-    }
-    /**
-     * Turns a string representing x, y, and z coordinates into a {@link Location} object, given you provide a world.
-     * @param str The string representing the x, y, and z coordinates
-     * @param world The world the coordinates are supposed to be in
-     * @return The Location object
-     * @see Arena#locToVectorString(Location)
-     */
-    private static Location vectorStringToLoc(String str, World world) {
-        String[] segments = str.split(",");
-        return new Location(world,
-                Double.parseDouble(segments[0]),
-                Double.parseDouble(segments[1]),
-                Double.parseDouble(segments[2]));
-    }
-
-    /**
-     * Functionally identical to {@link Arena#locToVectorString(Location)} except it works on a List of Locations.
-     * @see Arena#vectorStringToLocList(List, World)
-     * @param locations The list of Locations
-     * @return The list of strings
-     */
-    private static List<String> locToVectorStringList(List<Location> locations) {
-        return locations.stream().map(Arena::locToVectorString).collect(Collectors.toList());
-    }
-    /**
-     * Functionally identical to {@link Arena#vectorStringToLoc(String, World)} except it works on a List of Strings.
-     * @see Arena#locToVectorStringList(List)
-     * @param strings The list of strings
-     * @param world The world
-     * @return The list of Locations
-     */
-    private static List<Location> vectorStringToLocList(List<String> strings, World world) {
-        return strings.stream().map(s -> vectorStringToLoc(s, world)).collect(Collectors.toList());
-    }
-
-    /**
-     * Turns a list of {@link BoundingBox}es into their string representations.
-     * @see Arena#stringToBoxList(List)
-     * @param boxes The list of bounding boxes
-     * @return The string representation
-     */
-    private static List<String> boxToStringList(List<BoundingBox> boxes) {
-        return boxes.stream()
-                .map(b -> ((int) b.getMinX()) + ","
-                + ((int) b.getMinY()) + ","
-                + ((int) b.getMinZ()) + ","
-                + ((int) b.getMaxX()) + ","
-                + ((int) b.getMaxY()) + ","
-                + ((int) b.getMaxZ()))
-                .collect(Collectors.toList());
-    }
-    /**
-     * Turns a list of strings representing bounding boxes into the {@link BoundingBox} objects.
-     * @see Arena#boxToStringList(List)
-     * @param strings The list of strings
-     * @return The list of bounding boxes
-     */
-    private static List<BoundingBox> stringToBoxList(List<String> strings) {
-        return strings.stream()
-                .map(s -> {
-                    String[] segments = s.split(",");
-                    return new BoundingBox(
-                            Double.parseDouble(segments[0]),
-                            Double.parseDouble(segments[1]),
-                            Double.parseDouble(segments[2]),
-                            Double.parseDouble(segments[3]),
-                            Double.parseDouble(segments[4]),
-                            Double.parseDouble(segments[5])
-                    );
-                }).collect(Collectors.toList());
     }
 
     @Override
@@ -602,10 +526,10 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         }
 
         final ArenaScoreboard scoreboard;
+        final Set<Player> hiddenPlayers = new HashSet<>();
         int checkpoint = 0;
         int lap = 1;
         long time = 0;
-        boolean spectator = false;
         boolean canEnterBoat = true;
         boolean canExitBoat = false;
     }
@@ -620,7 +544,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
 
     public static class Events implements Listener {
 
-        @EventHandler
+        /*@EventHandler
         public void onSpectatorTeleport(PlayerTeleportEvent event) {
             if(event.getCause() != PlayerTeleportEvent.TeleportCause.SPECTATE) return;
             if(event.getPlayer().hasPermission("yesboats.spectatortp")) return;
@@ -635,7 +559,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             Optional<Arena> targetArenaOptional = Arena.get(target);
             if (!targetArenaOptional.isPresent() || !targetArenaOptional.get().equals(arenaOptional.get()))
                 event.setCancelled(true);
-        }
+        }*/
 
         @EventHandler
         public void onVehicleEnter(VehicleEnterEvent event) {
@@ -645,7 +569,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             Arena arena = Arena.get(player).get();
             if(arena.gameData.get(player).canEnterBoat) return;
 
-            System.out.println(player.getName() + " was blocked from entering a boat.");
             event.setCancelled(true);
         }
 
@@ -657,7 +580,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             Arena arena = Arena.get(player).get();
             if(arena.gameData.get(player).canExitBoat) return;
 
-            System.out.println(player.getName() + " was blocked from exiting a boat.");
             event.setCancelled(true);
         }
 
