@@ -295,8 +295,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         for (BoundingBox b : checkpointBoxes) {
             int currentCheckpoint = checkpointBoxes.indexOf(b);
             if(!b.contains(player.getLocation().toVector())) continue;
-            if(currentCheckpoint == previousCheckpoint) continue;player.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] " + ChatColor.AQUA + "Passing Checkpoint: " + currentCheckpoint + "(Previous Checkpoint: " + previousCheckpoint + ")");
-
             if(currentCheckpoint == previousCheckpoint + 1) {
                 playerData.checkpoint = currentCheckpoint;
             }
@@ -326,18 +324,19 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         firework.detonate();
 
         GameData playerData = gameData.get(player);
+        playerData.hiddenPlayers.forEach(p -> p.showPlayer(plugin, player));
         double totalSeconds = ((double) (System.currentTimeMillis() - playerData.time)) / 1000;
         int minutes = (int) totalSeconds / 60;
         int seconds = (int) totalSeconds % 60;
-        String suffix = "th";
+        String s = "th";
         int lastDigit = currentPlace % 10;
         if(lastDigit == 1 && currentPlace != 11)
-            suffix = "st";
+            s = "st";
         else if(lastDigit == 2 && currentPlace != 12)
-            suffix = "nd";
+            s = "nd";
         else if(lastDigit == 3 && currentPlace != 13)
-            suffix = "rd";
-
+            s = "rd";
+        final String suffix = s;
         player.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
                 + ChatColor.AQUA + "You have completed the race with a time of "
                 + ChatColor.YELLOW + minutes + ":" + seconds
@@ -347,6 +346,11 @@ public class Arena implements ConfigurationSerializable, Cloneable {
                 + "\nYou can now spectate the other players or type "
                 + ChatColor.YELLOW + "/yb leave"
                 + ChatColor.AQUA + " to return to the lobby.");
+        players.forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
+                + ChatColor.AQUA + ChatColor.BOLD + player.getName()
+                + ChatColor.RESET + ChatColor.AQUA + " has completed the race in "
+                + ChatColor.YELLOW + currentPlace + suffix
+                + ChatColor.AQUA + " place."));
         currentPlace++;
         if(currentPlace > players.size()) {
             players.forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] " + ChatColor.AQUA + "All Players have finished. Returning to lobby in 5 seconds."));

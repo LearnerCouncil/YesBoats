@@ -331,11 +331,12 @@ public class ArenaEditor {
         boxCorner2 = null;
         selectedBox = null;
         createdBox = null;
-        startBoats.forEach(boat -> {
-            if(boat.isInsideVehicle())
+        for (Boat boat : startBoats) {
+            if (boat.isInsideVehicle())
                 Objects.requireNonNull(boat.getVehicle()).remove();
             boat.remove();
-        });
+        }
+        startBoats.clear();
     }
 
     private String validate() {

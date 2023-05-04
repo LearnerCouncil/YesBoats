@@ -34,6 +34,14 @@ public class PlayerManager {
         player.setLevel(0);
         playerData.invulnerable = player.isInvulnerable();
         player.setInvulnerable(true);
+        playerData.health = player.getHealth();
+        player.setHealth(20);
+        playerData.hunger = player.getFoodLevel();
+        player.setFoodLevel(20);
+        playerData.saturation = player.getSaturation();
+        player.setSaturation(1.0f);
+        playerData.canFly = player.getAllowFlight();
+        player.setAllowFlight(false);
     }
 
     private static void initializeItems(Player player) {
@@ -84,6 +92,10 @@ public class PlayerManager {
         p.setExp(playerData.xp);
         p.setLevel(playerData.level);
         p.setInvulnerable(playerData.invulnerable);
+        p.setHealth(playerData.health);
+        p.setFoodLevel(playerData.hunger);
+        p.setSaturation(playerData.saturation);
+        p.setAllowFlight(playerData.canFly);
     }
     
     private static class PlayerData {
@@ -92,6 +104,10 @@ public class PlayerManager {
         public float xp;
         public int level;
         public boolean invulnerable;
+        public double health;
+        public int hunger;
+        public float saturation;
+        public boolean canFly;
     }
 
     public static class Events implements Listener {
