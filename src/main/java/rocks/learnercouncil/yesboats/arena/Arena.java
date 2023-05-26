@@ -16,6 +16,8 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.util.BoundingBox;
+import org.bukkit.util.RayTraceResult;
+import org.bukkit.util.Vector;
 import rocks.learnercouncil.yesboats.PlayerManager;
 import rocks.learnercouncil.yesboats.YesBoats;
 
@@ -87,6 +89,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     public BukkitTask queueTimer;
     private BukkitTask mainLoop;
     private final Map<Player, GameData> gameData = new HashMap<>();
+    private final Map<Player, Vector> previousPositions = new HashMap<>();
     private int currentPlace = 1;
 
     private State state = State.WAITING;
@@ -224,31 +227,21 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         });
         final Iterator<Location> lightsIterator = lightLocations.iterator();
         mainLoop = new BukkitRunnable() {
-            int prestartTimer = 0;
+            boolean inCountdown = true;
             int secondCounter = 0;
             int timeLeft = time;
             @Override
             public void run() {
                 secondCounter = secondCounter < 20 ? ++secondCounter : 0;
-                if(prestartTimer != -1) {
-                    prestartTimer++;
-                    if(prestartTimer % 20 != 0) return;
+                if(inCountdown && secondCounter == 20) {
                     if(lightsIterator.hasNext()) {
-                        Block block = lightsIterator.next().getBlock();
-                        block.setType(Material.REDSTONE_LAMP);
-                        Lightable blockData = (Lightable) block.getBlockData();
-                        blockData.setLit(true);
-                        block.setBlockData(blockData);
+                        setLamp(lightsIterator.next().getBlock(), true);
                         players.forEach(p -> p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1));
                     } else {
-                        lightLocations.forEach(location -> {
-                            Lightable locationBlockData = (Lightable) location.getBlock().getBlockData();
-                            locationBlockData.setLit(false);
-                            location.getBlock().setBlockData(locationBlockData);
-                            players.forEach(p -> p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 2));
-                        });
+                        lightLocations.forEach(location -> setLamp(location.getBlock(), false));
+                        players.forEach(p -> p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 2));
                         startLineActivator.getBlock().setType(Material.RED_CONCRETE);
-                        prestartTimer = -1;
+                        inCountdown = false;
                     }
                 }
                 players.forEach(player -> {
@@ -256,13 +249,14 @@ public class Arena implements ConfigurationSerializable, Cloneable {
                     if(spectators.contains(player)) return;
                     playerData.scoreboard.updateScores(timeLeft, playerData.lap, laps);
                     updateCheckpoint(player);
+                    boolean inVoid = player.getLocation().getY() < -16.0;
                     deathBarriers.forEach(deathBarrier -> {
-                        if(deathBarrier.contains(player.getLocation().add(0, -0.55, 0).toVector()))
+                        if(isIntersecting(player, deathBarrier) || inVoid)
                             respawn(player);
                     });
                 });
 
-                if(secondCounter == 20 && prestartTimer == -1) {
+                if(secondCounter == 20 && !inCountdown) {
                     if(timeLeft <= 0) {
                         stopGame();
                         players.forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] " + ChatColor.AQUA + "The timer has run out. Returning to the lobby."));
@@ -272,6 +266,13 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             }
         }.runTaskTimer(plugin, 0, 1);
 
+    }
+
+    private void setLamp(Block lamp, boolean lit) {
+        if(lamp.getType() != Material.REDSTONE_LAMP) lamp.setType(Material.REDSTONE_LAMP);
+        Lightable blockData = (Lightable) lamp.getBlockData();
+        blockData.setLit(lit);
+        lamp.setBlockData(blockData);
     }
 
     public void stopGame() {
@@ -289,12 +290,34 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     }
 
 
+    private boolean isIntersecting(Player player, BoundingBox boundingBox) {
+        Vector previousPosition = previousPositions.get(player);
+        Vector currentPosition = player.getLocation().toVector();
+
+        if(boundingBox.contains(currentPosition)) return true;
+
+        Vector direction = currentPosition.clone().subtract(previousPosition).normalize();
+        RayTraceResult rayTraceResult = boundingBox.rayTrace(previousPosition, direction, currentPosition.distance(previousPosition));
+        return rayTraceResult != null;
+    }
+
     private void updateCheckpoint(Player player) {
         GameData playerData = this.gameData.get(player);
         int previousCheckpoint = playerData.checkpoint;
+        int currentCheckpoint = previousCheckpoint == checkpointBoxes.size() - 1 ? 0 : previousCheckpoint + 1;
+
+        if(!isIntersecting(player, checkpointBoxes.get(currentCheckpoint))) return;
+
+        if(currentCheckpoint == 0) {
+            if(playerData.lap >= laps) setSpectator(player);
+            playerData.lap += 1;
+        }
+
+        playerData.checkpoint = currentCheckpoint;
+        /*
         for (BoundingBox b : checkpointBoxes) {
+            if(!isIntersecting(player, b)) continue;
             int currentCheckpoint = checkpointBoxes.indexOf(b);
-            if(!b.contains(player.getLocation().toVector())) continue;
             if(currentCheckpoint == previousCheckpoint + 1) {
                 playerData.checkpoint = currentCheckpoint;
             }
@@ -303,7 +326,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
                 playerData.lap += 1;
                 playerData.checkpoint = currentCheckpoint;
             }
-        }
+        }*/
     }
 
     private void hidePlayer(Player toHide, Player hideFor) {

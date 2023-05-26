@@ -28,16 +28,18 @@ public class LeaveArg implements CommandArgument {
         boolean isAdmin = sender.hasPermission("yesboats.commands.yesboats.admin");
         if(args.length > (isAdmin ? 2 : 1)) return TOO_MANY_ARGS;
 
-        Optional<Arena> arenaOptional = Arena.get((Player) sender);
-        if(!arenaOptional.isPresent()) return NOT_IN_ARENA_SELF;
+        Optional<Arena> arenaOptional;
         if(args.length == 2) {
             String playername = args[1];
             Player player = plugin.getServer().getPlayer(playername);
             if(player == null) return PLAYER_NOT_FOUND;
-            if(!Arena.get(player).isPresent()) return CommandResult.NOT_IN_ARENA_OTHER;
+            arenaOptional = Arena.get(player);
+            if(!arenaOptional.isPresent()) return CommandResult.NOT_IN_ARENA_OTHER;
             arenaOptional.get().setGameStatus(player, false);
             return leftOther(playername);
         }
+        arenaOptional = Arena.get((Player) sender);
+        if(!arenaOptional.isPresent()) return NOT_IN_ARENA_SELF;
         arenaOptional.get().setGameStatus((Player) sender, false);
         return LEFT;
     }
