@@ -89,7 +89,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     public BukkitTask queueTimer;
     private BukkitTask mainLoop;
     private final Map<Player, GameData> gameData = new HashMap<>();
-    private final Map<Player, Vector> previousPositions = new HashMap<>();
     private int currentPlace = 1;
 
     private State state = State.WAITING;
@@ -254,6 +253,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
                         if(isIntersecting(player, deathBarrier) || inVoid)
                             respawn(player);
                     });
+                    playerData.previousLocation = player.getLocation().toVector();
                 });
 
                 if(secondCounter == 20 && !inCountdown) {
@@ -291,7 +291,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
 
 
     private boolean isIntersecting(Player player, BoundingBox boundingBox) {
-        Vector previousPosition = previousPositions.get(player);
+        Vector previousPosition = gameData.get(player).previousLocation;
         Vector currentPosition = player.getLocation().toVector();
 
         if(boundingBox.contains(currentPosition)) return true;
@@ -550,10 +550,12 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     private static class GameData {
         public GameData(Player player, Scoreboard scoreboard) {
             this.scoreboard = new ArenaScoreboard(player, scoreboard);
+            this.previousLocation = player.getLocation().toVector();
         }
 
         final ArenaScoreboard scoreboard;
         final Set<Player> hiddenPlayers = new HashSet<>();
+        Vector previousLocation;
         int checkpoint = 0;
         int lap = 1;
         long time = 0;
