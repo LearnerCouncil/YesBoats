@@ -250,7 +250,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
                     updateCheckpoint(player);
                     boolean inVoid = player.getLocation().getY() < -16.0;
                     deathBarriers.forEach(deathBarrier -> {
-                        if(isIntersecting(player, deathBarrier) || inVoid)
+                        if(inVoid || isIntersecting(player, deathBarrier))
                             respawn(player);
                     });
                     playerData.previousLocation = player.getLocation().toVector();
