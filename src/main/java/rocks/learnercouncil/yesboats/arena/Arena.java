@@ -292,12 +292,14 @@ public class Arena implements ConfigurationSerializable, Cloneable {
 
     private boolean isIntersecting(Player player, BoundingBox boundingBox) {
         Vector previousPosition = gameData.get(player).previousLocation;
-        if(previousPosition == null) previousPosition = player.getLocation().toVector();
         Vector currentPosition = player.getLocation().toVector();
 
+        if(currentPosition.equals(previousPosition)) return false;
         if(boundingBox.contains(currentPosition)) return true;
 
         Vector direction = currentPosition.clone().subtract(previousPosition).normalize();
+        if(Double.isNaN(direction.getX())) direction = new Vector();
+
         RayTraceResult rayTraceResult = boundingBox.rayTrace(previousPosition, direction, currentPosition.distance(previousPosition));
         return rayTraceResult != null;
     }
