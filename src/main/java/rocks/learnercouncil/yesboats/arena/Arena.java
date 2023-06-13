@@ -592,6 +592,13 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         }*/
 
         @EventHandler
+        public void onPlayerQuit(PlayerQuitEvent event) {
+            Player player = event.getPlayer();
+            if(!Arena.get(player).isPresent()) return;
+            Arena.get(player).get().setGameStatus(player, false);
+        }
+
+        @EventHandler
         public void onVehicleEnter(VehicleEnterEvent event) {
             if(!(event.getEntered() instanceof Player)) return;
             Player player = (Player) event.getEntered();
