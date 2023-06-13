@@ -461,7 +461,20 @@ public class ArenaEditor {
                     editor.spawnStartBoats();
                     break;
                 default:
-                    event.setCancelled(false);
+                    if(action != Action.LEFT_CLICK_BLOCK || event.getClickedBlock() == null) {
+                        event.setCancelled(false);
+                        return;
+                    }
+                    Block block = event.getClickedBlock();
+                    if(editor.arena.lightLocations.contains(block.getLocation())) {
+                        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(RED + "Removing light #" + editor.arena.lightLocations.indexOf(block.getLocation())));
+                        if(editor.oldLightMaterials.containsKey(block)) {
+                            block.setType(editor.oldLightMaterials.get(block));
+                            event.setCancelled(true);
+                            return;
+                        }
+                        event.setCancelled(false);
+                    }
             }
         }
         //Handler methods
@@ -614,6 +627,7 @@ public class ArenaEditor {
             block.setType(Material.REDSTONE_LAMP);
             ((Lightable) block.getBlockData()).setLit(true);
             arena.lightLocations.add(block.getLocation());
+            e.getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(AQUA + "Light #" + arena.lightLocations.size() + " placed."));
         }
     }
 }
