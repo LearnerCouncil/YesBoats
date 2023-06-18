@@ -317,19 +317,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         }
 
         playerData.checkpoint = currentCheckpoint;
-        /*
-        for (BoundingBox b : checkpointBoxes) {
-            if(!isIntersecting(player, b)) continue;
-            int currentCheckpoint = checkpointBoxes.indexOf(b);
-            if(currentCheckpoint == previousCheckpoint + 1) {
-                playerData.checkpoint = currentCheckpoint;
-            }
-            if(currentCheckpoint == 0 && previousCheckpoint == checkpointBoxes.size() - 1) {
-                if(playerData.lap >= laps) setSpectator(player);
-                playerData.lap += 1;
-                playerData.checkpoint = currentCheckpoint;
-            }
-        }*/
     }
 
     private void hidePlayer(Player toHide, Player hideFor) {
@@ -499,8 +486,8 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     public Arena(Map<String, Object> m) {
         name = (String) m.get("name");
 
-        //for backwards compatability
         String worldName = (String) m.get("world");
+        //for backwards compatability
         if(worldName == null) worldName = (String) m.get("startWorld");
 
         world = plugin.getServer().getWorld(worldName);
@@ -575,23 +562,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     }
 
     public static class Events implements Listener {
-
-        /*@EventHandler
-        public void onSpectatorTeleport(PlayerTeleportEvent event) {
-            if(event.getCause() != PlayerTeleportEvent.TeleportCause.SPECTATE) return;
-            if(event.getPlayer().hasPermission("yesboats.spectatortp")) return;
-            Optional<Arena> arenaOptional = Arena.get(event.getPlayer());
-            if(!arenaOptional.isPresent()) return;
-            Optional<Player> targetOptional = arenaOptional.get().getPlayers().stream().filter(p -> p.getLocation().equals(event.getTo())).findAny();
-            if(!targetOptional.isPresent()) {
-                event.setCancelled(true);
-                return;
-            }
-            Player target = targetOptional.get();
-            Optional<Arena> targetArenaOptional = Arena.get(target);
-            if (!targetArenaOptional.isPresent() || !targetArenaOptional.get().equals(arenaOptional.get()))
-                event.setCancelled(true);
-        }*/
 
         @EventHandler
         public void onPlayerQuit(PlayerQuitEvent event) {

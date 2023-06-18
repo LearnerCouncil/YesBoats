@@ -264,12 +264,6 @@ public class ArenaEditor {
         if(box == null) return false;
         RayTraceResult rayTraceResult = box.rayTrace(player.getEyeLocation().toVector(), player.getEyeLocation().getDirection(), 10);
         return rayTraceResult != null;
-        /*for(double i = 0; i < 10; i += 0.5) {
-            Vector directionVector = player.getEyeLocation().getDirection();
-            Vector locationVector = player.getEyeLocation().toVector().add(directionVector.multiply(i));
-            if(box.contains(locationVector.toBlockVector())) return true;
-        }
-        return false;*/
     }
 
     private boolean offsetDisplayBox = false;
