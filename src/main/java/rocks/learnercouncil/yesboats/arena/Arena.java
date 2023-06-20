@@ -1,5 +1,6 @@
 package rocks.learnercouncil.yesboats.arena;
 
+import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Lightable;
@@ -20,6 +21,7 @@ import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 import rocks.learnercouncil.yesboats.PlayerManager;
 import rocks.learnercouncil.yesboats.YesBoats;
+import rocks.learnercouncil.yesboats.YesBoatsPlayer;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -80,15 +82,11 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     protected Set<ArenaSign> signs = new HashSet<>();
 
     //non-serialized fields
-    private final List<Player> players = new ArrayList<>();
-    public List<Player> getPlayers() {
-        return players;
-    }
-    private final Set<Player> spectators = new HashSet<>();
+    private final @Getter Map<Player, YesBoatsPlayer> players = new HashMap<>();
+    private final @Getter Set<Player> spectators = new HashSet<>();
     private final Set<ArmorStand> queueStands = new HashSet<>();
     public BukkitTask queueTimer;
     private BukkitTask mainLoop;
-    private final Map<Player, GameData> gameData = new HashMap<>();
     private int currentPlace = 1;
 
     private State state = State.WAITING;
@@ -114,8 +112,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
      * @param join 'true' to add the player to the arena, 'false' to remove them.
      */
     public void setGameStatus(Player player, boolean join) {
-        ScoreboardManager scoreboardManager = plugin.getServer().getScoreboardManager();
-        if(scoreboardManager == null) throw new NullPointerException("ScoreboardManager was assigned before the first world was loaded, and thus, is null.");
         if(join) {
             //failsafe
             if(players.size() == startLocations.size()) return;
@@ -126,12 +122,14 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             Boat boat = (Boat) world.spawnEntity(startLocation, EntityType.BOAT);
             boat.setInvulnerable(true);
 
-            players.add(player);
+            players.put(player, new YesBoatsPlayer(this, player));
             playerArenaMap.put(player, this);
-            gameData.put(player, new GameData(player, scoreboardManager.getNewScoreboard()));
             PlayerManager.set(player);
 
-            spectators.forEach(s -> hidePlayer(s, player));
+            spectators.forEach(s -> {
+                player.hidePlayer(s);
+                players.get(player).getHiddenPlayers().add(s);
+            });
 
             ArmorStand queueStand = spawnArmorStand(startLocation);
             queueStands.add(queueStand);
@@ -139,27 +137,26 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             boat.addPassenger(player);
             boat.addPassenger(spawnArmorStand(startLocation));
 
-            gameData.get(player).canEnterBoat = false;
+            players.get(player).canEnterBoat = false;
             if(players.size() >= minPlayers && state == State.WAITING) startQueueTimer();
         } else {
             //failsafe
             if(!Arena.get(player).isPresent()) return;
 
             removeVehicle(player);
-            gameData.get(player).hiddenPlayers.forEach(p -> player.showPlayer(plugin, p));
+            players.get(player).getHiddenPlayers().forEach(p -> player.showPlayer(plugin, p));
 
             player.teleport(lobbyLocation);
             PlayerManager.restore(player);
 
             players.remove(player);
             playerArenaMap.remove(player);
-            gameData.remove(player);
             spectators.remove(player);
             player.setScoreboard(scoreboardManager.getMainScoreboard());
 
             if(state == State.IN_QUEUE && players.size() < minPlayers) {
                 queueTimer.cancel();
-                players.forEach(p -> gameData.get(p).scoreboard.updateScores(-1));
+                players.values().forEach(p -> p.getScoreboard().updateScores(-1));
                 state = State.WAITING;
             }
             if(state == State.RUNNING && players.size() <= 0) stopGame();
@@ -196,7 +193,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
 
     public void startQueueTimer() {
         state = State.IN_QUEUE;
-        players.forEach(player -> gameData.get(player).scoreboard.updateScores(-1));
+        players.values().forEach(player -> player.getScoreboard().updateScores(-1));
         queueTimer = new BukkitRunnable() {
             int timeLeft = queueTime;
             @Override
@@ -206,7 +203,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
                     cancel();
                 }
                 timeLeft--;
-                players.forEach(player -> gameData.get(player).scoreboard.updateScores(timeLeft));
+                players.values().forEach(player -> player.getScoreboard().updateScores(timeLeft));
             }
         }.runTaskTimer(plugin, 0, 20);
     }
@@ -217,12 +214,11 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         currentPlace = 1;
         queueStands.forEach(Entity::remove);
         queueStands.clear();
-        players.forEach(p -> {
-            p.playSound(p.getLocation(), Sound.BLOCK_TRIPWIRE_ATTACH, 1, 1);
-            GameData playerData = gameData.get(p);
-            playerData.time = System.currentTimeMillis();
-            playerData.scoreboard.updateScores(time, playerData.lap, laps);
-            p.getInventory().clear();
+        players.forEach((player, yesBoatsPlayer) -> {
+            player.playSound(player.getLocation(), Sound.BLOCK_TRIPWIRE_ATTACH, 1, 1);
+            yesBoatsPlayer.setTime(System.currentTimeMillis());
+            yesBoatsPlayer.getScoreboard().updateScores(time, yesBoatsPlayer.getLap(), laps);
+            player.getInventory().clear();
         });
         final Iterator<Location> lightsIterator = lightLocations.iterator();
         mainLoop = new BukkitRunnable() {
@@ -235,31 +231,30 @@ public class Arena implements ConfigurationSerializable, Cloneable {
                 if(inCountdown && secondCounter == 20) {
                     if(lightsIterator.hasNext()) {
                         setLamp(lightsIterator.next().getBlock(), true);
-                        players.forEach(p -> p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1));
+                        players.keySet().forEach(p -> p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1));
                     } else {
                         lightLocations.forEach(location -> setLamp(location.getBlock(), false));
-                        players.forEach(p -> p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 2));
+                        players.keySet().forEach(p -> p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 2));
                         startLineActivator.getBlock().setType(Material.RED_CONCRETE);
                         inCountdown = false;
                     }
                 }
-                players.forEach(player -> {
-                    GameData playerData = gameData.get(player);
+                players.values().forEach(player -> {
                     if(spectators.contains(player)) return;
-                    playerData.scoreboard.updateScores(timeLeft, playerData.lap, laps);
+                    player.getScoreboard().updateScores(timeLeft, player.getLap(), laps);
                     updateCheckpoint(player);
-                    boolean inVoid = player.getLocation().getY() < -16.0;
+                    boolean inVoid = player.getPlayer().getLocation().getY() < -16.0;
                     deathBarriers.forEach(deathBarrier -> {
                         if(inVoid || isIntersecting(player, deathBarrier))
                             respawn(player);
                     });
-                    playerData.previousLocation = player.getLocation().toVector();
+                    player.updatePreviousLocation();
                 });
 
                 if(secondCounter == 20 && !inCountdown) {
                     if(timeLeft <= 0) {
                         stopGame();
-                        players.forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] " + ChatColor.AQUA + "The timer has run out. Returning to the lobby."));
+                        players.keySet().forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] " + ChatColor.AQUA + "The timer has run out. Returning to the lobby."));
                     }
                     timeLeft--;
                 }
@@ -279,7 +274,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         if(state == State.RUNNING) mainLoop.cancel();
         if(state == State.IN_QUEUE) queueTimer.cancel();
         state = State.WAITING;
-        List<Player> playersCopy = new ArrayList<>(players);
+        Set<Player> playersCopy = new HashSet<>(players.keySet());
         for (Player p : playersCopy) setGameStatus(p, false);
         startLineActivator.getBlock().setType(Material.REDSTONE_BLOCK);
         lightLocations.forEach(l -> {
@@ -290,9 +285,9 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     }
 
 
-    private boolean isIntersecting(Player player, BoundingBox boundingBox) {
-        Vector previousPosition = gameData.get(player).previousLocation;
-        Vector currentPosition = player.getLocation().toVector();
+    private boolean isIntersecting(YesBoatsPlayer player, BoundingBox boundingBox) {
+        Vector previousPosition = player.getPreviousLocation();
+        Vector currentPosition = player.getPlayer().getLocation().toVector();
 
         if(currentPosition.equals(previousPosition)) return false;
         if(boundingBox.contains(currentPosition)) return true;
@@ -304,41 +299,30 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         return rayTraceResult != null;
     }
 
-    private void updateCheckpoint(Player player) {
-        GameData playerData = this.gameData.get(player);
-        int previousCheckpoint = playerData.checkpoint;
+    private void updateCheckpoint(YesBoatsPlayer player) {
+        int previousCheckpoint = player.getCheckpoint();
         int currentCheckpoint = previousCheckpoint == checkpointBoxes.size() - 1 ? 0 : previousCheckpoint + 1;
 
         if(!isIntersecting(player, checkpointBoxes.get(currentCheckpoint))) return;
 
         if(currentCheckpoint == 0) {
-            if(playerData.lap >= laps) setSpectator(player);
-            playerData.lap += 1;
+            if(player.getLap() >= laps) finish(player);
+            player.incrementLap();
         }
 
-        playerData.checkpoint = currentCheckpoint;
+        player.setCheckpoint(currentCheckpoint);
     }
 
-    private void hidePlayer(Player toHide, Player hideFor) {
-        hideFor.hidePlayer(plugin, toHide);
-        gameData.get(hideFor).hiddenPlayers.add(toHide);
-    }
+    private void finish(YesBoatsPlayer player) {
+        player.setSpectator();
 
-    private void setSpectator(Player player) {
-        removeVehicle(player);
-        player.setAllowFlight(true);
-        players.forEach(p -> hidePlayer(player, p));
-        spectators.add(player);
-
-        Firework firework = (Firework) world.spawnEntity(player.getLocation(), EntityType.FIREWORK);
+        Firework firework = (Firework) world.spawnEntity(player.getPlayer().getLocation(), EntityType.FIREWORK);
         FireworkMeta meta = firework.getFireworkMeta();
         meta.addEffect(FireworkEffect.builder().withTrail().withColor(Color.AQUA).with(FireworkEffect.Type.BALL).build());
         firework.setFireworkMeta(meta);
         firework.detonate();
 
-        GameData playerData = gameData.get(player);
-        playerData.hiddenPlayers.forEach(p -> p.showPlayer(plugin, player));
-        double totalSeconds = ((double) (System.currentTimeMillis() - playerData.time)) / 1000;
+        double totalSeconds = ((double) (System.currentTimeMillis() - player.getTime())) / 1000;
         int minutes = (int) totalSeconds / 60;
         int seconds = (int) totalSeconds % 60;
         String s = "th";
@@ -350,7 +334,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         else if(lastDigit == 3 && currentPlace != 13)
             s = "rd";
         final String suffix = s;
-        player.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
+        player.getPlayer().sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
                 + ChatColor.AQUA + "You have completed the race with a time of "
                 + ChatColor.YELLOW + minutes + ":" + seconds
                 + ChatColor.AQUA + ". That puts you in "
@@ -359,14 +343,14 @@ public class Arena implements ConfigurationSerializable, Cloneable {
                 + "\nYou can now spectate the other players or type "
                 + ChatColor.YELLOW + "/yb leave"
                 + ChatColor.AQUA + " to return to the lobby.");
-        players.forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
-                + ChatColor.AQUA + ChatColor.BOLD + player.getName()
+        players.keySet().forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
+                + ChatColor.AQUA + ChatColor.BOLD + player.getPlayer().getName()
                 + ChatColor.RESET + ChatColor.AQUA + " has completed the race in "
                 + ChatColor.YELLOW + currentPlace + suffix
                 + ChatColor.AQUA + " place."));
         currentPlace++;
         if(currentPlace > players.size()) {
-            players.forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] " + ChatColor.AQUA + "All Players have finished. Returning to lobby in 5 seconds."));
+            players.keySet().forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] " + ChatColor.AQUA + "All Players have finished. Returning to lobby in 5 seconds."));
             new BukkitRunnable() {
                 @Override
                 public void run() {
@@ -380,31 +364,30 @@ public class Arena implements ConfigurationSerializable, Cloneable {
      * Respawns the specified player at the last checkpoint they passed.
      * @param player The player to teleport
      */
-    private void respawn(Player player) {
-        if(player.getVehicle() == null) return;
-        if(player.getVehicle().getType() != EntityType.BOAT) return;
-        Boat oldBoat = (Boat) player.getVehicle();
-        GameData playerData = this.gameData.get(player);
+    private void respawn(YesBoatsPlayer player) {
+        if(player.getPlayer().getVehicle() == null) return;
+        if(player.getPlayer().getVehicle().getType() != EntityType.BOAT) return;
+        Boat oldBoat = (Boat) player.getPlayer().getVehicle();
 
         List<Entity> passengers = oldBoat.getPassengers().stream().filter(e -> e.getType() != EntityType.PLAYER).collect(Collectors.toList());
-        Boat newBoat = (Boat) world.spawnEntity(checkpointSpawns.get(playerData.checkpoint), EntityType.BOAT);
+        Boat newBoat = (Boat) world.spawnEntity(checkpointSpawns.get(player.getCheckpoint()), EntityType.BOAT);
 
-        playerData.canExitBoat = true;
-        oldBoat.removePassenger(player);
+        player.canExitBoat = true;
+        oldBoat.removePassenger(player.getPlayer());
 
-        player.teleport(checkpointSpawns.get(playerData.checkpoint));
-        player.setFireTicks(-1);
+        player.getPlayer().teleport(checkpointSpawns.get(player.getCheckpoint()));
+        player.getPlayer().setFireTicks(-1);
         newBoat.setWoodType(oldBoat.getWoodType());
 
-        playerData.canExitBoat = false;
-        playerData.canEnterBoat = true;
-        newBoat.addPassenger(player);
-        playerData.canEnterBoat = false;
+        player.canExitBoat = false;
+        player.canEnterBoat = true;
+        newBoat.addPassenger(player.getPlayer());
+        player.canEnterBoat = false;
 
         newBoat.setInvulnerable(true);
-        passengers.forEach(p -> {
-            oldBoat.removePassenger(p);
-            newBoat.addPassenger(p);
+        passengers.forEach(e -> {
+            oldBoat.removePassenger(e);
+            newBoat.addPassenger(e);
         });
         oldBoat.remove();
     }
@@ -537,22 +520,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         return m;
     }
 
-    private static class GameData {
-        public GameData(Player player, Scoreboard scoreboard) {
-            this.scoreboard = new ArenaScoreboard(player, scoreboard);
-            this.previousLocation = player.getLocation().toVector();
-        }
-
-        final ArenaScoreboard scoreboard;
-        final Set<Player> hiddenPlayers = new HashSet<>();
-        Vector previousLocation;
-        int checkpoint = 0;
-        int lap = 1;
-        long time = 0;
-        boolean canEnterBoat = true;
-        boolean canExitBoat = false;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -576,7 +543,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             Player player = (Player) event.getEntered();
             if(!Arena.get(player).isPresent()) return;
             Arena arena = Arena.get(player).get();
-            if(arena.gameData.get(player).canEnterBoat) return;
+            if(arena.players.get(player).canEnterBoat) return;
 
             event.setCancelled(true);
         }
@@ -587,7 +554,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             Player player = (Player) event.getExited();
             if(!Arena.get(player).isPresent()) return;
             Arena arena = Arena.get(player).get();
-            if(arena.gameData.get(player).canExitBoat) return;
+            if(arena.players.get(player).canExitBoat) return;
 
             event.setCancelled(true);
         }
@@ -600,7 +567,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             Player player = (Player) boat.getPassengers().stream().filter(p -> p instanceof Player).findAny().orElseThrow(() -> new NullPointerException("Boat is empty."));
             if(!Arena.get(player).isPresent()) return;
             Arena arena = Arena.get(player).get();
-            if(arena.gameData.get(player).canExitBoat) return;
+            if(arena.players.get(player).canExitBoat) return;
 
             event.setCancelled(true);
         }
