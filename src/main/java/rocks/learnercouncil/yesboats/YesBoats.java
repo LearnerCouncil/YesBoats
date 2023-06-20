@@ -63,6 +63,10 @@ public final class YesBoats extends JavaPlugin {
     public void onDisable() {
         // Plugin shutdown logic
         ArenaEditor.editors.values().forEach(a -> a.restore(false));
+        Arena.arenas.forEach(a -> {
+            if(a.getState() != Arena.State.WAITING) return;
+            a.stopGame();
+        });
         
         arenaCfg.getConfig().set("arenas", Arena.arenas);
         arenaCfg.saveConfig();

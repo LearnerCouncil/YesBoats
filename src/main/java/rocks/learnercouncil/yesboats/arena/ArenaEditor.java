@@ -24,6 +24,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.BoundingBox;
+import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 import rocks.learnercouncil.yesboats.YesBoats;
 
@@ -98,12 +99,12 @@ public class ArenaEditor {
         inv.setItem(2, getItem(Material.BARRIER,
                 BOLD.toString() + RED + "Death Barrier",
                 DARK_RED + "Click to set the selected",
-                DARK_RED + "bouding box to a death barrier"));
+                DARK_RED + "bounding box to a death barrier"));
 
         inv.setItem(3, getItem(Material.LIGHT_BLUE_BANNER,
                 BOLD.toString() + AQUA + "Checkpoint",
                 DARK_AQUA + "Click to set the selected",
-                DARK_AQUA + "bouding box to a checkpoint"));
+                DARK_AQUA + "bounding box to a checkpoint"));
 
         inv.setItem(27, getItem(Material.RED_CARPET, arena.minPlayers,
                 BOLD.toString() + RED + "Minimum Players",
@@ -261,12 +262,8 @@ public class ArenaEditor {
 
     private boolean boxRaycast(BoundingBox box) {
         if(box == null) return false;
-        for(double i = 0; i < 10; i += 0.5) {
-            Vector directionVector = player.getEyeLocation().getDirection();
-            Vector locationVector = player.getEyeLocation().toVector().add(directionVector.multiply(i));
-            if(box.contains(locationVector.toBlockVector())) return true;
-        }
-        return false;
+        RayTraceResult rayTraceResult = box.rayTrace(player.getEyeLocation().toVector(), player.getEyeLocation().getDirection(), 10);
+        return rayTraceResult != null;
     }
 
     private boolean offsetDisplayBox = false;
@@ -344,7 +341,7 @@ public class ArenaEditor {
         if(arena.minPlayers < 1) result.append("minPlayers, ");
         if(arena.laps < 1) result.append("laps, ");
         if(arena.time < 30 || arena.time > 3600) result.append("time, ");
-        if(arena.lobbyLocation == null) result.append("lobbyLoation, ");
+        if(arena.lobbyLocation == null) result.append("lobbyLocation, ");
         if(arena.world == null) result.append("world, ");
         if(arena.startLineActivator == null) result.append("startLineActivator, ");
         if(arena.startLocations == null || arena.startLocations.isEmpty()) result.append("startLocations, ");
@@ -493,13 +490,13 @@ public class ArenaEditor {
             if(action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
             if(!settingCheckpoint.contains(player)) {
                 editor.addBoundingBox(BoundingBoxType.CHECKPOINT);
-                player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +" Bounding box for chectpoint #" + arena.checkpointBoxes.size() + " set. Click again to set the spawnpoint.");
+                player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +" Bounding box for checkpoint #" + arena.checkpointBoxes.size() + " set. Click again to set the spawnpoint.");
                 settingCheckpoint.add(player);
             } else {
                 Location playerLocation = player.getLocation();
                 float yaw = (float) (Math.round(playerLocation.getYaw() / 22.5) * 22.5);
                 arena.checkpointSpawns.add(new Location(player.getWorld(), playerLocation.getBlockX(), playerLocation.getBlockY(), playerLocation.getBlockZ(), yaw, 0));
-                player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +" Spawnpoint for chectpoint #" + arena.checkpointBoxes.size() + " set. (" +
+                player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA +" Spawnpoint for checkpoint #" + arena.checkpointBoxes.size() + " set. (" +
                         playerLocation.getBlockX() + ", " +
                         playerLocation.getBlockY() + ", " +
                         playerLocation.getBlockZ() + ")");
@@ -604,13 +601,35 @@ public class ArenaEditor {
         }
 
         private void handleLightLocations(PlayerInteractEvent e, Action action, ArenaEditor editor, Arena arena) {
-            if(action != Action.RIGHT_CLICK_BLOCK && action != Action.LEFT_CLICK_BLOCK) return;
             if(e.getClickedBlock() == null) return;
             Block block = e.getClickedBlock();
-            editor.oldLightMaterials.put(block, block.getType());
-            block.setType(Material.REDSTONE_LAMP);
-            ((Lightable) block.getBlockData()).setLit(true);
-            arena.lightLocations.add(block.getLocation());
+
+            if(action == Action.RIGHT_CLICK_BLOCK) {
+                if(arena.lightLocations.contains(block.getLocation())) {
+                    e.getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(RED + "A Light already exists there!"));
+                    return;
+                }
+                editor.oldLightMaterials.put(block, block.getType());
+                block.setType(Material.REDSTONE_LAMP);
+                ((Lightable) block.getBlockData()).setLit(true);
+                arena.lightLocations.add(block.getLocation());
+                e.getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(YELLOW + "Light #" + arena.lightLocations.size() + " placed."));
+                return;
+            }
+            if(action == Action.LEFT_CLICK_BLOCK) {
+                if (!editor.arena.lightLocations.contains(block.getLocation())) {
+                    e.getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(RED + "A Light doesn't exist there!"));
+                    return;
+                }
+                e.getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(GOLD + "Light #" + (editor.arena.lightLocations.indexOf(block.getLocation()) + 1) + " removed."));
+                arena.lightLocations.remove(block.getLocation());
+                if (editor.oldLightMaterials.containsKey(block)) {
+                    block.setType(editor.oldLightMaterials.get(block));
+                    e.setCancelled(true);
+                    return;
+                }
+                e.setCancelled(false);
+            }
         }
     }
 }

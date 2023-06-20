@@ -26,6 +26,8 @@ public class PlayerManager {
         playerData.inventory = player.getInventory().getContents();
         player.getInventory().clear();
         initializeItems(player);
+        playerData.canFly = player.getAllowFlight();
+        player.setAllowFlight(false);
         playerData.gameMode = player.getGameMode();
         player.setGameMode(GameMode.ADVENTURE);
         playerData.xp = player.getExp();
@@ -40,8 +42,6 @@ public class PlayerManager {
         player.setFoodLevel(20);
         playerData.saturation = player.getSaturation();
         player.setSaturation(1.0f);
-        playerData.canFly = player.getAllowFlight();
-        player.setAllowFlight(false);
     }
 
     private static void initializeItems(Player player) {
@@ -88,6 +88,7 @@ public class PlayerManager {
     public static void restore(Player p) {
         PlayerData playerData = PlayerManager.playerData.get(p);
         p.getInventory().setContents(playerData.inventory);
+        p.setAllowFlight(playerData.canFly);
         p.setGameMode(playerData.gameMode);
         p.setExp(playerData.xp);
         p.setLevel(playerData.level);
@@ -95,7 +96,6 @@ public class PlayerManager {
         p.setHealth(playerData.health);
         p.setFoodLevel(playerData.hunger);
         p.setSaturation(playerData.saturation);
-        p.setAllowFlight(playerData.canFly);
     }
     
     private static class PlayerData {

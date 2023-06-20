@@ -31,16 +31,19 @@ public class JoinArg implements CommandArgument {
 
         Optional<Arena> arenaOptional = Arena.get(args[1]);
         if(!arenaOptional.isPresent()) return ARENA_NOT_EXIST;
+        Arena arena = arenaOptional.get();
+        if(arena.getState() == Arena.State.RUNNING) return ALREADY_RUNNING;
+
         if(args.length == 3) {
             String playername = args[2];
             Player player = plugin.getServer().getPlayer(playername);
             if(player == null) return PLAYER_NOT_FOUND;
             if(Arena.get(player).isPresent()) return CommandResult.ALREADY_IN_ARENA_OTHER;
-            arenaOptional.get().setGameStatus(player, true);
+            arena.setGameStatus(player, true);
             return joinedOther(playername);
         }
         if(Arena.get((Player) sender).isPresent()) return CommandResult.ALREADY_IN_ARENA_SELF;
-        arenaOptional.get().setGameStatus((Player) sender, true);
+        arena.setGameStatus((Player) sender, true);
         return JOINED;
     }
 
