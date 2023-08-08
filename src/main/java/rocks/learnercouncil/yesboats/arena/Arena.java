@@ -10,15 +10,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.vehicle.*;
-import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.util.BoundingBox;
-import org.bukkit.util.RayTraceResult;
-import org.bukkit.util.Vector;
-import rocks.learnercouncil.yesboats.PlayerManager;
-import rocks.learnercouncil.yesboats.Serializers;
 import rocks.learnercouncil.yesboats.YesBoats;
 import rocks.learnercouncil.yesboats.YesBoatsPlayer;
 
@@ -88,7 +83,11 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     private final Set<ArmorStand> queueStands = new HashSet<>();
     public BukkitTask queueTimer;
     private BukkitTask mainLoop;
-    private int currentPlace = 1;
+    private @Getter int currentPlace = 1;
+    public void incrementCurrentPlace() {
+        currentPlace++;
+    }
+    private int timeLeft;
 
     private @Getter State state = State.WAITING;
     public enum State {
@@ -116,7 +115,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
 
         players.put(player, new YesBoatsPlayer(this, player));
         playerArenaMap.put(player, this);
-        PlayerManager.set(player);
+        players.get(player).setData();
 
         spectators.forEach(s -> {
             player.hidePlayer(s);
@@ -141,7 +140,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         players.get(player).getHiddenPlayers().forEach(p -> player.showPlayer(plugin, p));
 
         player.teleport(lobbyLocation);
-        PlayerManager.restore(player);
+        players.get(player).restoreData();
 
         players.remove(player);
         playerArenaMap.remove(player);
@@ -204,66 +203,68 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         }.runTaskTimer(plugin, 0, 20);
     }
 
-
     public void startGame() {
         state = State.RUNNING;
         currentPlace = 1;
         queueStands.forEach(Entity::remove);
         queueStands.clear();
-        players.forEach((player, yesBoatsPlayer) -> {
-            player.playSound(player.getLocation(), Sound.BLOCK_TRIPWIRE_ATTACH, 1, 1);
-            yesBoatsPlayer.setTime(System.currentTimeMillis());
-            yesBoatsPlayer.getScoreboard().updateScores(time, yesBoatsPlayer.getLap(), laps);
-            player.getInventory().clear();
+        players.values().forEach((player) -> {
+            player.getPlayer().playSound(player.getPlayer().getLocation(), Sound.BLOCK_TRIPWIRE_ATTACH, 1, 1);
+            player.setTime(System.currentTimeMillis());
+            player.getScoreboard().updateScores(time, player.getLap(), laps);
+            player.getPlayer().getInventory().clear();
         });
         final Iterator<Location> lightsIterator = lightLocations.iterator();
+        timeLeft = time;
         mainLoop = new BukkitRunnable() {
-            boolean inCountdown = true;
+            boolean countdownFinished = false;
             int secondCounter = 0;
-            int timeLeft = time;
             @Override
             public void run() {
-                secondCounter = secondCounter < 20 ? ++secondCounter : 0;
-                if(inCountdown && secondCounter == 20) {
-                    if(lightsIterator.hasNext()) {
-                        setLamp(lightsIterator.next().getBlock(), true);
-                        players.keySet().forEach(p -> p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1));
-                    } else {
-                        lightLocations.forEach(location -> setLamp(location.getBlock(), false));
-                        players.keySet().forEach(p -> p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 2));
-                        startLineActivator.getBlock().setType(Material.RED_CONCRETE);
-                        inCountdown = false;
-                    }
+                secondCounter = (secondCounter < 20) ? ++secondCounter : 0;
+                if(secondCounter == 20) {
+                    if(!countdownFinished) countdownFinished = incrementCountdown(lightsIterator);
+                    else decrementTimer();
                 }
-                players.values().forEach(player -> {
-                    if(spectators.contains(player)) return;
-                    player.getScoreboard().updateScores(timeLeft, player.getLap(), laps);
-                    updateCheckpoint(player);
-                    boolean inVoid = player.getPlayer().getLocation().getY() < -16.0;
-                    deathBarriers.forEach(deathBarrier -> {
-                        if(inVoid || isIntersecting(player, deathBarrier))
-                            respawn(player);
-                    });
-                    player.updatePreviousLocation();
-                });
-
-                if(secondCounter == 20 && !inCountdown) {
-                    if(timeLeft <= 0) {
-                        stopGame();
-                        players.keySet().forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] " + ChatColor.AQUA + "The timer has run out. Returning to the lobby."));
-                    }
-                    timeLeft--;
-                }
+                players.values().forEach(p -> updatePlayer(p));
             }
         }.runTaskTimer(plugin, 0, 1);
-
     }
-
+    private void decrementTimer() {
+        if(timeLeft <= 0) {
+            stopGame();
+            players.keySet().forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] " + ChatColor.AQUA + "The timer has run out. Returning to the lobby."));
+        }
+        timeLeft--;
+    }
+    private boolean incrementCountdown(Iterator<Location> lightsIterator) {
+        if(lightsIterator.hasNext()) {
+            setLamp(lightsIterator.next().getBlock(), true);
+            players.keySet().forEach(p -> p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1));
+            return false;
+        } else {
+            lightLocations.forEach(location -> setLamp(location.getBlock(), false));
+            players.keySet().forEach(p -> p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 2));
+            startLineActivator.getBlock().setType(Material.RED_CONCRETE);
+            return true;
+        }
+    }
     private void setLamp(Block lamp, boolean lit) {
         if(lamp.getType() != Material.REDSTONE_LAMP) lamp.setType(Material.REDSTONE_LAMP);
         Lightable blockData = (Lightable) lamp.getBlockData();
         blockData.setLit(lit);
         lamp.setBlockData(blockData);
+    }
+    private void updatePlayer(YesBoatsPlayer player) {
+        if(spectators.contains(player)) return;
+        player.getScoreboard().updateScores(timeLeft, player.getLap(), laps);
+        player.updateCheckpoint(checkpointBoxes, laps);
+        boolean inVoid = player.getPlayer().getLocation().getY() < -16.0;
+        deathBarriers.forEach(deathBarrier -> {
+            if(inVoid || player.isIntersecting(deathBarrier))
+                player.respawn(checkpointSpawns);
+        });
+        player.updatePreviousLocation();
     }
 
     public void stopGame() {
@@ -278,110 +279,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             blockData.setLit(false);
             l.getBlock().setBlockData(blockData);
         });
-    }
-
-
-    private boolean isIntersecting(YesBoatsPlayer player, BoundingBox boundingBox) {
-        Vector previousPosition = player.getPreviousLocation();
-        Vector currentPosition = player.getPlayer().getLocation().toVector();
-
-        if(currentPosition.equals(previousPosition)) return false;
-        if(boundingBox.contains(currentPosition)) return true;
-
-        Vector direction = currentPosition.clone().subtract(previousPosition).normalize();
-        if(Double.isNaN(direction.getX())) direction = new Vector();
-
-        RayTraceResult rayTraceResult = boundingBox.rayTrace(previousPosition, direction, currentPosition.distance(previousPosition));
-        return rayTraceResult != null;
-    }
-
-    private void updateCheckpoint(YesBoatsPlayer player) {
-        int previousCheckpoint = player.getCheckpoint();
-        int currentCheckpoint = previousCheckpoint == checkpointBoxes.size() - 1 ? 0 : previousCheckpoint + 1;
-
-        if(!isIntersecting(player, checkpointBoxes.get(currentCheckpoint))) return;
-
-        if(currentCheckpoint == 0) {
-            if(player.getLap() >= laps) finish(player);
-            player.incrementLap();
-        }
-
-        player.setCheckpoint(currentCheckpoint);
-    }
-
-    private void finish(YesBoatsPlayer player) {
-        player.setSpectator();
-
-        Firework firework = (Firework) world.spawnEntity(player.getPlayer().getLocation(), EntityType.FIREWORK);
-        FireworkMeta meta = firework.getFireworkMeta();
-        meta.addEffect(FireworkEffect.builder().withTrail().withColor(Color.AQUA).with(FireworkEffect.Type.BALL).build());
-        firework.setFireworkMeta(meta);
-        firework.detonate();
-
-        double totalSeconds = ((double) (System.currentTimeMillis() - player.getTime())) / 1000;
-        int minutes = (int) totalSeconds / 60;
-        int seconds = (int) totalSeconds % 60;
-        String s = "th";
-        int lastDigit = currentPlace % 10;
-        if(lastDigit == 1 && currentPlace != 11)
-            s = "st";
-        else if(lastDigit == 2 && currentPlace != 12)
-            s = "nd";
-        else if(lastDigit == 3 && currentPlace != 13)
-            s = "rd";
-        final String suffix = s;
-        player.getPlayer().sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
-                + ChatColor.AQUA + "You have completed the race with a time of "
-                + ChatColor.YELLOW + minutes + ":" + seconds
-                + ChatColor.AQUA + ". That puts you in "
-                + ChatColor.YELLOW + currentPlace + suffix
-                + ChatColor.AQUA + " place."
-                + "\nYou can now spectate the other players or type "
-                + ChatColor.YELLOW + "/yb leave"
-                + ChatColor.AQUA + " to return to the lobby.");
-        players.keySet().forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
-                + ChatColor.AQUA + ChatColor.BOLD + player.getPlayer().getName()
-                + ChatColor.RESET + ChatColor.AQUA + " has completed the race in "
-                + ChatColor.YELLOW + currentPlace + suffix
-                + ChatColor.AQUA + " place."));
-        currentPlace++;
-        if(currentPlace > players.size()) {
-            players.keySet().forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] " + ChatColor.AQUA + "All Players have finished. Returning to lobby in 5 seconds."));
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    stopGame();
-                }
-            }.runTaskLater(plugin, 100);
-        }
-    }
-
-    private void respawn(YesBoatsPlayer player) {
-        if(player.getPlayer().getVehicle() == null) return;
-        if(player.getPlayer().getVehicle().getType() != EntityType.BOAT) return;
-        Boat oldBoat = (Boat) player.getPlayer().getVehicle();
-
-        List<Entity> passengers = oldBoat.getPassengers().stream().filter(e -> e.getType() != EntityType.PLAYER).collect(Collectors.toList());
-        Boat newBoat = (Boat) world.spawnEntity(checkpointSpawns.get(player.getCheckpoint()), EntityType.BOAT);
-
-        player.canExitBoat = true;
-        oldBoat.removePassenger(player.getPlayer());
-
-        player.getPlayer().teleport(checkpointSpawns.get(player.getCheckpoint()));
-        player.getPlayer().setFireTicks(-1);
-        newBoat.setWoodType(oldBoat.getWoodType());
-
-        player.canExitBoat = false;
-        player.canEnterBoat = true;
-        newBoat.addPassenger(player.getPlayer());
-        player.canEnterBoat = false;
-
-        newBoat.setInvulnerable(true);
-        passengers.forEach(e -> {
-            oldBoat.removePassenger(e);
-            newBoat.addPassenger(e);
-        });
-        oldBoat.remove();
     }
 
     @Override
@@ -480,8 +377,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         @EventHandler
         public void onVehicleBreak(VehicleDestroyEvent event) {
             Vehicle boat = event.getVehicle();
-            if(boat.getPassengers().isEmpty()) return;
-            if(!boat.getPassengers().stream().anyMatch(p -> p instanceof Player)) return;
+            if (boat.getPassengers().isEmpty() || boat.getPassengers().stream().noneMatch(p -> p instanceof Player)) return;
             Player player = (Player) boat.getPassengers().stream().filter(p -> p instanceof Player).findAny().orElseThrow(() -> new NullPointerException("Boat is empty."));
             if(!Arena.get(player).isPresent()) return;
             Arena arena = Arena.get(player).get();
