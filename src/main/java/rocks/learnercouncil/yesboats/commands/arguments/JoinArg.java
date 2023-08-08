@@ -39,11 +39,11 @@ public class JoinArg implements CommandArgument {
             Player player = plugin.getServer().getPlayer(playername);
             if(player == null) return PLAYER_NOT_FOUND;
             if(Arena.get(player).isPresent()) return CommandResult.ALREADY_IN_ARENA_OTHER;
-            arena.setGameStatus(player, true);
+            arena.add(player);
             return joinedOther(playername);
         }
         if(Arena.get((Player) sender).isPresent()) return CommandResult.ALREADY_IN_ARENA_SELF;
-        arena.setGameStatus((Player) sender, true);
+        arena.add((Player) sender);
         return JOINED;
     }
 

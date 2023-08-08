@@ -9,22 +9,23 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.vehicle.*;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 import rocks.learnercouncil.yesboats.PlayerManager;
+import rocks.learnercouncil.yesboats.Serializers;
 import rocks.learnercouncil.yesboats.YesBoats;
 import rocks.learnercouncil.yesboats.YesBoatsPlayer;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static rocks.learnercouncil.yesboats.Serializers.*;
 
 /**
  * Represents an arena
@@ -89,10 +90,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     private BukkitTask mainLoop;
     private int currentPlace = 1;
 
-    private State state = State.WAITING;
-    public State getState() {
-        return state;
-    }
+    private @Getter State state = State.WAITING;
     public enum State {
         WAITING, IN_QUEUE, RUNNING
     }
@@ -106,61 +104,59 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         signs.forEach(s -> s.update(state, players.size(), startLocations.size()));
     }
 
-    /**
-     * Adds/removes a player from the arena.
-     * @param player The player.
-     * @param join 'true' to add the player to the arena, 'false' to remove them.
-     */
-    public void setGameStatus(Player player, boolean join) {
-        if(join) {
-            //failsafe
-            if(players.size() == startLocations.size()) return;
-            if(!getStartLocation().isPresent()) return;
+    public void add(Player player) {
+        //failsafe
+        if(players.size() == startLocations.size()) return;
+        if(!getStartLocation().isPresent()) return;
 
-            Location startLocation = getStartLocation().get();
-            player.teleport(startLocation);
-            Boat boat = (Boat) world.spawnEntity(startLocation, EntityType.BOAT);
-            boat.setInvulnerable(true);
+        Location startLocation = getStartLocation().get();
+        player.teleport(startLocation);
+        Boat boat = (Boat) world.spawnEntity(startLocation, EntityType.BOAT);
+        boat.setInvulnerable(true);
 
-            players.put(player, new YesBoatsPlayer(this, player));
-            playerArenaMap.put(player, this);
-            PlayerManager.set(player);
+        players.put(player, new YesBoatsPlayer(this, player));
+        playerArenaMap.put(player, this);
+        PlayerManager.set(player);
 
-            spectators.forEach(s -> {
-                player.hidePlayer(s);
-                players.get(player).getHiddenPlayers().add(s);
-            });
+        spectators.forEach(s -> {
+            player.hidePlayer(s);
+            players.get(player).getHiddenPlayers().add(s);
+        });
 
-            ArmorStand queueStand = spawnArmorStand(startLocation);
-            queueStands.add(queueStand);
-            queueStand.addPassenger(boat);
-            boat.addPassenger(player);
-            boat.addPassenger(spawnArmorStand(startLocation));
+        ArmorStand queueStand = spawnArmorStand(startLocation);
+        queueStands.add(queueStand);
+        queueStand.addPassenger(boat);
+        boat.addPassenger(player);
+        boat.addPassenger(spawnArmorStand(startLocation));
 
-            players.get(player).canEnterBoat = false;
-            if(players.size() >= minPlayers && state == State.WAITING) startQueueTimer();
-        } else {
-            //failsafe
-            if(!Arena.get(player).isPresent()) return;
+        players.get(player).canEnterBoat = false;
+        if(players.size() >= minPlayers && state == State.WAITING) startQueueTimer();
+        updateSigns();
+    }
+    public void remove(Player player) {
+        //failsafe
+        if(!Arena.get(player).isPresent()) return;
 
-            removeVehicle(player);
-            players.get(player).getHiddenPlayers().forEach(p -> player.showPlayer(plugin, p));
+        removeVehicle(player);
+        players.get(player).getHiddenPlayers().forEach(p -> player.showPlayer(plugin, p));
 
-            player.teleport(lobbyLocation);
-            PlayerManager.restore(player);
+        player.teleport(lobbyLocation);
+        PlayerManager.restore(player);
 
-            players.remove(player);
-            playerArenaMap.remove(player);
-            spectators.remove(player);
-            player.setScoreboard(scoreboardManager.getMainScoreboard());
+        players.remove(player);
+        playerArenaMap.remove(player);
+        spectators.remove(player);
 
-            if(state == State.IN_QUEUE && players.size() < minPlayers) {
-                queueTimer.cancel();
-                players.values().forEach(p -> p.getScoreboard().updateScores(-1));
-                state = State.WAITING;
-            }
-            if(state == State.RUNNING && players.size() <= 0) stopGame();
+        ScoreboardManager scoreboardManager = plugin.getServer().getScoreboardManager();
+        assert scoreboardManager != null;
+        player.setScoreboard(scoreboardManager.getMainScoreboard());
+
+        if(state == State.IN_QUEUE && players.size() < minPlayers) {
+            queueTimer.cancel();
+            players.values().forEach(p -> p.getScoreboard().updateScores(-1));
+            state = State.WAITING;
         }
+        if(state == State.RUNNING && players.size() <= 0) stopGame();
         updateSigns();
     }
 
@@ -275,7 +271,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         if(state == State.IN_QUEUE) queueTimer.cancel();
         state = State.WAITING;
         Set<Player> playersCopy = new HashSet<>(players.keySet());
-        for (Player p : playersCopy) setGameStatus(p, false);
+        for (Player p : playersCopy) remove(p);
         startLineActivator.getBlock().setType(Material.REDSTONE_BLOCK);
         lightLocations.forEach(l -> {
             Lightable blockData = (Lightable) l.getBlock().getBlockData();
@@ -360,10 +356,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         }
     }
 
-    /**
-     * Respawns the specified player at the last checkpoint they passed.
-     * @param player The player to teleport
-     */
     private void respawn(YesBoatsPlayer player) {
         if(player.getPlayer().getVehicle() == null) return;
         if(player.getPlayer().getVehicle().getType() != EntityType.BOAT) return;
@@ -392,77 +384,12 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         oldBoat.remove();
     }
 
-    //Methods to change locations to and from their string representations
-    
-    private static String locToString(Location loc) {
-        return loc.getX() + ","
-                + loc.getY() + ","
-                + loc.getZ() + ","
-                + loc.getYaw() + ","
-                + loc.getPitch();
-    }
-    private static Location stringToLoc(String str, World world) {
-        String[] segments = str.split(",");
-        return new Location(
-                world,
-                Double.parseDouble(segments[0]),
-                Double.parseDouble(segments[1]),
-                Double.parseDouble(segments[2]),
-                Float.parseFloat(segments[3]),
-                Float.parseFloat(segments[4])
-        );
-    }
-
-    private static List<String> locToStringList(List<Location> locations) {
-        return locations.stream().map(Arena::locToString).collect(Collectors.toList());
-    }
-    private static List<Location> stringToLocList(List<String> strings, World world) {
-        return strings.stream().map(s -> stringToLoc(s, world)).collect(Collectors.toList());
-    }
-
-    private static String locToVectorString(Location loc) {
-        return loc.getBlockX() + ","
-                + loc.getBlockY() + ","
-                + loc.getBlockZ();
-    }
-    private static Location vectorStringToLoc(String str, World world) {
-        String[] segments = str.split(",");
-        return new Location(world,
-                Double.parseDouble(segments[0]),
-                Double.parseDouble(segments[1]),
-                Double.parseDouble(segments[2]));
-    }
-
-    private static List<String> locToVectorStringList(List<Location> locations) {
-        return locations.stream().map(Arena::locToVectorString).collect(Collectors.toList());
-    }
-    private static List<Location> vectorStringToLocList(List<String> strings, World world) {
-        return strings.stream().map(s -> vectorStringToLoc(s, world)).collect(Collectors.toList());
-    }
-
-    private static List<String> boxToStringList(List<BoundingBox> boxes) {
-        return boxes.stream()
-                .map(b -> ((int) b.getMinX()) + ","
-                        + ((int) b.getMinY()) + ","
-                        + ((int) b.getMinZ()) + ","
-                        + ((int) b.getMaxX()) + ","
-                        + ((int) b.getMaxY()) + ","
-                        + ((int) b.getMaxZ()))
-                .collect(Collectors.toList());
-    }
-    private static List<BoundingBox> stringToBoxList(List<String> strings) {
-        return strings.stream()
-                .map(s -> {
-                    String[] segments = s.split(",");
-                    return new BoundingBox(
-                            Double.parseDouble(segments[0]),
-                            Double.parseDouble(segments[1]),
-                            Double.parseDouble(segments[2]),
-                            Double.parseDouble(segments[3]),
-                            Double.parseDouble(segments[4]),
-                            Double.parseDouble(segments[5])
-                    );
-                }).collect(Collectors.toList());
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Arena arena = (Arena) o;
+        return name.equals(arena.name);
     }
 
     @SuppressWarnings({"unused", "unchecked"})
@@ -479,20 +406,19 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         laps = (int) m.get("laps");
         time = (int) m.get("time");
 
-        lobbyLocation = stringToLoc((String) m.get("lobbyLocation"), world);
-        startLineActivator = vectorStringToLoc((String) m.get("startLineActivator"), world);
+        lobbyLocation = toLocation((String) m.get("lobbyLocation"), world);
+        startLineActivator = toVectorLocation((String) m.get("startLineActivator"), world);
 
-        startLocations = stringToLocList((List<String>) m.get("startLocations"), world);
-        lightLocations = vectorStringToLocList((List<String>) m.get("lightLocations"), world);
+        startLocations = toLocationList((List<String>) m.get("startLocations"), world);
+        lightLocations = toVectorLocationList((List<String>) m.get("lightLocations"), world);
 
-        deathBarriers = stringToBoxList((List<String>) m.get("deathBarriers"));
+        deathBarriers = toBoxList((List<String>) m.get("deathBarriers"));
 
-        checkpointBoxes = stringToBoxList((List<String>) m.get("checkpointBoxes"));
-        checkpointSpawns = stringToLocList((List<String>) m.get("checkpointSpawns"), world);
+        checkpointBoxes = toBoxList((List<String>) m.get("checkpointBoxes"));
+        checkpointSpawns = toLocationList((List<String>) m.get("checkpointSpawns"), world);
 
         signs = ArenaSign.deserialize((List<String>) m.get("signs"));
     }
-
     @Override
     public Map<String, Object> serialize() {
         LinkedHashMap<String, Object> m = new LinkedHashMap<>();
@@ -503,29 +429,21 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         m.put("laps", laps);
         m.put("time", time);
 
-        m.put("lobbyLocation", locToString(lobbyLocation));
-        m.put("startLineActivator", locToVectorString(startLineActivator));
+        m.put("lobbyLocation", fromLocation(lobbyLocation));
+        m.put("startLineActivator", fromVectorLocation(startLineActivator));
 
         m.put("world", world.getName());
-        m.put("startLocations", locToStringList(startLocations));
+        m.put("startLocations", fromLocationList(startLocations));
 
-        m.put("lightLocations", locToVectorStringList(lightLocations));
+        m.put("lightLocations", fromVectorLocationList(lightLocations));
 
-        m.put("deathBarriers", boxToStringList(deathBarriers));
+        m.put("deathBarriers", fromBoxList(deathBarriers));
 
-        m.put("checkpointBoxes", boxToStringList(checkpointBoxes));
-        m.put("checkpointSpawns", locToStringList(checkpointSpawns));
+        m.put("checkpointBoxes", fromBoxList(checkpointBoxes));
+        m.put("checkpointSpawns", fromLocationList(checkpointSpawns));
 
         m.put("signs", ArenaSign.serialize(signs));
         return m;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Arena arena = (Arena) o;
-        return name.equals(arena.name);
     }
 
     public static class Events implements Listener {
@@ -534,7 +452,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         public void onPlayerQuit(PlayerQuitEvent event) {
             Player player = event.getPlayer();
             if(!Arena.get(player).isPresent()) return;
-            Arena.get(player).get().setGameStatus(player, false);
+            Arena.get(player).get().remove(player);
         }
 
         @EventHandler
