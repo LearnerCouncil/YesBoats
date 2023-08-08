@@ -25,6 +25,7 @@ public class YesBoatsCmd implements TabExecutor {
         result.add(new EditArg());
         result.add(new StartArg());
         result.add(new StopArg());
+        result.add(new ReportsArg());
 
         return result;
     }
@@ -32,7 +33,7 @@ public class YesBoatsCmd implements TabExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if(!(sender instanceof Player)) {
-            sender.sendMessage("This command must be executed by a player");
+            sender.sendMessage("[YesBoats] This command must be executed by a player");
             return true;
         }
         if(cmd.getName().equalsIgnoreCase("yesboats")) {

@@ -147,6 +147,9 @@ public class ArenaEditor {
                 BOLD.toString() + GREEN + "Save",
                 DARK_GREEN + "Stops editing, saving changes.",
                 DARK_GREEN + "(Arena must be valid)"));
+        inv.setItem(9, getItem(Material.FEATHER,
+                BOLD.toString() + GRAY + "Debug",
+                WHITE + "Turns on extra debugging capabilities."));
     }
 
 
@@ -454,6 +457,8 @@ public class ArenaEditor {
                     editor.initializeInventory();
                     editor.spawnStartBoats();
                     break;
+                case FEATHER:
+                    handleDebugToggle(arena, player);
                 default:
                     event.setCancelled(false);
             }
@@ -630,6 +635,11 @@ public class ArenaEditor {
                 }
                 e.setCancelled(false);
             }
+        }
+
+        private void handleDebugToggle(Arena arena, Player player) {
+            arena.debug = !arena.debug;
+            player.sendMessage(DARK_AQUA + "Toggled extended debug features: " + YELLOW + (arena.debug ? "On" : "Off"));
         }
     }
 }

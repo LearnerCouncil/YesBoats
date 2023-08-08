@@ -20,7 +20,8 @@ public class CommandResult {
             NOT_IN_ARENA_SELF = prefix + RED + "You are not in an arena.",
             NOT_IN_ARENA_OTHER = prefix + RED + "That player is not in an arena.",
             ALREADY_IN_ARENA_SELF = prefix + RED + "You are already in an arena.",
-            ALREADY_IN_ARENA_OTHER = prefix + RED + "That player is already in an arena.";
+            ALREADY_IN_ARENA_OTHER = prefix + RED + "That player is already in an arena.",
+            INVALID_NUMBER = prefix + RED + "Invalid number.";
 
 
     public static String joinedOther(String name) {
@@ -38,7 +39,8 @@ public class CommandResult {
             LEFT = prefix + AQUA + "Left the game.",
             EDITING = prefix + AQUA + "Now editing.",
             STARTED = prefix + AQUA + "Started the game.",
-            STOPPED = prefix + AQUA + "Stopped the game.";
+            STOPPED = prefix + AQUA + "Stopped the game.",
+            DISPLAYING_PATH = prefix + AQUA + "Now displaying debug path.";
 
 
 }
