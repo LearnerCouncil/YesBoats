@@ -40,7 +40,8 @@ public class CommandResult {
             EDITING = prefix + AQUA + "Now editing.",
             STARTED = prefix + AQUA + "Started the game.",
             STOPPED = prefix + AQUA + "Stopped the game.",
-            DISPLAYING_PATH = prefix + AQUA + "Now displaying debug path.";
+            DISPLAYING_PATH = prefix + AQUA + "Now displaying debug path.",
+            CLEARING_PATH = prefix + AQUA + "Clearing desplayed debug paths.";
 
 
 }

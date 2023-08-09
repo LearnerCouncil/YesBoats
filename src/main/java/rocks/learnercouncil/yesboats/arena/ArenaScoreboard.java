@@ -22,7 +22,7 @@ public class ArenaScoreboard {
     private Team startsIn, timeLeft, lap;
 
     private void initializeScores() {
-        queue = scoreboard.registerNewObjective("queue", "dummy", DARK_AQUA.toString() + BOLD + "YesBoats");
+        queue = scoreboard.registerNewObjective("queue", "dummy", DARK_AQUA.toString() + BOLD +"YesBoats");
         queueIdle = scoreboard.registerNewObjective("queueIdle", "dummy", DARK_AQUA.toString() + BOLD + "YesBoats");
         game = scoreboard.registerNewObjective("game", "dummy", DARK_AQUA.toString() + BOLD + "YesBoats");
 
@@ -59,7 +59,7 @@ public class ArenaScoreboard {
     }
 
     public void updateScores(int seconds, int currentLap, int maxLaps) {
-        if(queue.getDisplaySlot() != DisplaySlot.SIDEBAR) game.setDisplaySlot(DisplaySlot.SIDEBAR);
+        if(game.getDisplaySlot() != DisplaySlot.SIDEBAR) game.setDisplaySlot(DisplaySlot.SIDEBAR);
         timeLeft.setSuffix(YELLOW.toString() + (seconds/60) + ":" + (seconds%60 < 10 ? "0" + seconds%60 : seconds%60));
         lap.setSuffix(YELLOW.toString() + currentLap + "/" + maxLaps);
     }

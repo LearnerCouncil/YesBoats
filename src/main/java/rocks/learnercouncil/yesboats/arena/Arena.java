@@ -320,7 +320,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             if(isIntersecting(player, checkpointBoxes.get(nextNextCheckpoint))) {
                 playerData.debugPath.timestamp = System.currentTimeMillis();
                 DebugPath.debugPaths.add(playerData.debugPath);
-                player.sendMessage(ChatColor.RED + "[!!!] Debug report: " + playerData.debugPath + ", added.");
                 plugin.getServer().getOnlinePlayers().stream().filter(p -> p.hasPermission("yesboats.admin")).forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
                         + ChatColor.AQUA + "Player "
                         + ChatColor.YELLOW + player.getName()

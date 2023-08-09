@@ -34,6 +34,7 @@ public class ReportsArg implements CommandArgument {
         } else if(args.length == 3) {
             if(args[2].equalsIgnoreCase("clear")) {
                 DebugPath.clearDisplay();
+                return CommandResult.CLEARING_PATH;
             } else {
                 int index;
                 try {
