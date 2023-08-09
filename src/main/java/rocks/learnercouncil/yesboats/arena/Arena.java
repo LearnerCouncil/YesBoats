@@ -8,7 +8,6 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.vehicle.*;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -61,6 +60,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         copy.checkpointBoxes = this.checkpointBoxes;
         copy.checkpointSpawns = this.checkpointSpawns;
         copy.signs = this.signs;
+        copy.debug = this.debug;
         return copy;
     }
 
@@ -78,6 +78,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     protected List<BoundingBox> checkpointBoxes = new ArrayList<>();
     protected List<Location> checkpointSpawns = new ArrayList<>();
     protected Set<ArenaSign> signs = new HashSet<>();
+    protected boolean debug = false;
 
     //non-serialized fields
     private final List<Player> players = new ArrayList<>();
@@ -128,7 +129,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
 
             players.add(player);
             playerArenaMap.put(player, this);
-            gameData.put(player, new GameData(player, scoreboardManager.getNewScoreboard()));
+            gameData.put(player, new GameData(player, scoreboardManager.getNewScoreboard(), this));
             PlayerManager.set(player);
 
             spectators.forEach(s -> hidePlayer(s, player));
@@ -306,17 +307,38 @@ public class Arena implements ConfigurationSerializable, Cloneable {
 
     private void updateCheckpoint(Player player) {
         GameData playerData = this.gameData.get(player);
-        int previousCheckpoint = playerData.checkpoint;
-        int currentCheckpoint = previousCheckpoint == checkpointBoxes.size() - 1 ? 0 : previousCheckpoint + 1;
+        if(debug) {
+            playerData.debugPath.vectors.add(player.getLocation().toVector());
+            playerData.debugPath.ping = Math.max(playerData.debugPath.ping, player.getPing());
+        }
+        int currentCheckpoint = playerData.checkpoint;
+        int nextCheckpoint = (currentCheckpoint == checkpointBoxes.size() - 1) ? 0 : currentCheckpoint + 1;
 
-        if(!isIntersecting(player, checkpointBoxes.get(currentCheckpoint))) return;
+        if(!isIntersecting(player, checkpointBoxes.get(nextCheckpoint))) {
+            if(!debug) return;
+            int nextNextCheckpoint = (nextCheckpoint == checkpointBoxes.size() - 1) ? 0 : nextCheckpoint + 1;
+            if(isIntersecting(player, checkpointBoxes.get(nextNextCheckpoint))) {
+                playerData.debugPath.timestamp = System.currentTimeMillis();
+                DebugPath.debugPaths.add(playerData.debugPath);
+                plugin.getServer().getOnlinePlayers().stream().filter(p -> p.hasPermission("yesboats.admin")).forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
+                        + ChatColor.AQUA + "Player "
+                        + ChatColor.YELLOW + player.getName()
+                        + ChatColor.AQUA + " has skipped checkpoint "
+                        + ChatColor.YELLOW + "#" + nextCheckpoint
+                        + ChatColor.AQUA + "."));
+                playerData.checkpoint = nextNextCheckpoint;
+                playerData.debugPath = new DebugPath(player, this);
+            }
+            return;
+        }
 
-        if(currentCheckpoint == 0) {
+        if(nextCheckpoint == 0) {
             if(playerData.lap >= laps) setSpectator(player);
             playerData.lap += 1;
         }
-
-        playerData.checkpoint = currentCheckpoint;
+        if(!debug) return;
+        playerData.checkpoint = nextCheckpoint;
+        playerData.debugPath = new DebugPath(player, this);
     }
 
     private void hidePlayer(Player toHide, Player hideFor) {
@@ -508,6 +530,8 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         checkpointSpawns = stringToLocList((List<String>) m.get("checkpointSpawns"), world);
 
         signs = ArenaSign.deserialize((List<String>) m.get("signs"));
+
+        debug = m.containsKey("debug") ? (boolean) m.get("debug") : false;
     }
 
     @Override
@@ -534,13 +558,16 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         m.put("checkpointSpawns", locToStringList(checkpointSpawns));
 
         m.put("signs", ArenaSign.serialize(signs));
+
+        m.put("debug", debug);
         return m;
     }
 
     private static class GameData {
-        public GameData(Player player, Scoreboard scoreboard) {
+        public GameData(Player player, Scoreboard scoreboard, Arena arena) {
             this.scoreboard = new ArenaScoreboard(player, scoreboard);
             this.previousLocation = player.getLocation().toVector();
+            this.debugPath = new DebugPath(player, arena);
         }
 
         final ArenaScoreboard scoreboard;
@@ -551,6 +578,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         long time = 0;
         boolean canEnterBoat = true;
         boolean canExitBoat = false;
+        DebugPath debugPath;
     }
 
     @Override
