@@ -59,6 +59,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         copy.checkpointBoxes = this.checkpointBoxes;
         copy.checkpointSpawns = this.checkpointSpawns;
         copy.signs = this.signs;
+        copy.debug = this.debug;
         return copy;
     }
 
@@ -76,6 +77,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     protected List<BoundingBox> checkpointBoxes = new ArrayList<>();
     protected List<Location> checkpointSpawns = new ArrayList<>();
     protected Set<ArenaSign> signs = new HashSet<>();
+    protected boolean debug = false;
 
     //non-serialized fields
     private final @Getter Map<Player, YesBoatsPlayer> players = new HashMap<>();
@@ -258,7 +260,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     private void updatePlayer(YesBoatsPlayer player) {
         if(spectators.contains(player)) return;
         player.getScoreboard().updateScores(timeLeft, player.getLap(), laps);
-        player.updateCheckpoint(checkpointBoxes, laps);
+        player.updateCheckpoint(checkpointBoxes, laps, debug);
         boolean inVoid = player.getPlayer().getLocation().getY() < -16.0;
         deathBarriers.forEach(deathBarrier -> {
             if(inVoid || player.isIntersecting(deathBarrier))
@@ -315,6 +317,8 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         checkpointSpawns = toLocationList((List<String>) m.get("checkpointSpawns"), world);
 
         signs = ArenaSign.deserialize((List<String>) m.get("signs"));
+
+        debug = m.containsKey("debug") ? (boolean) m.get("debug") : false;
     }
     @Override
     public Map<String, Object> serialize() {
@@ -340,6 +344,8 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         m.put("checkpointSpawns", fromLocationList(checkpointSpawns));
 
         m.put("signs", ArenaSign.serialize(signs));
+
+        m.put("debug", debug);
         return m;
     }
 

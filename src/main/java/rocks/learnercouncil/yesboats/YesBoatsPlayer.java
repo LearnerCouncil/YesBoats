@@ -13,6 +13,7 @@ import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 import rocks.learnercouncil.yesboats.arena.Arena;
 import rocks.learnercouncil.yesboats.arena.ArenaScoreboard;
+import rocks.learnercouncil.yesboats.arena.DebugPath;
 
 import java.util.HashSet;
 import java.util.List;
@@ -22,12 +23,14 @@ import java.util.stream.Collectors;
 
 public class YesBoatsPlayer {
     private final YesBoats plugin = YesBoats.getInstance();
+
     private final @Getter Player player;
     private final @Getter Arena arena;
-
-    private @Getter boolean spectator = false;
     private final @Getter ArenaScoreboard scoreboard;
+
+    private @Getter DebugPath debugPath;
     private final @Getter Set<Player> hiddenPlayers = new HashSet<>();
+    private @Getter boolean spectator = false;
     private Vector previousLocation;
     public void updatePreviousLocation() {
         previousLocation = player.getLocation().toVector();
@@ -47,6 +50,7 @@ public class YesBoatsPlayer {
         this.arena = arena;
         this.player = player;
         this.scoreboard = new ArenaScoreboard(player, scoreboardManager.getNewScoreboard());
+        this.debugPath = new DebugPath(player, arena);
     }
 
     public void setSpectator() {
@@ -75,11 +79,31 @@ public class YesBoatsPlayer {
         return rayTraceResult != null;
     }
 
-    public void updateCheckpoint(List<BoundingBox> checkpointBoxes, int laps) {
+    public void updateCheckpoint(List<BoundingBox> checkpointBoxes, int laps, boolean debug) {
+        if(debug) {
+            debugPath.vectors.add(player.getLocation().toVector());
+            debugPath.ping = Math.max(debugPath.ping, player.getPing());
+        }
         int currentCheckpoint = checkpoint;
-        int nextCheckpoint = currentCheckpoint == checkpointBoxes.size() - 1 ? 0 : currentCheckpoint + 1;
+        int nextCheckpoint = (currentCheckpoint == checkpointBoxes.size() - 1) ? 0 : currentCheckpoint + 1;
 
-        if(!this.isIntersecting(checkpointBoxes.get(nextCheckpoint))) return;
+        if(!this.isIntersecting(checkpointBoxes.get(nextCheckpoint))) {
+            if(!debug) return;
+            int nextNextCheckpoint = (nextCheckpoint == checkpointBoxes.size() - 1) ? 0 : nextCheckpoint + 1;
+            if(isIntersecting(checkpointBoxes.get(nextNextCheckpoint))) {
+                debugPath.timestamp = System.currentTimeMillis();
+                DebugPath.debugPaths.add(debugPath);
+                plugin.getServer().getOnlinePlayers().stream().filter(p -> p.hasPermission("yesboats.admin")).forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
+                        + ChatColor.AQUA + "Player "
+                        + ChatColor.YELLOW + player.getName()
+                        + ChatColor.AQUA + " has skipped checkpoint "
+                        + ChatColor.YELLOW + "#" + nextCheckpoint
+                        + ChatColor.AQUA + "."));
+                checkpoint = nextNextCheckpoint;
+                debugPath = new DebugPath(player, arena);
+            }
+            return;
+        }
 
         if(nextCheckpoint == 0) {
             if(lap >= laps) finish();
@@ -87,6 +111,8 @@ public class YesBoatsPlayer {
         }
 
         checkpoint = nextCheckpoint;
+        if(debug) debugPath = new DebugPath(player, arena);
+
     }
 
     public void respawn(List<Location> checkpointSpawns) {
