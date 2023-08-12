@@ -315,8 +315,8 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         int nextCheckpoint = (currentCheckpoint == checkpointBoxes.size() - 1) ? 0 : currentCheckpoint + 1;
 
         if(!isIntersecting(player, checkpointBoxes.get(nextCheckpoint))) {
-            if(!debug) return;
             int nextNextCheckpoint = (nextCheckpoint == checkpointBoxes.size() - 1) ? 0 : nextCheckpoint + 1;
+            if(!debug) return;
             if(isIntersecting(player, checkpointBoxes.get(nextNextCheckpoint))) {
                 playerData.debugPath.timestamp = System.currentTimeMillis();
                 DebugPath.debugPaths.add(playerData.debugPath);
@@ -336,8 +336,8 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             if(playerData.lap >= laps) setSpectator(player);
             playerData.lap += 1;
         }
-        if(!debug) return;
         playerData.checkpoint = nextCheckpoint;
+        if(!debug) return;
         playerData.debugPath = new DebugPath(player, this);
     }
 
