@@ -35,12 +35,12 @@ public class LeaveArg implements CommandArgument {
             if(player == null) return PLAYER_NOT_FOUND;
             arenaOptional = Arena.get(player);
             if(!arenaOptional.isPresent()) return CommandResult.NOT_IN_ARENA_OTHER;
-            arenaOptional.get().setGameStatus(player, false);
+            arenaOptional.get().remove(player);
             return leftOther(playername);
         }
         arenaOptional = Arena.get((Player) sender);
         if(!arenaOptional.isPresent()) return NOT_IN_ARENA_SELF;
-        arenaOptional.get().setGameStatus((Player) sender, false);
+        arenaOptional.get().remove((Player) sender);
         return LEFT;
     }
 
