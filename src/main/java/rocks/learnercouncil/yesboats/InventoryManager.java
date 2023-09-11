@@ -3,8 +3,8 @@ package rocks.learnercouncil.yesboats;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
-import org.bukkit.TreeSpecies;
 import org.bukkit.entity.Boat;
+import org.bukkit.entity.ChestBoat;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -12,17 +12,18 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
+import rocks.learnercouncil.yesboats.arena.Arena;
 
 import java.util.*;
 
-public class PlayerManager {
+public class InventoryManager {
     public static HashMap<Player, PlayerData> playerData = new HashMap<>();
 
     private static final List<ItemStack> items = new ArrayList<>();
 
     public static void set(Player player) {
         if(!playerData.containsKey(player)) playerData.put(player, new PlayerData());
-        PlayerData playerData = PlayerManager.playerData.get(player);
+        PlayerData playerData = InventoryManager.playerData.get(player);
         playerData.inventory = player.getInventory().getContents();
         player.getInventory().clear();
         initializeItems(player);
@@ -52,7 +53,7 @@ public class PlayerManager {
 
         inventory.setItem(20, getItem(Material.SPRUCE_BOAT,
                 ChatColor.BOLD.toString() + ChatColor.GREEN + "Spruce",
-                ChatColor.DARK_GREEN + "Click to set your boat's wood type to Spruce."));
+                ChatColor.DARK_GREEN + "Click to set your boat's wood type to spruce."));
 
         inventory.setItem(21, getItem(Material.BIRCH_BOAT,
                 ChatColor.BOLD.toString() + ChatColor.GREEN + "Birch",
@@ -86,7 +87,7 @@ public class PlayerManager {
     }
 
     public static void restore(Player p) {
-        PlayerData playerData = PlayerManager.playerData.get(p);
+        PlayerData playerData = InventoryManager.playerData.get(p);
         p.getInventory().setContents(playerData.inventory);
         p.setAllowFlight(playerData.canFly);
         p.setGameMode(playerData.gameMode);
@@ -117,32 +118,37 @@ public class PlayerManager {
             if(!items.contains(e.getCurrentItem())) return;
             if(!(e.getWhoClicked() instanceof Player)) return;
             Player player = (Player) e.getWhoClicked();
+            if(Arena.get(player).isEmpty()) return;
+            Arena arena = Arena.get(player).get();
+            if(arena.getState() != Arena.State.IN_QUEUE) return;
             if(!player.isInsideVehicle()) return;
             if(!(player.getVehicle() instanceof Boat)) return;
             Boat vehicle = (Boat) player.getVehicle();
-            switch (Objects.requireNonNull(e.getCurrentItem()).getType()) {
-                case OAK_BOAT:
-                    vehicle.setWoodType(TreeSpecies.GENERIC);
-                    break;
-                case SPRUCE_BOAT:
-                    vehicle.setWoodType(TreeSpecies.REDWOOD);
-                    break;
-                case BIRCH_BOAT:
-                    vehicle.setWoodType(TreeSpecies.BIRCH);
-                    break;
-                case JUNGLE_BOAT:
-                    vehicle.setWoodType(TreeSpecies.JUNGLE);
-                    break;
-                case ACACIA_BOAT:
-                    vehicle.setWoodType(TreeSpecies.ACACIA);
-                    break;
-                case DARK_OAK_BOAT:
-                    vehicle.setWoodType(TreeSpecies.DARK_OAK);
-                    break;
-                default:
-                    return;
-            }
+
+            Material itemType = Objects.requireNonNull(e.getCurrentItem()).getType();
+            boolean vehicleHasChest = player.getVehicle() instanceof ChestBoat;
+            boolean itemHasChest = itemType.toString().contains("CHEST");
+            Boat.Type boatType = switch (itemType) {
+                case OAK_BOAT, OAK_CHEST_BOAT -> Boat.Type.OAK;
+                case SPRUCE_BOAT, SPRUCE_CHEST_BOAT -> Boat.Type.SPRUCE;
+                case BIRCH_BOAT, BIRCH_CHEST_BOAT -> Boat.Type.BIRCH;
+                case JUNGLE_BOAT, JUNGLE_CHEST_BOAT -> Boat.Type.JUNGLE;
+                case ACACIA_BOAT, ACACIA_CHEST_BOAT -> Boat.Type.ACACIA;
+                case DARK_OAK_BOAT, DARK_OAK_CHEST_BOAT -> Boat.Type.DARK_OAK;
+                case MANGROVE_BOAT, MANGROVE_CHEST_BOAT -> Boat.Type.MANGROVE;
+                case CHERRY_BOAT, CHERRY_CHEST_BOAT -> Boat.Type.CHERRY;
+                case BAMBOO_RAFT, BAMBOO_CHEST_RAFT -> Boat.Type.BAMBOO;
+                default -> vehicle.getBoatType();
+            };
+
+            if(vehicleHasChest != itemHasChest) respawnBoat(itemHasChest, boatType);
+            else vehicle.setBoatType(boatType);
+
             e.setCancelled(true);
+        }
+
+        private void respawnBoat(boolean hasChest, Boat.Type type) {
+            //TODO enable entering and exiting of vehicles for player and kill and respawn the boat to the correct type.
         }
     }
 }

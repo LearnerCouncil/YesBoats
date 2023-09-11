@@ -6,7 +6,7 @@
 
     <groupId>rocks.learnercouncil</groupId>
     <artifactId>YesBoats</artifactId>
-    <version>1.4</version>
+    <version>1.5.0</version>
     <packaging>jar</packaging>
 
     <name>Yesboats</name>
@@ -24,8 +24,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <source>14</source>
+                    <target>14</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -68,13 +68,13 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.17.1-R0.1-SNAPSHOT</version>
+            <version>1.20.1-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>RELEASE</version>
+            <version>1.18.26</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>

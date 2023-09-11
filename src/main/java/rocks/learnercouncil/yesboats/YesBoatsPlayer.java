@@ -128,7 +128,7 @@ public class YesBoatsPlayer {
 
         player.teleport(checkpointSpawns.get(checkpoint));
         player.setFireTicks(-1);
-        newBoat.setWoodType(oldBoat.getWoodType());
+        newBoat.setBoatType(oldBoat.getBoatType());
 
         canExitBoat = false;
         canEnterBoat = true;
