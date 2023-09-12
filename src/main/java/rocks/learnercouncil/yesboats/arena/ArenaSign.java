@@ -107,7 +107,6 @@ public class ArenaSign {
         private String[] getValidText(Sign sign) {
             String[] frontText = getValidText(sign.getSide(Side.FRONT).getLines());
             String[] backText = getValidText(sign.getSide(Side.BACK).getLines());
-            System.out.println("Text: " + Arrays.toString(frontText) + ", " + Arrays.toString(backText));
             if(frontText.length != 0) return frontText;
             if(backText.length != 0) return backText;
             return new String[0];
@@ -115,7 +114,6 @@ public class ArenaSign {
 
         private String[] getValidText(String[] lines) {
             String[] text = Arrays.stream(lines).map(ChatColor::stripColor).toArray(String[]::new);
-            System.out.println("Checking Text: " + Arrays.toString(text) + ", is valid: " + (text[0].equalsIgnoreCase("[YesBoats]") && Arena.get(text[1]).isPresent()));
             return text[0].equalsIgnoreCase("[YesBoats]") && Arena.get(text[1]).isPresent() ? text : new String[0];
         }
 
