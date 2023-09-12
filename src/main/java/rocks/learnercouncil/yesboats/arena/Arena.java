@@ -277,6 +277,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         for (Player p : playersCopy) remove(p);
         startLineActivator.getBlock().setType(Material.REDSTONE_BLOCK);
         lightLocations.forEach(l -> {
+            if(!(l.getBlock().getBlockData() instanceof Lightable)) return;
             Lightable blockData = (Lightable) l.getBlock().getBlockData();
             blockData.setLit(false);
             l.getBlock().setBlockData(blockData);
