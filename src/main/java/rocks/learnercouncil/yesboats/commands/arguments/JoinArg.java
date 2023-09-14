@@ -9,7 +9,6 @@ import rocks.learnercouncil.yesboats.arena.Arena;
 import rocks.learnercouncil.yesboats.commands.CommandArgument;
 import rocks.learnercouncil.yesboats.commands.CommandResult;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -30,7 +29,7 @@ public class JoinArg implements CommandArgument {
         if(args.length > (isAdmin ? 3 : 2)) return TOO_MANY_ARGS;
 
         Optional<Arena> arenaOptional = Arena.get(args[1]);
-        if(!arenaOptional.isPresent()) return ARENA_NOT_EXIST;
+        if(arenaOptional.isEmpty()) return ARENA_NOT_EXIST;
         Arena arena = arenaOptional.get();
         if(arena.getState() == Arena.State.RUNNING) return ALREADY_RUNNING;
 
@@ -55,6 +54,6 @@ public class JoinArg implements CommandArgument {
             return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
         if(args.length == 3 && args[0].equalsIgnoreCase("join") && sender.hasPermission("yesboats.commands.yesboats.admin"))
             return plugin.getServer().getOnlinePlayers().stream().map(HumanEntity::getName).collect(Collectors.toList());
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 }

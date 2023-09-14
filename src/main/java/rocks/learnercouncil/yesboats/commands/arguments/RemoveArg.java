@@ -5,7 +5,6 @@ import org.bukkit.command.CommandSender;
 import rocks.learnercouncil.yesboats.arena.Arena;
 import rocks.learnercouncil.yesboats.commands.CommandArgument;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -21,7 +20,7 @@ public class RemoveArg implements CommandArgument {
         if(args.length < 2) return TOO_FEW_ARGS;
         if(args.length > 2) return TOO_MANY_ARGS;
         Optional<Arena> arenaOptional = Arena.get(args[1]);
-        if(!arenaOptional.isPresent()) return ARENA_NOT_EXIST;
+        if(arenaOptional.isEmpty()) return ARENA_NOT_EXIST;
         Arena.arenas.remove(arenaOptional.get());
         return REMOVED;
     }
@@ -32,6 +31,6 @@ public class RemoveArg implements CommandArgument {
             return Collections.singletonList("remove");
         if(args.length == 2 && args[0].equalsIgnoreCase("remove"))
             return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 }

@@ -8,7 +8,6 @@ import rocks.learnercouncil.yesboats.arena.ArenaEditor;
 import rocks.learnercouncil.yesboats.commands.CommandArgument;
 import rocks.learnercouncil.yesboats.commands.CommandResult;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -32,6 +31,6 @@ public class AddArg implements CommandArgument {
     public List<String> tabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
         if(args.length == 1)
             return Collections.singletonList("add");
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 }

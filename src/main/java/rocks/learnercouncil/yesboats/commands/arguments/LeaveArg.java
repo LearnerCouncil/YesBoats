@@ -9,7 +9,6 @@ import rocks.learnercouncil.yesboats.arena.Arena;
 import rocks.learnercouncil.yesboats.commands.CommandArgument;
 import rocks.learnercouncil.yesboats.commands.CommandResult;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -34,12 +33,12 @@ public class LeaveArg implements CommandArgument {
             Player player = plugin.getServer().getPlayer(playername);
             if(player == null) return PLAYER_NOT_FOUND;
             arenaOptional = Arena.get(player);
-            if(!arenaOptional.isPresent()) return CommandResult.NOT_IN_ARENA_OTHER;
+            if(arenaOptional.isEmpty()) return CommandResult.NOT_IN_ARENA_OTHER;
             arenaOptional.get().remove(player);
             return leftOther(playername);
         }
         arenaOptional = Arena.get((Player) sender);
-        if(!arenaOptional.isPresent()) return NOT_IN_ARENA_SELF;
+        if(arenaOptional.isEmpty()) return NOT_IN_ARENA_SELF;
         arenaOptional.get().remove((Player) sender);
         return LEFT;
     }
@@ -50,6 +49,6 @@ public class LeaveArg implements CommandArgument {
             return Collections.singletonList("leave");
         if(args.length == 2 && args[0].equalsIgnoreCase("leave") && sender.hasPermission("yesboats.commands.yesboats.admin"))
             return plugin.getServer().getOnlinePlayers().stream().map(HumanEntity::getName).collect(Collectors.toList());
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 }

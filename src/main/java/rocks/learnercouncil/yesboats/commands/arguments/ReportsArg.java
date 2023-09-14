@@ -27,23 +27,25 @@ public class ReportsArg implements CommandArgument {
         if(args.length < 2) return TOO_FEW_ARGS;
 
         String name = args[1];
-        if(!Arena.get(name).isPresent()) return ARENA_NOT_EXIST;
+        if(Arena.get(name).isEmpty()) return ARENA_NOT_EXIST;
+
         if(args.length == 2) {
             sender.spigot().sendMessage(getReports());
             return " ";
-        } else if(args.length == 3) {
+        }
+
+        if(args.length == 3) {
             if(args[2].equalsIgnoreCase("clear")) {
                 DebugPath.clearDisplay();
                 return CommandResult.CLEARING_PATH;
-            } else {
-                int index;
-                try {
-                    index = Integer.parseInt(args[2]);
-                } catch (NumberFormatException e) {
-                    return CommandResult.INVALID_NUMBER;
-                }
+            }
+            int index;
+            try {
+                index = Integer.parseInt(args[2]);
                 DebugPath.display(index, (Player) sender);
                 return CommandResult.DISPLAYING_PATH;
+            } catch (NumberFormatException e) {
+                return CommandResult.INVALID_NUMBER;
             }
         }
         return TOO_MANY_ARGS;
