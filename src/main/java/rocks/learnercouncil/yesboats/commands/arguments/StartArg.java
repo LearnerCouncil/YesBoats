@@ -1,5 +1,6 @@
 package rocks.learnercouncil.yesboats.commands.arguments;
 
+import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -15,8 +16,8 @@ import static rocks.learnercouncil.yesboats.commands.CommandResult.*;
 
 public class StartArg implements CommandArgument {
     @Override
-    public String execute(CommandSender sender, Command cmd, String label, String[] args) {
-        if(!args[0].equalsIgnoreCase("start")) return "";
+    public BaseComponent[] execute(CommandSender sender, Command cmd, String label, String[] args) {
+        if(!args[0].equalsIgnoreCase("start")) return NONE;
         if(!sender.hasPermission("yesboats.commands.yesboats.admin")) return NO_PERMISSION;
         if(args.length > 2) return TOO_MANY_ARGS;
 

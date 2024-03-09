@@ -137,23 +137,23 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         if(players.size() >= minPlayers && state == State.WAITING) startQueueTimer();
         updateSigns();
     }
-    public void remove(Player player) {
+    public void remove(Player leavingPlayer) {
         //failsafe
-        if(!Arena.get(player).isPresent()) return;
+        if(!Arena.get(leavingPlayer).isPresent()) return;
 
-        removeVehicle(player);
-        players.get(player).getHiddenPlayers().forEach(p -> player.showPlayer(plugin, p));
+        removeVehicle(leavingPlayer);
+        players.keySet().forEach(p -> p.showPlayer(plugin, leavingPlayer));
 
-        player.teleport(lobbyLocation);
-        players.get(player).restoreData();
+        leavingPlayer.teleport(lobbyLocation);
+        players.get(leavingPlayer).restoreData();
 
-        players.remove(player);
-        playerArenaMap.remove(player);
-        spectators.remove(player);
+        players.remove(leavingPlayer);
+        playerArenaMap.remove(leavingPlayer);
+        spectators.remove(leavingPlayer);
 
         ScoreboardManager scoreboardManager = plugin.getServer().getScoreboardManager();
         assert scoreboardManager != null;
-        player.setScoreboard(scoreboardManager.getMainScoreboard());
+        leavingPlayer.setScoreboard(scoreboardManager.getMainScoreboard());
 
         if(state == State.IN_QUEUE && players.size() < minPlayers) {
             queueTimer.cancel();
