@@ -1,10 +1,7 @@
 package rocks.learnercouncil.yesboats.arena;
 
 import org.bukkit.entity.Player;
-import org.bukkit.scoreboard.DisplaySlot;
-import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
+import org.bukkit.scoreboard.*;
 
 import static org.bukkit.ChatColor.*;
 
@@ -22,9 +19,9 @@ public class ArenaScoreboard {
     private Team startsIn, timeLeft, lap;
 
     private void initializeScores() {
-        queue = scoreboard.registerNewObjective("queue", "dummy", DARK_AQUA.toString() + BOLD +"YesBoats");
-        queueIdle = scoreboard.registerNewObjective("queueIdle", "dummy", DARK_AQUA.toString() + BOLD + "YesBoats");
-        game = scoreboard.registerNewObjective("game", "dummy", DARK_AQUA.toString() + BOLD + "YesBoats");
+        queue = scoreboard.registerNewObjective("queue", Criteria.DUMMY, DARK_AQUA.toString() + BOLD +"YesBoats");
+        queueIdle = scoreboard.registerNewObjective("queueIdle", Criteria.DUMMY, DARK_AQUA.toString() + BOLD + "YesBoats");
+        game = scoreboard.registerNewObjective("game", Criteria.DUMMY, DARK_AQUA.toString() + BOLD + "YesBoats");
 
         startsIn = scoreboard.registerNewTeam("YBSB_startsIn");
         timeLeft = scoreboard.registerNewTeam("YBSB_timeLeft");
