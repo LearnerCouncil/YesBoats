@@ -88,7 +88,9 @@ public class ArenaSign {
         try {
             Block block = world.getBlockAt(Integer.parseInt(segments[1]), Integer.parseInt(segments[2]), Integer.parseInt(segments[3]));
             if(!(block.getState() instanceof Sign)) return Optional.empty();
-            return Optional.of(new ArenaSign((Sign) block.getState(), legacy ? Side.FRONT : Side.valueOf(segments[4])));
+            final Sign state = (Sign) block.getState();
+            if(legacy) state.setWaxed(true);
+            return Optional.of(new ArenaSign(state, legacy ? Side.FRONT : Side.valueOf(segments[4])));
         } catch (IllegalArgumentException ignored) {
             return Optional.empty();
         }
@@ -135,8 +137,9 @@ public class ArenaSign {
 
         @EventHandler
         public void onSignEdit(SignChangeEvent event) {
+            if(!event.getPlayer().hasPermission("yesboats.joinsign")) return;
             if(getValidText(event.getLines()).length == 0) return;
-
+            
             assert Arena.get(event.getLine(1)).isPresent();
             Arena arena = Arena.get(event.getLine(1)).get();
             ArenaSign sign = new ArenaSign((Sign) event.getBlock().getState(), event.getSide());

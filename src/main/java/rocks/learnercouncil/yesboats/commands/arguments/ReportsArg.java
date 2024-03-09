@@ -1,8 +1,6 @@
 package rocks.learnercouncil.yesboats.commands.arguments;
 
-import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -21,8 +19,8 @@ public class ReportsArg implements CommandArgument {
 
 
     @Override
-    public String execute(CommandSender sender, Command cmd, String label, String[] args) {
-        if(!args[0].equalsIgnoreCase("reports")) return "";
+    public BaseComponent[] execute(CommandSender sender, Command cmd, String label, String[] args) {
+        if(!args[0].equalsIgnoreCase("reports")) return NONE;
         if(!sender.hasPermission("yesboats.commands.yesboats.admin")) return NO_PERMISSION;
         if(args.length < 2) return TOO_FEW_ARGS;
 
@@ -30,8 +28,7 @@ public class ReportsArg implements CommandArgument {
         if(Arena.get(name).isEmpty()) return ARENA_NOT_EXIST;
 
         if(args.length == 2) {
-            sender.spigot().sendMessage(getReports());
-            return " ";
+            return CommandResult.getReports();
         }
 
         if(args.length == 3) {
@@ -49,16 +46,6 @@ public class ReportsArg implements CommandArgument {
             }
         }
         return TOO_MANY_ARGS;
-    }
-
-    private BaseComponent[] getReports() {
-        ComponentBuilder message = new ComponentBuilder("[YesBoats] ").color(ChatColor.DARK_AQUA)
-                .append("====================\n").color(ChatColor.AQUA);
-        for(DebugPath path : DebugPath.debugPaths) {
-            message.append(path.toReport()).append("\n");
-        }
-        message.append("====================").color(ChatColor.AQUA);
-        return message.create();
     }
 
     @Override

@@ -106,54 +106,54 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         signs.forEach(s -> s.update(state, players.size(), startLocations.size()));
     }
 
-    public void add(Player player) {
+    public void add(Player joiningPlayer) {
         //failsafe
         if(players.size() == startLocations.size()) return;
         if(!getStartLocation().isPresent()) return;
 
         Location startLocation = getStartLocation().get();
-        player.teleport(startLocation);
+        joiningPlayer.teleport(startLocation);
         Boat boat = (Boat) world.spawnEntity(startLocation, EntityType.BOAT);
         boat.setInvulnerable(true);
 
-        players.put(player, new YesBoatsPlayer(this, player));
-        playerArenaMap.put(player, this);
-        players.get(player).setData();
+        players.put(joiningPlayer, new YesBoatsPlayer(this, joiningPlayer));
+        playerArenaMap.put(joiningPlayer, this);
+        players.get(joiningPlayer).setData();
 
-        InventoryManager.initialize(player);
+        InventoryManager.initialize(joiningPlayer);
 
         spectators.forEach(s -> {
-            player.hidePlayer(s);
-            players.get(player).getHiddenPlayers().add(s);
+            joiningPlayer.hidePlayer(s);
+            players.get(joiningPlayer).getHiddenPlayers().add(s);
         });
 
         ArmorStand queueStand = spawnArmorStand(startLocation);
         queueStands.add(queueStand);
         queueStand.addPassenger(boat);
-        boat.addPassenger(player);
+        boat.addPassenger(joiningPlayer);
         boat.addPassenger(spawnArmorStand(startLocation));
 
-        players.get(player).canEnterBoat = false;
+        players.get(joiningPlayer).canEnterBoat = false;
         if(players.size() >= minPlayers && state == State.WAITING) startQueueTimer();
         updateSigns();
     }
-    public void remove(Player player) {
+    public void remove(Player leavingPlayer) {
         //failsafe
-        if(!Arena.get(player).isPresent()) return;
+        if(!Arena.get(leavingPlayer).isPresent()) return;
 
-        removeVehicle(player);
-        players.get(player).getHiddenPlayers().forEach(p -> player.showPlayer(plugin, p));
+        removeVehicle(leavingPlayer);
+        players.keySet().forEach(p -> p.showPlayer(plugin, leavingPlayer));
 
-        player.teleport(lobbyLocation);
-        players.get(player).restoreData();
+        leavingPlayer.teleport(lobbyLocation);
+        players.get(leavingPlayer).restoreData();
 
-        players.remove(player);
-        playerArenaMap.remove(player);
-        spectators.remove(player);
+        players.remove(leavingPlayer);
+        playerArenaMap.remove(leavingPlayer);
+        spectators.remove(leavingPlayer);
 
         ScoreboardManager scoreboardManager = plugin.getServer().getScoreboardManager();
         assert scoreboardManager != null;
-        player.setScoreboard(scoreboardManager.getMainScoreboard());
+        leavingPlayer.setScoreboard(scoreboardManager.getMainScoreboard());
 
         if(state == State.IN_QUEUE && players.size() < minPlayers) {
             queueTimer.cancel();

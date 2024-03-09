@@ -1,5 +1,6 @@
 package rocks.learnercouncil.yesboats.commands;
 
+import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
@@ -27,6 +28,7 @@ public class YesBoatsCmd implements TabExecutor {
         result.add(new StartArg());
         result.add(new StopArg());
         result.add(new ReportsArg());
+        result.add(new HelpArg());
 
         return result;
     }
@@ -39,9 +41,9 @@ public class YesBoatsCmd implements TabExecutor {
         }
         if(cmd.getName().equalsIgnoreCase("yesboats")) {
             for (CommandArgument a : arguments) {
-                String result = a.execute(sender, cmd, label, args);
-                if(!result.isEmpty()) {
-                    sender.sendMessage(result);
+                final BaseComponent[] result = a.execute(sender, cmd, label, args);
+                if(result.length != 0) {
+                    sender.spigot().sendMessage(result);
                     return true;
                 }
             }

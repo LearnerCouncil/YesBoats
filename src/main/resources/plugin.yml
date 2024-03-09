@@ -9,6 +9,6 @@ description: A simple iceboat racing plugin
 commands:
   yesboats:
     permission:
-      yesboats.commands.yesboats.use
+      yesboats.commands.yesboats.user
     aliases:
       - yb

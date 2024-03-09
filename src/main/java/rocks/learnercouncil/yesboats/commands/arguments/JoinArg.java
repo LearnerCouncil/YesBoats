@@ -1,5 +1,6 @@
 package rocks.learnercouncil.yesboats.commands.arguments;
 
+import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.HumanEntity;
@@ -21,8 +22,8 @@ public class JoinArg implements CommandArgument {
     private static final YesBoats plugin = YesBoats.getInstance();
 
     @Override
-    public String execute(CommandSender sender, Command cmd, String label, String[] args) {
-        if(!args[0].equalsIgnoreCase("join")) return "";
+    public BaseComponent[] execute(CommandSender sender, Command cmd, String label, String[] args) {
+        if(!args[0].equalsIgnoreCase("join")) return CommandResult.NONE;
         if(!sender.hasPermission("yesboats.commands.yesboats.user")) return CommandResult.NO_PERMISSION;
         if(args.length < 2) return TOO_FEW_ARGS;
         boolean isAdmin = sender.hasPermission("yesboats.commands.yesboats.admin");
