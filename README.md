@@ -1,8 +1,10 @@
 # YesBoats
 
-![Racetrack Not Included](./assets/lc-yesboats.jpg)
+![Banner Image of Racetrack](./assets/lc-yesboats.jpg)
 
 An ice boat racing plugin for Minecraft servers running Spigot/Paper.
+
+(Racetrack not included)
 
 ## Installation
 
