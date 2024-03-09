@@ -55,7 +55,7 @@ public final class YesBoats extends JavaPlugin {
                 new Arena.Events(),
                 new ArenaEditor.Events(),
                 new ArenaSign.Events(),
-                new PlayerManager.Events()
+                new InventoryManager.Events()
         );
     }
 

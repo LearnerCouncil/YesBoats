@@ -6,7 +6,6 @@ import org.bukkit.entity.Player;
 import rocks.learnercouncil.yesboats.arena.Arena;
 import rocks.learnercouncil.yesboats.commands.CommandArgument;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -24,12 +23,12 @@ public class StopArg implements CommandArgument {
         Arena arena = null;
         if(args.length == 1) {
             Optional<Arena> arenaOptional = Arena.get((Player) sender);
-            if(!arenaOptional.isPresent()) return NOT_IN_ARENA_SELF;
+            if(arenaOptional.isEmpty()) return NOT_IN_ARENA_SELF;
             arena = arenaOptional.get();
         }
         if(args.length == 2) {
             Optional<Arena> arenaOptional = Arena.get(args[1]);
-            if(!arenaOptional.isPresent()) return ARENA_NOT_EXIST;
+            if(arenaOptional.isEmpty()) return ARENA_NOT_EXIST;
             arena = arenaOptional.get();
         }
         if(arena.getState() == Arena.State.WAITING) return NOT_RUNNING;
@@ -44,6 +43,6 @@ public class StopArg implements CommandArgument {
             return Collections.singletonList("stop");
         if(args.length == 2 && args[0].equalsIgnoreCase("stop"))
             return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 }

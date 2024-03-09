@@ -14,6 +14,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.util.BoundingBox;
+import rocks.learnercouncil.yesboats.InventoryManager;
 import rocks.learnercouncil.yesboats.YesBoats;
 import rocks.learnercouncil.yesboats.YesBoatsPlayer;
 
@@ -118,6 +119,8 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         players.put(player, new YesBoatsPlayer(this, player));
         playerArenaMap.put(player, this);
         players.get(player).setData();
+
+        InventoryManager.initialize(player);
 
         spectators.forEach(s -> {
             player.hidePlayer(s);
@@ -258,7 +261,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         lamp.setBlockData(blockData);
     }
     private void updatePlayer(YesBoatsPlayer player) {
-        if(spectators.contains(player)) return;
+        if(player.isSpectator()) return;
         player.getScoreboard().updateScores(timeLeft, player.getLap(), laps);
         player.updateCheckpoint(checkpointBoxes, laps, debug);
         boolean inVoid = player.getPlayer().getLocation().getY() < -16.0;
@@ -277,6 +280,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         for (Player p : playersCopy) remove(p);
         startLineActivator.getBlock().setType(Material.REDSTONE_BLOCK);
         lightLocations.forEach(l -> {
+            if(!(l.getBlock().getBlockData() instanceof Lightable)) return;
             Lightable blockData = (Lightable) l.getBlock().getBlockData();
             blockData.setLit(false);
             l.getBlock().setBlockData(blockData);

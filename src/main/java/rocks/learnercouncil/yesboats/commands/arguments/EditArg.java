@@ -7,7 +7,6 @@ import rocks.learnercouncil.yesboats.arena.Arena;
 import rocks.learnercouncil.yesboats.arena.ArenaEditor;
 import rocks.learnercouncil.yesboats.commands.CommandArgument;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,7 +23,7 @@ public class EditArg implements CommandArgument {
         if(args.length > 2) return TOO_MANY_ARGS;
 
         String name = args[1];
-        if(!Arena.get(name).isPresent()) return ARENA_NOT_EXIST;
+        if(Arena.get(name).isEmpty()) return ARENA_NOT_EXIST;
 
         ArenaEditor.editors.put((Player) sender, new ArenaEditor((Player) sender, Arena.get(name).get().clone()));
         return EDITING;
@@ -36,6 +35,6 @@ public class EditArg implements CommandArgument {
             return Collections.singletonList("edit");
         if(args.length == 2 && args[0].equalsIgnoreCase("edit"))
             return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 }

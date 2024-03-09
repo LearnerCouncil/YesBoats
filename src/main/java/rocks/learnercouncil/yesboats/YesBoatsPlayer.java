@@ -59,13 +59,17 @@ public class YesBoatsPlayer {
             Objects.requireNonNull(player.getVehicle()).remove();
         player.setAllowFlight(true);
         arena.getPlayers().forEach(((p, ybp) -> {
-            p.hidePlayer(plugin, player);
-            ybp.getHiddenPlayers().add(player);
+            if(!ybp.isSpectator()) {
+                p.hidePlayer(plugin, player);
+                ybp.getHiddenPlayers().add(player);
+            }
         }));
+        hiddenPlayers.clear();
         arena.getSpectators().add(player);
     }
 
     public boolean isIntersecting(BoundingBox boundingBox) {
+        if(previousLocation == null) updatePreviousLocation();
         Vector previousPosition = previousLocation;
         Vector currentPosition = player.getLocation().toVector();
 
@@ -117,18 +121,18 @@ public class YesBoatsPlayer {
 
     public void respawn(List<Location> checkpointSpawns) {
         if(player.getVehicle() == null) return;
-        if(player.getVehicle().getType() != EntityType.BOAT) return;
+        if(!(player.getVehicle() instanceof Boat)) return;
         Boat oldBoat = (Boat) player.getVehicle();
 
         List<Entity> passengers = oldBoat.getPassengers().stream().filter(e -> e.getType() != EntityType.PLAYER).collect(Collectors.toList());
-        Boat newBoat = (Boat) player.getWorld().spawnEntity(checkpointSpawns.get(checkpoint), EntityType.BOAT);
+        Boat newBoat = (Boat) player.getWorld().spawnEntity(checkpointSpawns.get(checkpoint), oldBoat.getType());
 
         canExitBoat = true;
         oldBoat.removePassenger(player);
 
         player.teleport(checkpointSpawns.get(checkpoint));
         player.setFireTicks(-1);
-        newBoat.setWoodType(oldBoat.getWoodType());
+        newBoat.setBoatType(oldBoat.getBoatType());
 
         canExitBoat = false;
         canEnterBoat = true;
@@ -166,7 +170,7 @@ public class YesBoatsPlayer {
         final String suffix = s;
         player.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
                 + ChatColor.AQUA + "You have completed the race with a time of "
-                + ChatColor.YELLOW + minutes + ":" + seconds
+                + ChatColor.YELLOW + minutes + ":" + (seconds < 10 ? "0"+seconds : seconds)
                 + ChatColor.AQUA + ". That puts you in "
                 + ChatColor.YELLOW + currentPlace + suffix
                 + ChatColor.AQUA + " place."
@@ -179,7 +183,7 @@ public class YesBoatsPlayer {
                 + ChatColor.YELLOW + currentPlace + suffix
                 + ChatColor.AQUA + " place."));
         arena.incrementCurrentPlace();
-        if(currentPlace > arena.getPlayers().size()) {
+        if(arena.getCurrentPlace() > arena.getPlayers().size()) {
             arena.getPlayers().keySet().forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] " + ChatColor.AQUA + "All Players have finished. Returning to lobby in 5 seconds."));
             new BukkitRunnable() {
                 @Override
