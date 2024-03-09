@@ -43,9 +43,9 @@ Once you are in the editor, the following items will be added to your inventory.
 
 Join signs can be created by placing a sign with the text detailed in the below diagram, replacing 'arena_name' with the name of the arena you want the sign to lead to. Once a join sign is placed, it will be styled accordingly, and keep track of the number of players in the arena, and the arena's current state.
 #### Before:
-![Line 1: '[YesBoats]', Line 2: 'arena_name'](./assets/join_sign_before.png)
+<img alt="Line 1: '[YesBoats]', Line 2: 'arena_name'" src="./assets/join_sign_before.png" width=480 height=270></img>
 #### After:
-![Line 1: '[YesBoats]', Line 2: 'arena_name', Line 3: 'Waiting...', Line 4: '(0/15)'](./assets/join_sign_after.png)
+<img alt="Line 1: '[YesBoats]', Line 2: 'arena_name', Line 3: 'Waiting...', Line 4: '(0/15)'" src="./assets/join_sign_after.png" width=480 height=270></img>
 
 ### Playing
 > [!note]
