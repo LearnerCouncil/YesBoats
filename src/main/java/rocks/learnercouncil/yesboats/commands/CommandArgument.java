@@ -24,8 +24,7 @@ public interface CommandArgument {
                 return result;
             }
         }
-        //return CommandResult.invalidArgs(label);
-        return CommandResult.NONE;
+        return CommandResult.invalidArgs(label);
     }
     
     static List<String> parseTabCompletion(CommandSender sender, Command cmd, String alias, String[] args, CommandArgument[] arguments) {

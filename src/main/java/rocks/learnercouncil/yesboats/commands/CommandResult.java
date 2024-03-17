@@ -3,6 +3,7 @@ package rocks.learnercouncil.yesboats.commands;
 
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
@@ -14,7 +15,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class CommandResult {
-
+    
     private static final ChatColor PREFIX = ChatColor.DARK_AQUA;
     private static final ChatColor RESULT = ChatColor.AQUA;
     private static final ChatColor ERROR = ChatColor.RED;
@@ -23,28 +24,26 @@ public class CommandResult {
     private static ComponentBuilder prefix() {
         return new ComponentBuilder().append("[YesBoats] ").color(PREFIX);
     }
+    private static BaseComponent[] result(String message) {
+        return prefix().append(message).color(RESULT).create();
+    }
+    private static BaseComponent[] error(String message) {
+        return prefix().append(message).color(ERROR).create();
+    }
     
     public static final BaseComponent[] NONE = {};
     
-    //Errors
     public static final BaseComponent[]
-            NO_PERMISSION = prefix().append("You don't have permission to execute this command.").color(ERROR).create(),
-            TOO_FEW_ARGS = prefix().append("Too few arguments.").color(ERROR).create(),
-            TOO_MANY_ARGS = prefix().append("Too many arguments").color(ERROR).create(),
-            ARENA_EXISTS = prefix().append("That arena already exists.").color(ERROR).create(),
-            ARENA_NOT_EXIST = prefix().append("That arena doesn't exist.").color(ERROR).create(),
-            PLAYER_NOT_FOUND = prefix().append("Player not found.").color(ERROR).create(),
-            ALREADY_RUNNING = prefix().append("Arena already running.").color(ERROR).create(),
-            NOT_RUNNING = prefix().append("Arena not running.").color(ERROR).create(),
-            TOO_FEW_PLAYERS = prefix().append("Arena doesn't have enough players.").color(ERROR).create(),
-            NOT_IN_ARENA_SELF = prefix().append("You are not in an arena.").color(ERROR).create(),
-            NOT_IN_ARENA_OTHER = prefix().append("That player is not in an arena.").color(ERROR).create(),
-            ALREADY_IN_ARENA_SELF = prefix().append("You are already in an arena.").color(ERROR).create(),
-            ALREADY_IN_ARENA_OTHER = prefix().append("That player is already in an arena.").color(ERROR).create(),
-            INVALID_NUMBER = prefix().append("Invalid number.").color(ERROR).create();
-
-
-    //Results
+            CREATED = result("Arena successfully created. Now editing."),
+            REMOVED = result("Arena successfully removed."),
+            JOINED = result("Joined the game."),
+            LEFT = result("Left the game."),
+            EDITING = result("Now editing."),
+            STARTED = result("Started the game."),
+            STOPPED = result("Stopped the game."),
+            DISPLAYING_PATH = result("Now displaying debug path."),
+            CLEARING_PATH = result("Clearing desplayed debug paths.");
+    
     public static BaseComponent[] joinedOther(String name) {
         return prefix().append("Added ").color(RESULT).append(name).color(SPECIAL).append(" to the game").color(RESULT).create();
     }
@@ -60,17 +59,39 @@ public class CommandResult {
         message.append("====================").color(RESULT);
         return message.create();
     }
-
+    
+    
     public static final BaseComponent[]
-            CREATED = prefix().append("Arena successfully created. Now editing.").color(RESULT).create(),
-            REMOVED = prefix().append("Arena successfully removed.").color(RESULT).create(),
-            JOINED = prefix().append("Joined the game.").color(RESULT).create(),
-            LEFT = prefix().append("Left the game.").color(RESULT).create(),
-            EDITING = prefix().append("Now editing.").color(RESULT).create(),
-            STARTED = prefix().append("Started the game.").color(RESULT).create(),
-            STOPPED = prefix().append("Stopped the game.").color(RESULT).create(),
-            DISPLAYING_PATH = prefix().append("Now displaying debug path.").color(RESULT).create(),
-            CLEARING_PATH = prefix().append("Clearing desplayed debug paths.").color(RESULT).create();
+            NO_PERMISSION = error("You don't have permission to execute this command."),
+            TOO_FEW_ARGS = error("Too few arguments."),
+            TOO_MANY_ARGS = error("Too many arguments"),
+            ARENA_EXISTS = error("That arena already exists."),
+            ARENA_NOT_EXIST = error("That arena doesn't exist."),
+            PLAYER_NOT_FOUND = error("Player not found."),
+            ALREADY_RUNNING = error("Arena already running."),
+            NOT_RUNNING = error("Arena not running."),
+            TOO_FEW_PLAYERS = error("Arena doesn't have enough players."),
+            NOT_IN_ARENA_SELF = error("You are not in an arena."),
+            NOT_IN_ARENA_OTHER = error("That player is not in an arena."),
+            ALREADY_IN_ARENA_SELF = error("You are already in an arena."),
+            ALREADY_IN_ARENA_OTHER = error("That player is already in an arena.");
+
+    public static BaseComponent[] needsPlayer(String label) {
+        return prefix().append("Command '").color(ERROR)
+                .append('/' + label).color(SPECIAL)
+                .append("' must be executed by a player.").color(ERROR)
+                .create();
+    }
+    public static BaseComponent[] invalidArgs(String label) {
+        return prefix().append("Invalid arguments. Try '").color(ERROR)
+                .append('/' + label + " help").color(SPECIAL).event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, '/' + label + " help"))
+                .append("' for help.")
+                .create();
+    }
+    public static BaseComponent[] invalidNumber(String number) {
+        return prefix().append("'").color(ERROR).append(number).color(SPECIAL).append("' is not a valid number.").color(ERROR).create();
+    }
+    
     
     public static BaseComponent[] getHelpMenu(String label, CommandSender sender) {
         return new HelpMenuBuilder(label, sender)

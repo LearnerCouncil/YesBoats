@@ -35,11 +35,12 @@ public class YesBoatsCmd implements TabExecutor {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, String[] args) {
         if(!cmd.getName().equalsIgnoreCase("yesboats")) return false;
         if(!(sender instanceof Player)) {
-            sender.sendMessage("[YesBoats] This command must be executed by a player");
+            sender.spigot().sendMessage(CommandResult.needsPlayer(label));
             return true;
         }
         if(!sender.hasPermission("yesboats.commands.yesboats.user")) {
             sender.spigot().sendMessage(CommandResult.NO_PERMISSION);
+            return true;
         }
         
         sender.spigot().sendMessage(CommandArgument.parseCommand(sender, cmd, label, args, arguments.toArray(CommandArgument[]::new)));
