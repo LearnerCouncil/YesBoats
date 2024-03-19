@@ -16,10 +16,11 @@ import java.util.stream.Collectors;
 
 public class CommandResult {
     
-    private static final ChatColor PREFIX = ChatColor.DARK_AQUA;
-    private static final ChatColor RESULT = ChatColor.AQUA;
-    private static final ChatColor ERROR = ChatColor.RED;
-    private static final ChatColor SPECIAL = ChatColor.YELLOW;
+    private static final ChatColor
+            PREFIX = ChatColor.DARK_AQUA,
+            RESULT = ChatColor.AQUA,
+            ERROR = ChatColor.RED,
+            SPECIAL = ChatColor.YELLOW;
     
     private static ComponentBuilder prefix() {
         return new ComponentBuilder().append("[YesBoats] ").color(PREFIX);
@@ -85,7 +86,7 @@ public class CommandResult {
     public static BaseComponent[] invalidArgs(String label) {
         return prefix().append("Invalid arguments. Try '").color(ERROR)
                 .append('/' + label + " help").color(SPECIAL).event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, '/' + label + " help"))
-                .append("' for help.")
+                .append("' for help.").color(ERROR)
                 .create();
     }
     public static BaseComponent[] invalidNumber(String number) {

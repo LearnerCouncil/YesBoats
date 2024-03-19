@@ -7,29 +7,21 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import rocks.learnercouncil.yesboats.commands.arguments.*;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class YesBoatsCmd implements TabExecutor {
 
-    private final List<CommandArgument> arguments = initializeArgs();
-
-    private List<CommandArgument> initializeArgs() {
-        List<CommandArgument> result = new ArrayList<>();
-
-        result.add(new JoinArg());
-        result.add(new LeaveArg());
-        result.add(new AddArg());
-        result.add(new RemoveArg());
-        result.add(new EditArg());
-        result.add(new StartArg());
-        result.add(new StopArg());
-        result.add(new ReportsArg());
-        result.add(new HelpArg());
-
-        return result;
-    }
+    private final CommandArgument[] ARGUMENTS = {
+            new JoinArg(),
+            new LeaveArg(),
+            new AddArg(),
+            new RemoveArg(),
+            new EditArg(),
+            new StopArg(),
+            new ReportsArg(),
+            new HelpArg(),
+    };
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, String[] args) {
@@ -43,13 +35,13 @@ public class YesBoatsCmd implements TabExecutor {
             return true;
         }
         
-        sender.spigot().sendMessage(CommandArgument.parseCommand(sender, cmd, label, args, arguments.toArray(CommandArgument[]::new)));
+        sender.spigot().sendMessage(CommandArgument.parseCommand(sender, cmd, label, args, ARGUMENTS));
         return true;
     }
 
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String alias, String[] args) {
         if(!sender.hasPermission("yesboats.commands.yesboats.user")) return Collections.emptyList();
-        return CommandArgument.parseTabCompletion(sender, cmd, alias, args, arguments.toArray(CommandArgument[]::new));
+        return CommandArgument.parseTabCompletion(sender, cmd, alias, args, ARGUMENTS);
     }
 }
