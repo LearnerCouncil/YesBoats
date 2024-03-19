@@ -42,7 +42,7 @@ public class ReportsArg implements CommandArgument {
                 DebugPath.display(index, (Player) sender);
                 return CommandResult.DISPLAYING_PATH;
             } catch (NumberFormatException e) {
-                return CommandResult.INVALID_NUMBER;
+                return CommandResult.invalidNumber(args[2]);
             }
         }
         return TOO_MANY_ARGS;
