@@ -115,3 +115,9 @@ buildNumber.properties
 
 # Common working directory
 run/
+
+# Neovim LSP
+.project
+.factorypath
+.classpath
+.settings
