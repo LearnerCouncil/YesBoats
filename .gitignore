@@ -121,3 +121,6 @@ run/
 .factorypath
 .classpath
 .settings
+
+# Testing
+test/
