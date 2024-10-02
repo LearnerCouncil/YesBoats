@@ -21,7 +21,7 @@
         default = pkgs.mkShell {
           packages = with pkgs; [
             maven
-            jdk17_headless
+            jdk17
           ];
         };
       });
