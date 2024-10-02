@@ -31,7 +31,7 @@
         yesboats = pkgs.callPackage
           ({ lib, maven, jdk17_headless }: maven.buildMavenPackage rec {
             pname = "YesBoats";
-            version = "1.5.2";
+            version = "1.5.3";
 
             src = ./.;
 
