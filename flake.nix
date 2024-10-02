@@ -31,7 +31,7 @@
         yesboats = pkgs.callPackage
           ({ lib, maven, jdk17_headless }: maven.buildMavenPackage rec {
             pname = "YesBoats";
-            version = "1.5.3";
+            version = with builtins; elemAt (match ".*${pname}</artifactId>[[:s:]]*<version>([[:d:]]{1,2}\.[[:d:]]{1,2}\.[[:d:]]{1,2}).*" (readFile ./pom.xml)) 0;
 
             src = ./.;
 
