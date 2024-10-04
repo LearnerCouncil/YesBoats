@@ -15,6 +15,7 @@ import rocks.learnercouncil.yesboats.arena.Arena;
 import rocks.learnercouncil.yesboats.arena.ArenaScoreboard;
 import rocks.learnercouncil.yesboats.arena.DebugPath;
 
+import java.text.DecimalFormat;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -158,7 +159,8 @@ public class YesBoatsPlayer {
 
         double totalSeconds = ((double) (System.currentTimeMillis() - time)) / 1000;
         int minutes = (int) totalSeconds / 60;
-        int seconds = (int) totalSeconds % 60;
+        double seconds = Math.floor((totalSeconds % 60) * 1000) / 1000;
+        DecimalFormat df = new DecimalFormat("00.00#");
         String s = "th";
         int lastDigit = currentPlace % 10;
         if(lastDigit == 1 && currentPlace != 11)
@@ -170,7 +172,7 @@ public class YesBoatsPlayer {
         final String suffix = s;
         player.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
                 + ChatColor.AQUA + "You have completed the race with a time of "
-                + ChatColor.YELLOW + minutes + ":" + (seconds < 10 ? "0"+seconds : seconds)
+                + ChatColor.YELLOW + minutes + ":" + df.format(seconds).toString()
                 + ChatColor.AQUA + ". That puts you in "
                 + ChatColor.YELLOW + currentPlace + suffix
                 + ChatColor.AQUA + " place."
