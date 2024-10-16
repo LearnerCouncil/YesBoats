@@ -90,7 +90,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         checkpointBoxes = toBoxList((List<String>) m.get("checkpointBoxes"));
         checkpointSpawns = toLocationList((List<String>) m.get("checkpointSpawns"), world);
 
-        signs = ArenaSign.deserialize((List<String>) m.get("signs"));
+        signs = ArenaSign.deserializeAll((List<String>) m.get("signs"));
 
         debug = m.containsKey("debug") && (boolean) m.get("debug");
     }

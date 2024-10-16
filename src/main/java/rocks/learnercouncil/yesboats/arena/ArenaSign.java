@@ -40,10 +40,10 @@ public class ArenaSign {
         }).collect(Collectors.toList());
     }
 
-    public static Set<ArenaSign> deserialize(Collection<String> serializedSigns) {
+    public static Set<ArenaSign> deserializeAll(Collection<String> serializedSigns) {
         HashSet<ArenaSign> result = new HashSet<>();
         serializedSigns.forEach(sign -> {
-            Optional<ArenaSign> signOptional = ArenaSign.deserializeSingle(sign);
+            Optional<ArenaSign> signOptional = ArenaSign.deserialize(sign);
             if (signOptional.isEmpty()) {
                 plugin.getLogger().warning("Arena Sign '" + sign + "' failed to deserialize.");
                 return;
@@ -53,7 +53,7 @@ public class ArenaSign {
         return result;
     }
 
-    private static Optional<ArenaSign> deserializeSingle(String serializedSign) {
+    private static Optional<ArenaSign> deserialize(String serializedSign) {
         String[] segments = serializedSign.split(",");
         boolean legacy = segments.length == 4;
         if (segments.length < 4 || segments.length > 5) return Optional.empty();
