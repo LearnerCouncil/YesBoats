@@ -32,7 +32,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
      * A list of all arenas, gets instantiated by 'arenas.yml' if it exists
      */
     public static final List<Arena> arenas = new ArrayList<>();
-    private static final YesBoats plugin = YesBoats.getInstance();
+    private static final YesBoats plugin = YesBoats.getPlugin();
 
     public static int queueTime;
 

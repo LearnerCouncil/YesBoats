@@ -1,5 +1,6 @@
 package rocks.learnercouncil.yesboats;
 
+import lombok.Getter;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.event.Listener;
@@ -17,20 +18,13 @@ public final class YesBoats extends JavaPlugin {
     public static ConfigFile arenaCfg;
     public static ConfigFile config;
 
-    private static YesBoats instance;
-
-    /**
-     * @return An instance of the main class
-     */
-    public static YesBoats getInstance() {
-        return instance;
-    }
+    @Getter private static YesBoats plugin;
 
     @SuppressWarnings("ConstantConditions")
     @Override
     public void onEnable() {
         // Plugin startup logic
-        instance = this;
+        plugin = this;
 
         ConfigurationSerialization.registerClass(Arena.class);
 

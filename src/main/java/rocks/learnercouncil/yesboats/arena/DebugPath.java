@@ -38,7 +38,7 @@ public class DebugPath {
                 }
                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, actionbarMessage);
             }
-        }.runTaskTimer(YesBoats.getInstance(), 0, 10);
+        }.runTaskTimer(YesBoats.getPlugin(), 0, 10);
     }
     public static void clearDisplay() {
         displayLoop.cancel();

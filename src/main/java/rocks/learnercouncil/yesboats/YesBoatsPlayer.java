@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class YesBoatsPlayer {
-    private final YesBoats plugin = YesBoats.getInstance();
+    private final YesBoats plugin = YesBoats.getPlugin();
 
     private final @Getter Player player;
     private final @Getter Arena arena;

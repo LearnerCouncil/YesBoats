@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 public class ArenaSign {
 
-    private static final YesBoats plugin = YesBoats.getInstance();
+    private static final YesBoats plugin = YesBoats.getPlugin();
 
     private final Sign sign;
     private final Side side;

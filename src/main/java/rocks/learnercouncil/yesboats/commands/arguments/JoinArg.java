@@ -19,7 +19,7 @@ import static rocks.learnercouncil.yesboats.commands.CommandResult.*;
 
 public class JoinArg implements CommandArgument {
 
-    private static final YesBoats plugin = YesBoats.getInstance();
+    private static final YesBoats plugin = YesBoats.getPlugin();
 
     @Override
     public BaseComponent[] execute(CommandSender sender, Command cmd, String label, String[] args) {

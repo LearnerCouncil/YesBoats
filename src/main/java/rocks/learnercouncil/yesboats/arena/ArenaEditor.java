@@ -35,7 +35,7 @@ import static org.bukkit.ChatColor.*;
 
 public class ArenaEditor {
 
-    private static final YesBoats plugin = YesBoats.getInstance();
+    private static final YesBoats plugin = YesBoats.getPlugin();
 
     public static HashMap<Player, ArenaEditor> editors = new HashMap<>();
 
