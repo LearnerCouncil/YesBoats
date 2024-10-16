@@ -31,7 +31,7 @@ public class InventoryManager {
         inventory.setItem(24, getItem(Material.MANGROVE_BOAT, "Mangrove Boat"));
         inventory.setItem(25, getItem(Material.CHERRY_BOAT, "Cherry Boat"));
         inventory.setItem(26, getItem(Material.BAMBOO_RAFT, "Bamboo Raft"));
-
+        
         inventory.setItem(9, getItem(Material.OAK_CHEST_BOAT, "Oak Chest Boat"));
         inventory.setItem(10, getItem(Material.SPRUCE_CHEST_BOAT, "Spruce Chest Boat"));
         inventory.setItem(11, getItem(Material.BIRCH_CHEST_BOAT, "Birch Chest Boat"));
@@ -47,7 +47,7 @@ public class InventoryManager {
         ItemStack item = new ItemStack(material, 1);
         items.add(item);
         ItemMeta meta = item.getItemMeta();
-        if(meta == null) return item;
+        if (meta == null) return item;
         meta.setDisplayName(ChatColor.BOLD.toString() + ChatColor.GREEN + boatType);
         meta.setLore(Collections.singletonList(ChatColor.DARK_GREEN + "Click to set your boat to a " + boatType));
         item.setItemMeta(meta);
@@ -58,14 +58,14 @@ public class InventoryManager {
 
         @EventHandler
         public void onInventoryClick(InventoryClickEvent e) {
-            if(!items.contains(e.getCurrentItem())) return;
-            if(!(e.getWhoClicked() instanceof Player)) return;
+            if (!items.contains(e.getCurrentItem())) return;
+            if (!(e.getWhoClicked() instanceof Player)) return;
             Player player = (Player) e.getWhoClicked();
-            if(Arena.get(player).isEmpty()) return;
+            if (Arena.get(player).isEmpty()) return;
             Arena arena = Arena.get(player).get();
-            if(arena.getState() != Arena.State.IN_QUEUE) return;
-            if(!player.isInsideVehicle()) return;
-            if(!(player.getVehicle() instanceof Boat)) return;
+            if (arena.getState() != Arena.State.IN_QUEUE) return;
+            if (!player.isInsideVehicle()) return;
+            if (!(player.getVehicle() instanceof Boat)) return;
             Boat vehicle = (Boat) player.getVehicle();
 
             Material itemType = Objects.requireNonNull(e.getCurrentItem()).getType();
@@ -84,7 +84,7 @@ public class InventoryManager {
                 default -> vehicle.getBoatType();
             };
 
-            if(vehicleHasChest != itemHasChest) respawnBoat(itemHasChest, boatType, arena.getPlayers().get(player));
+            if (vehicleHasChest != itemHasChest) respawnBoat(itemHasChest, boatType, arena.getPlayers().get(player));
             else vehicle.setBoatType(boatType);
 
             e.setCancelled(true);
@@ -96,12 +96,12 @@ public class InventoryManager {
             yesBoatsPlayer.canExitBoat = true;
             Player player = yesBoatsPlayer.getPlayer();
             Boat boat;
-            if(player.isInsideVehicle()) {
+            if (player.isInsideVehicle()) {
                 boat = (Boat) player.getWorld().spawnEntity(player.getVehicle().getLocation(), hasChest ? EntityType.CHEST_BOAT : EntityType.BOAT);
-                if(player.getVehicle().isInsideVehicle())
+                if (player.getVehicle().isInsideVehicle())
                     player.getVehicle().getVehicle().addPassenger(boat);
                 player.getVehicle().getPassengers().forEach(p -> {
-                    if(!(p instanceof Player))
+                    if (!(p instanceof Player))
                         p.remove();
                 });
                 player.getVehicle().remove();
@@ -110,7 +110,7 @@ public class InventoryManager {
             boat.setInvulnerable(true);
             boat.setBoatType(type);
             boat.addPassenger(player);
-            if(boat.getType() == EntityType.BOAT) {
+            if (boat.getType() == EntityType.BOAT) {
                 ArmorStand armorStand = (ArmorStand) boat.getWorld().spawnEntity(boat.getLocation(), EntityType.ARMOR_STAND);
                 armorStand.setInvulnerable(true);
                 armorStand.setInvisible(true);

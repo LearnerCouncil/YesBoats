@@ -17,23 +17,23 @@ import static rocks.learnercouncil.yesboats.commands.CommandResult.*;
 public class StartArg implements CommandArgument {
     @Override
     public BaseComponent[] execute(CommandSender sender, Command cmd, String label, String[] args) {
-        if(!args[0].equalsIgnoreCase("start")) return NONE;
-        if(!sender.hasPermission("yesboats.commands.yesboats.admin")) return NO_PERMISSION;
-        if(args.length > 2) return TOO_MANY_ARGS;
+        if (!args[0].equalsIgnoreCase("start")) return NONE;
+        if (!sender.hasPermission("yesboats.commands.yesboats.admin")) return NO_PERMISSION;
+        if (args.length > 2) return TOO_MANY_ARGS;
 
         Arena arena = null;
-        if(args.length == 1) {
+        if (args.length == 1) {
             Optional<Arena> arenaOptional = Arena.get((Player) sender);
-            if(arenaOptional.isEmpty()) return NOT_IN_ARENA_SELF;
+            if (arenaOptional.isEmpty()) return NOT_IN_ARENA_SELF;
             arena = arenaOptional.get();
         }
-        if(args.length == 2) {
+        if (args.length == 2) {
             Optional<Arena> arenaOptional = Arena.get(args[1]);
-            if(arenaOptional.isEmpty()) return ARENA_NOT_EXIST;
+            if (arenaOptional.isEmpty()) return ARENA_NOT_EXIST;
             arena = arenaOptional.get();
         }
-        if(arena.getState() == Arena.State.WAITING) return TOO_FEW_PLAYERS;
-        if(arena.getState() == Arena.State.RUNNING) return ALREADY_RUNNING;
+        if (arena.getState() == Arena.State.WAITING) return TOO_FEW_PLAYERS;
+        if (arena.getState() == Arena.State.RUNNING) return ALREADY_RUNNING;
         arena.queueTimer.cancel();
         arena.startGame();
         return STARTED;
@@ -41,9 +41,9 @@ public class StartArg implements CommandArgument {
 
     @Override
     public List<String> tabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
-        if(args.length == 1)
+        if (args.length == 1)
             return Collections.singletonList("start");
-        if(args.length == 2 && args[0].equalsIgnoreCase("start"))
+        if (args.length == 2 && args[0].equalsIgnoreCase("start"))
             return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
         return Collections.emptyList();
     }

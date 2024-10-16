@@ -13,14 +13,15 @@ import static rocks.learnercouncil.yesboats.commands.CommandResult.*;
 public class HelpArg implements CommandArgument {
     @Override
     public BaseComponent[] execute(CommandSender sender, Command cmd, String label, String[] args) {
-        if(!args[0].equalsIgnoreCase("help")) return NONE;
-        if(args.length > 1) return TOO_MANY_ARGS;
-    
+        if (!args[0].equalsIgnoreCase("help")) return NONE;
+        if (args.length > 1) return TOO_MANY_ARGS;
+
         return getHelpMenu(label, sender);
     }
+
     @Override
     public List<String> tabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
-        if(args.length == 1) return Collections.singletonList("help");
+        if (args.length == 1) return Collections.singletonList("help");
         return Collections.emptyList();
     }
 }

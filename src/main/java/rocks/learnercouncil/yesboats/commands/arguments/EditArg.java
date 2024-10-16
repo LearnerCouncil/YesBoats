@@ -18,13 +18,13 @@ public class EditArg implements CommandArgument {
 
     @Override
     public BaseComponent[] execute(CommandSender sender, Command cmd, String label, String[] args) {
-        if(!args[0].equalsIgnoreCase("edit")) return NONE;
-        if(!sender.hasPermission("yesboats.commands.yesboats.admin")) return NO_PERMISSION;
-        if(args.length < 2) return TOO_FEW_ARGS;
-        if(args.length > 2) return TOO_MANY_ARGS;
+        if (!args[0].equalsIgnoreCase("edit")) return NONE;
+        if (!sender.hasPermission("yesboats.commands.yesboats.admin")) return NO_PERMISSION;
+        if (args.length < 2) return TOO_FEW_ARGS;
+        if (args.length > 2) return TOO_MANY_ARGS;
 
         String name = args[1];
-        if(Arena.get(name).isEmpty()) return ARENA_NOT_EXIST;
+        if (Arena.get(name).isEmpty()) return ARENA_NOT_EXIST;
 
         ArenaEditor.editors.put((Player) sender, new ArenaEditor((Player) sender, Arena.get(name).get().clone()));
         return EDITING;
@@ -32,9 +32,9 @@ public class EditArg implements CommandArgument {
 
     @Override
     public List<String> tabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
-        if(args.length == 1)
+        if (args.length == 1)
             return Collections.singletonList("edit");
-        if(args.length == 2 && args[0].equalsIgnoreCase("edit"))
+        if (args.length == 2 && args[0].equalsIgnoreCase("edit"))
             return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
         return Collections.emptyList();
     }

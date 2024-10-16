@@ -20,30 +20,6 @@ import java.util.*;
 public class DebugPath {
     public static final List<DebugPath> debugPaths = new LinkedList<>();
     private static BukkitTask displayLoop;
-
-    public static void display(int index, Player player) {
-        DebugPath path = debugPaths.get(index);
-        BaseComponent[] actionbarMessage = new ComponentBuilder()
-                .append("ID: ").color(ChatColor.DARK_AQUA).append(String.valueOf(index)).color(ChatColor.AQUA)
-                .append(" | ").color(ChatColor.YELLOW).append("Player: ").color(ChatColor.DARK_AQUA).append(path.player.getName()).color(ChatColor.AQUA)
-                .append(" | ").color(ChatColor.YELLOW).append("Ping: ").color(ChatColor.DARK_AQUA).append(String.valueOf(path.ping)).color(ChatColor.AQUA)
-                .create();
-        if(displayLoop != null) displayLoop.cancel();
-        displayLoop = new BukkitRunnable() {
-            @Override
-            public void run() {
-                for(Vector vector : path.vectors) {
-                    Location l = vector.toLocation(player.getWorld());
-                    player.spawnParticle(Particle.END_ROD, l, 1, 0, 0, 0, 0);
-                }
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, actionbarMessage);
-            }
-        }.runTaskTimer(YesBoats.getInstance(), 0, 10);
-    }
-    public static void clearDisplay() {
-        displayLoop.cancel();
-    }
-
     public final HashSet<Vector> vectors = new HashSet<>();
     public final Player player;
     public final Arena arena;
@@ -53,6 +29,30 @@ public class DebugPath {
     public DebugPath(Player player, Arena arena) {
         this.player = player;
         this.arena = arena;
+    }
+
+    public static void display(int index, Player player) {
+        DebugPath path = debugPaths.get(index);
+        BaseComponent[] actionbarMessage = new ComponentBuilder()
+                .append("ID: ").color(ChatColor.DARK_AQUA).append(String.valueOf(index)).color(ChatColor.AQUA)
+                .append(" | ").color(ChatColor.YELLOW).append("Player: ").color(ChatColor.DARK_AQUA).append(path.player.getName()).color(ChatColor.AQUA)
+                .append(" | ").color(ChatColor.YELLOW).append("Ping: ").color(ChatColor.DARK_AQUA).append(String.valueOf(path.ping)).color(ChatColor.AQUA)
+                .create();
+        if (displayLoop != null) displayLoop.cancel();
+        displayLoop = new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (Vector vector : path.vectors) {
+                    Location l = vector.toLocation(player.getWorld());
+                    player.spawnParticle(Particle.END_ROD, l, 1, 0, 0, 0, 0);
+                }
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, actionbarMessage);
+            }
+        }.runTaskTimer(YesBoats.getPlugin(), 0, 10);
+    }
+
+    public static void clearDisplay() {
+        displayLoop.cancel();
     }
 
     public BaseComponent[] toReport() {
