@@ -24,25 +24,25 @@ public class ConfigFile {
     }
 
     public void reloadConfig() {
-        if(file == null)
+        if (file == null)
             file = new File(plugin.getDataFolder(), name);
         config = YamlConfiguration.loadConfiguration(file);
 
-        InputStream defaultStram = plugin.getResource(name);
-        if(defaultStram != null) {
-            YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(defaultStram));
+        InputStream defaultStream = plugin.getResource(name);
+        if (defaultStream != null) {
+            YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(defaultStream));
             config.setDefaults(defaultConfig);
         }
     }
 
     public FileConfiguration getConfig() {
-        if(config == null)
+        if (config == null)
             reloadConfig();
         return config;
     }
 
     public void saveConfig() {
-        if(config == null || file == null)
+        if (config == null || file == null)
             return;
         try {
             config.save(file);
@@ -52,9 +52,9 @@ public class ConfigFile {
     }
 
     private void saveDefaultConfig() {
-        if(file == null)
+        if (file == null)
             file = new File(plugin.getDataFolder(), name);
-        if(!file.exists())
+        if (!file.exists())
             plugin.saveResource(name, false);
     }
 }

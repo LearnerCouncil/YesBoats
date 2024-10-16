@@ -18,7 +18,8 @@ public final class YesBoats extends JavaPlugin {
     public static ConfigFile arenaCfg;
     public static ConfigFile config;
 
-    @Getter private static YesBoats plugin;
+
+    private static @Getter YesBoats plugin;
 
     @SuppressWarnings("ConstantConditions")
     @Override
@@ -31,7 +32,7 @@ public final class YesBoats extends JavaPlugin {
         //initialize arena config
         arenaCfg = new ConfigFile(this, "arenas.yml");
         List<?> arenas = arenaCfg.getConfig().getList("arenas", new ArrayList<>());
-        if(!arenas.isEmpty() && arenas.get(0) instanceof Arena) {
+        if (!arenas.isEmpty() && arenas.get(0) instanceof Arena) {
             //noinspection unchecked
             Arena.arenas.addAll((List<Arena>) arenas);
         }
@@ -58,16 +59,16 @@ public final class YesBoats extends JavaPlugin {
         // Plugin shutdown logic
         new ArrayList<>(ArenaEditor.editors.values()).forEach(a -> a.restore(false));
         Arena.arenas.forEach(a -> {
-            if(a.getState() != Arena.State.WAITING) return;
+            if (a.getState() != Arena.State.WAITING) return;
             a.stopGame();
         });
-        
+
         arenaCfg.getConfig().set("arenas", Arena.arenas);
         arenaCfg.saveConfig();
     }
 
     private void registerEvents(Listener... listeners) {
-        for(Listener listener : listeners) {
+        for (Listener listener : listeners) {
             getServer().getPluginManager().registerEvents(listener, this);
         }
     }

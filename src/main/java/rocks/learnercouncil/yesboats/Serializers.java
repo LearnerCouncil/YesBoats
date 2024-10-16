@@ -16,6 +16,7 @@ public class Serializers {
                 + loc.getYaw() + ","
                 + loc.getPitch();
     }
+
     public static Location toLocation(String string, World world) {
         String[] segments = string.split(",");
         return new Location(
@@ -31,6 +32,7 @@ public class Serializers {
     public static List<String> fromLocationList(List<Location> locations) {
         return locations.stream().map(Serializers::fromLocation).collect(Collectors.toList());
     }
+
     public static List<Location> toLocationList(List<String> strings, World world) {
         return strings.stream().map(s -> toLocation(s, world)).collect(Collectors.toList());
     }
@@ -40,6 +42,7 @@ public class Serializers {
                 + location.getBlockY() + ","
                 + location.getBlockZ();
     }
+
     public static Location toVectorLocation(String str, World world) {
         String[] segments = str.split(",");
         return new Location(world,
@@ -51,6 +54,7 @@ public class Serializers {
     public static List<String> fromVectorLocationList(List<Location> locations) {
         return locations.stream().map(Serializers::fromVectorLocation).collect(Collectors.toList());
     }
+
     public static List<Location> toVectorLocationList(List<String> strings, World world) {
         return strings.stream().map(s -> toVectorLocation(s, world)).collect(Collectors.toList());
     }
@@ -65,6 +69,7 @@ public class Serializers {
                         + ((int) b.getMaxZ()))
                 .collect(Collectors.toList());
     }
+
     public static List<BoundingBox> toBoxList(List<String> strings) {
         return strings.stream()
                 .map(s -> {

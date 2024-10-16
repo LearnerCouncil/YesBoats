@@ -18,6 +18,7 @@ public class YesBoatsCmd implements TabExecutor {
             new AddArg(),
             new RemoveArg(),
             new EditArg(),
+            new StartArg(),
             new StopArg(),
             new ReportsArg(),
             new HelpArg(),
