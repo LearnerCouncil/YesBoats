@@ -15,7 +15,7 @@ import rocks.learnercouncil.yesboats.arena.Arena;
 import rocks.learnercouncil.yesboats.arena.ArenaScoreboard;
 import rocks.learnercouncil.yesboats.arena.DebugPath;
 
-import java.text.DecimalFormat;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -158,36 +158,20 @@ public class YesBoatsPlayer {
         firework.setFireworkMeta(meta);
         firework.detonate();
 
-        double totalSeconds = ((double) (System.currentTimeMillis() - time)) / 1000;
-        int minutes = (int) totalSeconds / 60;
-        double seconds = Math.floor((totalSeconds % 60) * 1000) / 1000;
-        DecimalFormat df = new DecimalFormat("00.00#");
-        String s = "th";
-        int lastDigit = currentPlace % 10;
-        if (lastDigit == 1 && currentPlace != 11)
-            s = "st";
-        else if (lastDigit == 2 && currentPlace != 12)
-            s = "nd";
-        else if (lastDigit == 3 && currentPlace != 13)
-            s = "rd";
-        final String suffix = s;
-        player.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
-                + ChatColor.AQUA + "You have completed the race with a time of "
-                + ChatColor.YELLOW + minutes + ":" + df.format(seconds)
-                + ChatColor.AQUA + ". That puts you in "
-                + ChatColor.YELLOW + currentPlace + suffix
-                + ChatColor.AQUA + " place."
-                + "\nYou can now spectate the other players or type "
-                + ChatColor.YELLOW + "/yb leave"
-                + ChatColor.AQUA + " to return to the lobby.");
-        arena.getPlayers().keySet().forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
-                + ChatColor.AQUA + ChatColor.BOLD + player.getName()
-                + ChatColor.RESET + ChatColor.AQUA + " has completed the race in "
-                + ChatColor.YELLOW + currentPlace + suffix
-                + ChatColor.AQUA + " place."));
+        Duration duration = Duration.ofMillis(System.currentTimeMillis() - time);
+        String formattedTime;
+        if (duration.toHours() > 1)
+            formattedTime = String.format("%d:%02d:%02d.%03d", duration.toHours(), duration.toMinutesPart(), duration.toSecondsPart(), duration.toMillisPart());
+        else
+            formattedTime = String.format("%02d:%02d.%03d", duration.toMinutes(), duration.toSecondsPart(), duration.toMillisPart());
+
+        player.sendMessage(Messages.FINISH_SELF.formatted(formattedTime, placeOrdinal(currentPlace)));
+
+        arena.getPlayers().keySet().forEach(p -> p.sendMessage(Messages.FINISH_OTHERS.formatted(player.getName(), placeOrdinal(currentPlace))));
+
         arena.incrementCurrentPlace();
         if (arena.getCurrentPlace() > arena.getPlayers().size()) {
-            arena.getPlayers().keySet().forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] " + ChatColor.AQUA + "All Players have finished. Returning to lobby in 5 seconds."));
+            arena.getPlayers().keySet().forEach(p -> p.sendMessage(Messages.ALL_FINISHED));
             new BukkitRunnable() {
                 @Override
                 public void run() {
@@ -195,6 +179,22 @@ public class YesBoatsPlayer {
                 }
             }.runTaskLater(plugin, 100);
         }
+    }
+
+    private String placeOrdinal(int place) {
+        String suffix;
+        int lastTwoDigits = place % 100;
+        int lastDigit = place % 10;
+        if (lastDigit == 1 && lastTwoDigits != 11) {
+            suffix = "st";
+        } else if (lastDigit == 2 && lastTwoDigits != 12) {
+            suffix = "nd";
+        } else if (lastDigit == 3 && lastTwoDigits != 13) {
+            suffix = "rd";
+        } else {
+            suffix = "th";
+        }
+        return place + suffix;
     }
 
     public void restoreData() {

@@ -15,10 +15,6 @@ import java.util.List;
 
 public final class YesBoats extends JavaPlugin {
 
-    public static ConfigFile arenaCfg;
-    public static ConfigFile config;
-
-
     private static @Getter YesBoats plugin;
 
     @SuppressWarnings("ConstantConditions")
@@ -29,17 +25,20 @@ public final class YesBoats extends JavaPlugin {
 
         ConfigurationSerialization.registerClass(Arena.class);
 
-        //initialize arena config
-        arenaCfg = new ConfigFile(this, "arenas.yml");
-        List<?> arenas = arenaCfg.getConfig().getList("arenas", new ArrayList<>());
+        // initialize arena config
+        Configs.arena = new ConfigFile(this, "arenas.yml");
+        List<?> arenas = Configs.arena.get().getList("arenas", new ArrayList<>());
         if (!arenas.isEmpty() && arenas.get(0) instanceof Arena) {
             //noinspection unchecked
             Arena.arenas.addAll((List<Arena>) arenas);
         }
 
-        //initialize regular config
-        config = new ConfigFile(this, "config.yml");
-        Arena.queueTime = config.getConfig().getInt("queue-time");
+        Configs.messages = new ConfigFile(this, "messages.yml");
+        Messages.initialize(Configs.messages);
+
+        // initialize regular config
+        Configs.main = new ConfigFile(this, "config.yml");
+        Arena.queueTime = Configs.main.get().getInt("queue-time");
 
         TabExecutor yb = new YesBoatsCmd();
         getCommand("yesboats").setExecutor(yb);
@@ -63,8 +62,8 @@ public final class YesBoats extends JavaPlugin {
             a.stopGame();
         });
 
-        arenaCfg.getConfig().set("arenas", Arena.arenas);
-        arenaCfg.saveConfig();
+        Configs.arena.get().set("arenas", Arena.arenas);
+        Configs.arena.save();
     }
 
     private void registerEvents(Listener... listeners) {
@@ -73,4 +72,10 @@ public final class YesBoats extends JavaPlugin {
         }
     }
 
+
+    public static class Configs {
+        public static ConfigFile messages;
+        public static ConfigFile arena;
+        public static ConfigFile main;
+    }
 }
