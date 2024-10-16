@@ -16,10 +16,8 @@ import rocks.learnercouncil.yesboats.arena.ArenaScoreboard;
 import rocks.learnercouncil.yesboats.arena.DebugPath;
 
 import java.text.DecimalFormat;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class YesBoatsPlayer {
@@ -28,7 +26,6 @@ public class YesBoatsPlayer {
     private final @Getter Player player;
     private final @Getter Arena arena;
     private final @Getter ArenaScoreboard scoreboard;
-    private final @Getter Set<Player> hiddenPlayers = new HashSet<>();
     public boolean canEnterBoat = true;
     public boolean canExitBoat = false;
     private @Getter DebugPath debugPath;
@@ -53,19 +50,24 @@ public class YesBoatsPlayer {
         previousLocation = player.getLocation().toVector();
     }
 
-    public void setSpectator() {
-        spectator = true;
-        if (player.isInsideVehicle())
-            Objects.requireNonNull(player.getVehicle()).remove();
-        player.setAllowFlight(true);
-        arena.getPlayers().forEach(((p, ybp) -> {
-            if (!ybp.isSpectator()) {
-                p.hidePlayer(plugin, player);
-                ybp.getHiddenPlayers().add(player);
-            }
-        }));
-        hiddenPlayers.clear();
-        arena.getSpectators().add(player);
+    public void setSpectator(boolean spectator) {
+        if (spectator) {
+            this.spectator = true;
+            if (player.isInsideVehicle())
+                Objects.requireNonNull(player.getVehicle()).remove();
+            player.setAllowFlight(true);
+            arena.getPlayers().forEach((player, ybPlayer) -> {
+                if (!ybPlayer.isSpectator()) {
+                    player.hidePlayer(plugin, this.player);
+                }
+            });
+            arena.getSpectators().add(player);
+        } else {
+            this.spectator = false;
+            player.setAllowFlight(false);
+            arena.getPlayers().keySet().forEach(p -> p.showPlayer(plugin, player));
+            arena.getSpectators().remove(player);
+        }
     }
 
     public boolean isIntersecting(BoundingBox boundingBox) {
@@ -148,7 +150,7 @@ public class YesBoatsPlayer {
     }
 
     public void finish() {
-        setSpectator();
+        this.setSpectator(true);
         final int currentPlace = arena.getCurrentPlace();
         Firework firework = (Firework) player.getWorld().spawnEntity(player.getLocation(), EntityType.FIREWORK);
         FireworkMeta meta = firework.getFireworkMeta();

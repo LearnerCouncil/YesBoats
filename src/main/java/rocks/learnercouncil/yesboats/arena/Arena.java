@@ -37,9 +37,8 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     private static final YesBoats plugin = YesBoats.getPlugin();
     private static final HashMap<Player, Arena> playerArenaMap = new HashMap<>();
     public static int queueTime;
-    //serialized fields
+
     public final String name;
-    //non-serialized fields
     private final @Getter Map<Player, YesBoatsPlayer> players = new HashMap<>();
     private final @Getter Set<Player> spectators = new HashSet<>();
     private final Set<ArmorStand> queueStands = new HashSet<>();
@@ -133,7 +132,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
 
     public void add(Player joiningPlayer) {
         //failsafe
-        if (players.size() == startLocations.size()) return;
+        if (players.size() >= startLocations.size()) return;
         if (!getStartLocation().isPresent()) return;
 
         Location startLocation = getStartLocation().get();
@@ -149,7 +148,6 @@ public class Arena implements ConfigurationSerializable, Cloneable {
 
         spectators.forEach(s -> {
             joiningPlayer.hidePlayer(s);
-            players.get(joiningPlayer).getHiddenPlayers().add(s);
         });
 
         ArmorStand queueStand = spawnArmorStand(startLocation);
@@ -168,14 +166,13 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         if (!Arena.get(leavingPlayer).isPresent()) return;
 
         removeVehicle(leavingPlayer);
-        players.keySet().forEach(p -> p.showPlayer(plugin, leavingPlayer));
+        players.get(leavingPlayer).setSpectator(false);
 
         leavingPlayer.teleport(lobbyLocation);
         players.get(leavingPlayer).restoreData();
 
         players.remove(leavingPlayer);
         playerArenaMap.remove(leavingPlayer);
-        spectators.remove(leavingPlayer);
 
         ScoreboardManager scoreboardManager = plugin.getServer().getScoreboardManager();
         assert scoreboardManager != null;
@@ -186,7 +183,8 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             players.values().forEach(p -> p.getScoreboard().updateScores(-1));
             state = State.WAITING;
         }
-        if (state == State.RUNNING && players.size() <= 0) stopGame();
+        if (state == State.RUNNING && players.size() <= 0)
+            stopGame();
         updateSigns();
     }
 
@@ -258,12 +256,15 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             public void run() {
                 secondCounter = (secondCounter < 20) ? ++secondCounter : 0;
                 if (secondCounter == 20) {
-                    if (!countdownFinished) countdownFinished = incrementCountdown(lightsIterator);
-                    else decrementTimer();
+                    if (!countdownFinished)
+                        countdownFinished = incrementCountdown(lightsIterator);
+                    else
+                        decrementTimer();
                 }
                 players.values().forEach(p -> updatePlayer(p));
             }
         }.runTaskTimer(plugin, 0, 1);
+        updateSigns();
     }
 
     private void decrementTimer() {
@@ -313,12 +314,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         Set<Player> playersCopy = new HashSet<>(players.keySet());
         for (Player p : playersCopy) remove(p);
         startLineActivator.getBlock().setType(Material.REDSTONE_BLOCK);
-        lightLocations.forEach(l -> {
-            if (!(l.getBlock().getBlockData() instanceof Lightable)) return;
-            Lightable blockData = (Lightable) l.getBlock().getBlockData();
-            blockData.setLit(false);
-            l.getBlock().setBlockData(blockData);
-        });
+        lightLocations.forEach(l -> setLamp(l.getBlock(), false));
     }
 
     @Override
@@ -367,8 +363,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         @EventHandler
         public void onPlayerQuit(PlayerQuitEvent event) {
             Player player = event.getPlayer();
-            if (!Arena.get(player).isPresent()) return;
-            Arena.get(player).get().remove(player);
+            Arena.get(player).ifPresent(arena -> arena.remove(player));
         }
 
         @EventHandler
