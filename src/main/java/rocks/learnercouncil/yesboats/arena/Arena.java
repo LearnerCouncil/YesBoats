@@ -167,10 +167,10 @@ public class Arena implements ConfigurationSerializable, Cloneable {
 
         removeVehicle(leavingPlayer);
         players.get(leavingPlayer).setSpectator(false);
+        spectators.forEach(s -> leavingPlayer.showPlayer(plugin, s));
 
         leavingPlayer.teleport(lobbyLocation);
         players.get(leavingPlayer).restoreData();
-
         players.remove(leavingPlayer);
         playerArenaMap.remove(leavingPlayer);
 
@@ -311,6 +311,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         if (state == State.RUNNING) mainLoop.cancel();
         if (state == State.IN_QUEUE) queueTimer.cancel();
         state = State.WAITING;
+//        players.values().forEach(p -> p.setSpectator(false));
         Set<Player> playersCopy = new HashSet<>(players.keySet());
         for (Player p : playersCopy) remove(p);
         startLineActivator.getBlock().setType(Material.REDSTONE_BLOCK);
