@@ -45,7 +45,8 @@ public final class YesBoats extends JavaPlugin {
         getCommand("yesboats").setTabCompleter(yb);
 
 
-        registerEvents(new Arena.Events(),
+        registerEvents(
+                new Arena.Events(),
                 new ArenaEditor.Events(),
                 new ArenaSign.Events(),
                 new InventoryManager.Events()

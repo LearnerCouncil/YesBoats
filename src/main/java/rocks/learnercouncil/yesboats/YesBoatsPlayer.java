@@ -83,7 +83,7 @@ public class YesBoatsPlayer {
         if (Double.isNaN(direction.getX())) direction = new Vector();
 
         RayTraceResult rayTraceResult = boundingBox.rayTrace(previousPosition, direction,
-                                                             currentPosition.distance(previousPosition)
+                currentPosition.distance(previousPosition)
         );
         return rayTraceResult != null;
     }
@@ -106,8 +106,9 @@ public class YesBoatsPlayer {
                         .getOnlinePlayers()
                         .stream()
                         .filter(p -> p.hasPermission(YesBoats.Permissions.ADMIN_MESSAGES))
-                        .forEach(p -> p.sendMessage(
-                                Messages.SKIPPED_CHECKPOINT.formatted(player.getName(), nextCheckpoint)));
+                        .forEach(p ->
+                                p.sendMessage(Messages.SKIPPED_CHECKPOINT.formatted(player.getName(), nextCheckpoint))
+                        );
                 checkpoint = nextNextCheckpoint;
                 debugPath = new DebugPath(player, arena);
             }
@@ -168,10 +169,10 @@ public class YesBoatsPlayer {
         String formattedTime;
         if (duration.toHours() > 1)
             formattedTime = String.format("%d:%02d:%02d.%03d", duration.toHours(), duration.toMinutesPart(),
-                                          duration.toSecondsPart(), duration.toMillisPart()
+                    duration.toSecondsPart(), duration.toMillisPart()
             );
         else formattedTime = String.format("%02d:%02d.%03d", duration.toMinutes(), duration.toSecondsPart(),
-                                           duration.toMillisPart()
+                duration.toMillisPart()
         );
 
         player.sendMessage(Messages.FINISH_SELF.formatted(formattedTime, placeOrdinal(currentPlace)));
@@ -179,7 +180,8 @@ public class YesBoatsPlayer {
         arena.getPlayers()
                 .keySet()
                 .forEach(p -> p.sendMessage(
-                        Messages.FINISH_OTHERS.formatted(player.getName(), placeOrdinal(currentPlace))));
+                        Messages.FINISH_OTHERS.formatted(player.getName(), placeOrdinal(currentPlace))
+                ));
 
         arena.incrementCurrentPlace();
         if (arena.getCurrentPlace() > arena.getPlayers().size()) {
