@@ -17,21 +17,20 @@ import static rocks.learnercouncil.yesboats.commands.CommandResult.*;
 public class AddArg implements CommandArgument {
     @Override
     public BaseComponent[] execute(CommandSender sender, Command cmd, String label, String[] args) {
-        if (!args[0].equalsIgnoreCase("add")) return CommandResult.NONE;
-        if (!sender.hasPermission("yesboats.commands.yesboats.admin")) return NO_PERMISSION;
-        if (args.length < 2) return TOO_FEW_ARGS;
-        if (args.length > 2) return TOO_MANY_ARGS;
+        if (!args[0].equalsIgnoreCase("add")) return CommandResult.none();
+        if (!sender.hasPermission("yesboats.commands.yesboats.admin")) return noPermission();
+        if (args.length < 2) return tooFewArgs();
+        if (args.length > 2) return tooManyArgs();
 
         String name = args[1];
-        if (Arena.get(name).isPresent()) return CommandResult.ARENA_EXISTS;
+        if (Arena.get(name).isPresent()) return CommandResult.arenaExists(name);
         ArenaEditor.editors.put((Player) sender, new ArenaEditor((Player) sender, new Arena(name)));
-        return CommandResult.CREATED;
+        return CommandResult.created(name);
     }
 
     @Override
     public List<String> tabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
-        if (args.length == 1)
-            return Collections.singletonList("add");
+        if (args.length == 1) return Collections.singletonList("add");
         return Collections.emptyList();
     }
 }

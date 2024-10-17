@@ -7,79 +7,96 @@ import java.util.List;
 import java.util.Objects;
 
 public class Messages {
+    public static String PREFIX;
     public static String FINISH_SELF;
     public static String FINISH_OTHERS;
     public static String ALL_FINISHED;
-    private static String PREFIX;
 
     public static void initialize(ConfigFile config) {
         PREFIX = config.get().getString("prefix");
         FINISH_SELF = prefixedPath(config, "finish-self");
         FINISH_OTHERS = prefixedPath(config, "finish-others");
         ALL_FINISHED = prefixedPath(config, "all-finished");
-        // Editor
-        Editor.NO_BOX_SELECTED = prefixedPath(config, "editor.no-box-selected");
-        Editor.VALIDATION_FAILED = prefixedPath(config, "editor.validation-failed");
-        Editor.VALIDATOR_MIN_PLAYERS = path(config, "editor.validator.min-players");
-        Editor.VALIDATOR_LAPS = path(config, "editor.validator.laps");
-        Editor.VALIDATOR_TIME = path(config, "editor.validator.time");
-        Editor.VALIDATOR_LOBBY_LOCATION = path(config, "editor.validator.lobby-location");
-        Editor.VALIDATOR_WORLD = path(config, "editor.validator.world");
-        Editor.VALIDATOR_START_LINE_ACTIVATOR = path(config, "editor.validator.start-line-activator");
-        Editor.VALIDATOR_START_LOCATIONS = path(config, "editor.validator.start-locations");
-        Editor.VALIDATOR_LIGHT_LOCATIONS = path(config, "editor.validator.light-locations");
-        Editor.VALIDATOR_CHECKPOINT_BOXES = path(config, "editor.validator.checkpoint-boxes");
-        Editor.VALIDATOR_CHECKPOINT_SPAWNS = path(config, "editor.validator.checkpoint-spawns");
-        Editor.SAVED = prefixedPath(config, "editor.saved");
-        Editor.CANCELED = prefixedPath(config, "editor.canceled");
-        Editor.POSITION_1_SET = path(config, "editor.position-1-set");
-        Editor.POSITION_2_SET = path(config, "editor.position-2-set");
-        Editor.DEATH_BARRIER_ADDED = prefixedPath(config, "editor.death-barrier-added");
-        Editor.CHECKPOINT_BOX_SET = prefixedPath(config, "checkpoint-box-set");
-        Editor.CHECKPOINT_SPAWN_SET = prefixedPath(config, "checkpoint-spawn-set");
-        Editor.LOBBY_LOCATION_SET = prefixedPath(config, "editor.lobby-location-set");
-        Editor.START_LINE_SET = prefixedPath(config, "editor.start-line-set");
-        Editor.LIGHT_EXISTS = path(config, "editor.light-exists");
-        Editor.LIGHT_NOT_EXIST = path(config, "editor.light-not-exist");
-        Editor.LIGHT_PLACED = path(config, "editor.light-placed");
-        Editor.LIGHT_REMOVED = path(config, "editor.light-removed");
-        Editor.DEBUG_TOGGLED = prefixedPath(config, "editor.debug-toggled");
 
-        // Editor Items
-        Editor.Items.REGENERATE_NAME = path(config, "editor.items.regenerate.name");
-        Editor.Items.REGENERATE_LORE = pathArray(config, "editor.items.regenerate.lore");
-        Editor.Items.SELECTOR_NAME = path(config, "editor.items.selector.name");
-        Editor.Items.SELECTOR_LORE = pathArray(config, "editor.items.selector.lore");
-        Editor.Items.DEATH_BARRIER_NAME = path(config, "editor.items.death-barrier.name");
-        Editor.Items.DEATH_BARRIER_LORE = pathArray(config, "editor.items.death-barrier.lore");
-        Editor.Items.CHECKPOINT_NAME = path(config, "editor.items.checkpoint.name");
-        Editor.Items.CHECKPOINT_LORE = pathArray(config, "editor.items.checkpoint.lore");
-        Editor.Items.MIN_PLAYERS_NAME = path(config, "editor.items.min-players.name");
-        Editor.Items.MIN_PLAYERS_LORE = pathArray(config, "editor.items.min-players.lore");
-        Editor.Items.LAPS_NAME = path(config, "editor.items.laps.name");
-        Editor.Items.LAPS_LORE = pathArray(config, "editor.items.laps.lore");
-        Editor.Items.TIME_NAME = path(config, "editor.items.time.name");
-        Editor.Items.TIME_LORE = pathArray(config, "editor.items.time.lore");
-        Editor.Items.START_NAME = path(config, "editor.items.start.name");
-        Editor.Items.START_LORE = pathArray(config, "editor.items.start.lore");
-        Editor.Items.LOBBY_NAME = path(config, "editor.items.lobby.name");
-        Editor.Items.LOBBY_LORE = pathArray(config, "editor.items.lobby.lore");
-        Editor.Items.START_LINE_NAME = path(config, "editor.items.start-line.name");
-        Editor.Items.START_LINE_LORE = pathArray(config, "editor.items.start-line.lore");
-        Editor.Items.LIGHT_NAME = path(config, "editor.items.light.name");
-        Editor.Items.LIGHT_LORE = pathArray(config, "editor.items.light.lore");
-        Editor.Items.CANCEL_NAME = path(config, "editor.items.cancel.name");
-        Editor.Items.CANCEL_LORE = pathArray(config, "editor.items.cancel.lore");
-        Editor.Items.SAVE_NAME = path(config, "editor.items.save.name");
-        Editor.Items.SAVE_LORE = pathArray(config, "editor.items.save.lore");
-        Editor.Items.DEBUG_NAME = path(config, "editor.items.debug.name");
-        Editor.Items.DEBUG_LORE = pathArray(config, "editor.items.debug.lore");
+        //region Editor...
+        Editor.VALIDATOR_MIN_PLAYERS = validatorPath(config, "min-players");
+        Editor.VALIDATOR_LAPS = validatorPath(config, "laps");
+        Editor.VALIDATOR_TIME = validatorPath(config, "time");
+        Editor.VALIDATOR_LOBBY_LOCATION = validatorPath(config, "lobby-location");
+        Editor.VALIDATOR_WORLD = validatorPath(config, "world");
+        Editor.VALIDATOR_START_LINE_ACTIVATOR = validatorPath(config, "start-line-activator");
+        Editor.VALIDATOR_START_LOCATIONS = validatorPath(config, "start-locations");
+        Editor.VALIDATOR_LIGHT_LOCATIONS = validatorPath(config, "light-locations");
+        Editor.VALIDATOR_CHECKPOINT_BOXES = validatorPath(config, "checkpoint-boxes");
+        Editor.VALIDATOR_CHECKPOINT_SPAWNS = validatorPath(config, "checkpoint-spawns");
 
-    }
+        Editor.NO_BOX_SELECTED = editorPath(config, "no-box-selected", true);
+        Editor.VALIDATION_FAILED = editorPath(config, "validation-failed", true);
+        Editor.SAVED = editorPath(config, "saved", true);
+        Editor.CANCELED = editorPath(config, "canceled", true);
+        Editor.POSITION_1_SET = editorPath(config, "position-1-set", false);
+        Editor.POSITION_2_SET = editorPath(config, "position-2-set", false);
+        Editor.DEATH_BARRIER_ADDED = editorPath(config, "death-barrier-added", true);
+        Editor.CHECKPOINT_BOX_SET = editorPath(config, "checkpoint-box-set", true);
+        Editor.CHECKPOINT_SPAWN_SET = editorPath(config, "checkpoint-spawn-set", true);
+        Editor.LOBBY_LOCATION_SET = editorPath(config, "lobby-location-set", true);
+        Editor.START_LINE_SET = editorPath(config, "start-line-set", true);
+        Editor.LIGHT_EXISTS = editorPath(config, "light-exists", false);
+        Editor.LIGHT_NOT_EXIST = editorPath(config, "light-not-exist", false);
+        Editor.LIGHT_PLACED = editorPath(config, "light-placed", false);
+        Editor.LIGHT_REMOVED = editorPath(config, "light-removed", false);
+        Editor.DEBUG_TOGGLED = editorPath(config, "debug-toggled", true);
+        //endregion
 
-    private static String prefixedPath(ConfigFile config, String path) {
-        if (PREFIX == null) PREFIX = ChatColor.DARK_AQUA + "[YesBoats]";
-        return PREFIX + ' ' + path(config, path);
+        //region Editor.Items...
+        Editor.Items.REGENERATE = itemPath(config, "regenerate");
+        Editor.Items.SELECTOR = itemPath(config, "selector");
+        Editor.Items.DEATH_BARRIER = itemPath(config, "death-barrier");
+        Editor.Items.CHECKPOINT = itemPath(config, "checkpoint");
+        Editor.Items.MIN_PLAYERS = itemPath(config, "min-players");
+        Editor.Items.LAPS = itemPath(config, "laps");
+        Editor.Items.TIME = itemPath(config, "time");
+        Editor.Items.START = itemPath(config, "start");
+        Editor.Items.LOBBY = itemPath(config, "lobby");
+        Editor.Items.START_LINE = itemPath(config, "start-line");
+        Editor.Items.LIGHT = itemPath(config, "light");
+        Editor.Items.CANCEL = itemPath(config, "cancel");
+        Editor.Items.SAVE = itemPath(config, "save");
+        Editor.Items.DEBUG = itemPath(config, "debug");
+        //endregion
+
+        //region Commands
+        Commands.CREATED = commandPath(config, "created");
+        Commands.REMOVED = commandPath(config, "removed");
+        Commands.JOINED = commandPath(config, "joined");
+        Commands.LEFT = commandPath(config, "left");
+        Commands.EDITING = commandPath(config, "editing");
+        Commands.STARTED = commandPath(config, "started");
+        Commands.STOPPED = commandPath(config, "stopped");
+        Commands.DISPLAYING_PATH = commandPath(config, "displaying-path");
+        Commands.CLEARING_PATH = commandPath(config, "clearing-path");
+        Commands.JOINED_OTHER = commandPath(config, "joined-other");
+        Commands.LEFT_OTHER = commandPath(config, "left-other");
+
+        Commands.NO_PERMISSION = commandPath(config, "no-permission");
+        Commands.TOO_FEW_ARGS = commandPath(config, "too-few-args");
+        Commands.TOO_MANY_ARGS = commandPath(config, "too-many-args");
+        Commands.ARENA_EXISTS = commandPath(config, "arena-exists");
+        Commands.ARENA_NOT_EXIST = commandPath(config, "arena-not-exist");
+        Commands.PLAYER_NOT_FOUND = commandPath(config, "player-not-found");
+        Commands.ALREADY_RUNNING = commandPath(config, "already-running");
+        Commands.NOT_RUNNING = commandPath(config, "not-running");
+        Commands.TOO_FEW_PLAYERS = commandPath(config, "too-few-players");
+        Commands.NOT_IN_ARENA_SELF = commandPath(config, "not-in-arena-self");
+        Commands.NOT_IN_ARENA_OTHER = commandPath(config, "not-in-arena-other");
+        Commands.ALREADY_IN_ARENA_SELF = commandPath(config, "already-in-arena-self");
+        Commands.ALREADY_IN_ARENA_OTHER = commandPath(config, "already-in-arena-other");
+        Commands.NEEDS_PLAYER = commandPath(config, "needs-player");
+        Commands.INVALID_ARGS = commandPath(config, "invalid-args");
+        Commands.INVALID_NUMBER = commandPath(config, "invalid-number");
+        Commands.BAR = commandPath(config, "bar");
+
+        //endregion
     }
 
     private static String path(ConfigFile config, String path) {
@@ -95,8 +112,61 @@ public class Messages {
         return list.stream().filter(e -> e instanceof String).toArray(String[]::new);
     }
 
-    public static class Commands {
 
+    private static String prefixedPath(ConfigFile config, String path) {
+        if (PREFIX == null) PREFIX = ChatColor.DARK_AQUA + "[YesBoats]";
+        return PREFIX + ' ' + path(config, path);
+    }
+
+    private static String editorPath(ConfigFile config, String path, boolean prefixed) {
+        return prefixed ? prefixedPath(config, "editor." + path) : path(config, "editor." + path);
+    }
+
+    private static String validatorPath(ConfigFile config, String path) {
+        return path(config, "editor.validator." + path);
+    }
+
+    private static Editor.Item itemPath(ConfigFile config, String name) {
+        return new Editor.Item(path(config, "editor.items." + name + ".name"),
+                pathArray(config, "editor.items." + name + ".lore")
+        );
+    }
+
+    private static String commandPath(ConfigFile config, String path) {
+        return prefixedPath(config, "commands." + path);
+    }
+
+    public static class Commands {
+        public static String CREATED;
+        public static String REMOVED;
+        public static String JOINED;
+        public static String LEFT;
+        public static String EDITING;
+        public static String STARTED;
+        public static String STOPPED;
+        public static String DISPLAYING_PATH;
+        public static String CLEARING_PATH;
+        public static String JOINED_OTHER;
+        public static String LEFT_OTHER;
+
+        public static String NO_PERMISSION;
+        public static String TOO_FEW_ARGS;
+        public static String TOO_MANY_ARGS;
+        public static String ARENA_EXISTS;
+        public static String ARENA_NOT_EXIST;
+        public static String PLAYER_NOT_FOUND;
+        public static String ALREADY_RUNNING;
+        public static String NOT_RUNNING;
+        public static String TOO_FEW_PLAYERS;
+        public static String NOT_IN_ARENA_SELF;
+        public static String NOT_IN_ARENA_OTHER;
+        public static String ALREADY_IN_ARENA_SELF;
+        public static String ALREADY_IN_ARENA_OTHER;
+        public static String NEEDS_PLAYER;
+        public static String INVALID_ARGS;
+        public static String INVALID_NUMBER;
+
+        public static String BAR;
     }
 
     public static class Editor {
@@ -127,35 +197,27 @@ public class Messages {
         public static String LIGHT_REMOVED;
         public static String DEBUG_TOGGLED;
 
+        public record Item(String name, String[] lore) {
+            public Item formattedName(Object... args) {
+                return new Item(this.name().formatted(args), this.lore());
+            }
+        }
+
         public static class Items {
-            public static String REGENERATE_NAME;
-            public static String[] REGENERATE_LORE;
-            public static String SELECTOR_NAME;
-            public static String[] SELECTOR_LORE;
-            public static String DEATH_BARRIER_NAME;
-            public static String[] DEATH_BARRIER_LORE;
-            public static String CHECKPOINT_NAME;
-            public static String[] CHECKPOINT_LORE;
-            public static String MIN_PLAYERS_NAME;
-            public static String[] MIN_PLAYERS_LORE;
-            public static String LAPS_NAME;
-            public static String[] LAPS_LORE;
-            public static String TIME_NAME;
-            public static String[] TIME_LORE;
-            public static String START_NAME;
-            public static String[] START_LORE;
-            public static String LOBBY_NAME;
-            public static String[] LOBBY_LORE;
-            public static String START_LINE_NAME;
-            public static String[] START_LINE_LORE;
-            public static String LIGHT_NAME;
-            public static String[] LIGHT_LORE;
-            public static String CANCEL_NAME;
-            public static String[] CANCEL_LORE;
-            public static String SAVE_NAME;
-            public static String[] SAVE_LORE;
-            public static String DEBUG_NAME;
-            public static String[] DEBUG_LORE;
+            public static Item REGENERATE;
+            public static Item SELECTOR;
+            public static Item DEATH_BARRIER;
+            public static Item CHECKPOINT;
+            public static Item MIN_PLAYERS;
+            public static Item LAPS;
+            public static Item TIME;
+            public static Item START;
+            public static Item LOBBY;
+            public static Item START_LINE;
+            public static Item LIGHT;
+            public static Item CANCEL;
+            public static Item SAVE;
+            public static Item DEBUG;
         }
     }
 }

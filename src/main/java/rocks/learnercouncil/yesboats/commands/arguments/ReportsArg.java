@@ -20,12 +20,12 @@ public class ReportsArg implements CommandArgument {
 
     @Override
     public BaseComponent[] execute(CommandSender sender, Command cmd, String label, String[] args) {
-        if (!args[0].equalsIgnoreCase("reports")) return NONE;
-        if (!sender.hasPermission("yesboats.commands.yesboats.admin")) return NO_PERMISSION;
-        if (args.length < 2) return TOO_FEW_ARGS;
+        if (!args[0].equalsIgnoreCase("reports")) return none();
+        if (!sender.hasPermission("yesboats.commands.yesboats.admin")) return noPermission();
+        if (args.length < 2) return tooFewArgs();
 
         String name = args[1];
-        if (Arena.get(name).isEmpty()) return ARENA_NOT_EXIST;
+        if (Arena.get(name).isEmpty()) return arenaNotExist(name);
 
         if (args.length == 2) {
             return CommandResult.getReports();
@@ -34,28 +34,25 @@ public class ReportsArg implements CommandArgument {
         if (args.length == 3) {
             if (args[2].equalsIgnoreCase("clear")) {
                 DebugPath.clearDisplay();
-                return CommandResult.CLEARING_PATH;
+                return CommandResult.clearingPath();
             }
             int index;
             try {
                 index = Integer.parseInt(args[2]);
                 DebugPath.display(index, (Player) sender);
-                return CommandResult.DISPLAYING_PATH;
+                return CommandResult.displayingPath();
             } catch (NumberFormatException e) {
                 return CommandResult.invalidNumber(args[2]);
             }
         }
-        return TOO_MANY_ARGS;
+        return tooManyArgs();
     }
 
     @Override
     public List<String> tabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
-        if (args.length == 1)
-            return Collections.singletonList("reports");
-        if (args.length == 2)
-            return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
-        if (args.length == 3)
-            return Collections.singletonList("clear");
+        if (args.length == 1) return Collections.singletonList("reports");
+        if (args.length == 2) return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
+        if (args.length == 3) return Collections.singletonList("clear");
         return Collections.emptyList();
     }
 }

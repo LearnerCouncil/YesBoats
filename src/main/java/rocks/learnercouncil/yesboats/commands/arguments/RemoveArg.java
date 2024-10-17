@@ -16,20 +16,20 @@ import static rocks.learnercouncil.yesboats.commands.CommandResult.*;
 public class RemoveArg implements CommandArgument {
     @Override
     public BaseComponent[] execute(CommandSender sender, Command cmd, String label, String[] args) {
-        if (!args[0].equalsIgnoreCase("remove")) return NONE;
-        if (!sender.hasPermission("yesboats.commands.yesboats.admin")) return NO_PERMISSION;
-        if (args.length < 2) return TOO_FEW_ARGS;
-        if (args.length > 2) return TOO_MANY_ARGS;
-        Optional<Arena> arenaOptional = Arena.get(args[1]);
-        if (arenaOptional.isEmpty()) return ARENA_NOT_EXIST;
+        if (!args[0].equalsIgnoreCase("remove")) return none();
+        if (!sender.hasPermission("yesboats.commands.yesboats.admin")) return noPermission();
+        if (args.length < 2) return tooFewArgs();
+        if (args.length > 2) return tooManyArgs();
+        String name = args[1];
+        Optional<Arena> arenaOptional = Arena.get(name);
+        if (arenaOptional.isEmpty()) return arenaNotExist(name);
         Arena.arenas.remove(arenaOptional.get());
-        return REMOVED;
+        return removed(name);
     }
 
     @Override
     public List<String> tabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
-        if (args.length == 1)
-            return Collections.singletonList("remove");
+        if (args.length == 1) return Collections.singletonList("remove");
         if (args.length == 2 && args[0].equalsIgnoreCase("remove"))
             return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
         return Collections.emptyList();

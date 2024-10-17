@@ -96,3 +96,35 @@ editor:
     debug:
       name: '&l&7Debug'
       lore: '&fTurns on extra debugging capabilities.'
+commands:
+  # Results
+  created: "&bArena &e'%s' &bsuccessfully created. Now editing."
+  removed: "&bArena &e'%s' &bsuccessfully removed."
+  joined: "&bJoined the game."
+  left: "&bLeft the game."
+  editing: "&bNow editing arena &e'%s'&b."
+  started: "&bStarted the game."
+  stopped: "&bStopped the game."
+  displaying-path: "&bNow displaying debug path."
+  clearing-path: "&bClearing displayed debug paths."
+  joined-other: "&bAdded &e%s &bto the game."
+  left-other: "&bRemoved &e%s &bfrom the game."
+  # Errors
+  no-permission: "&cYou don't have permission to execute this command."
+  too-few-args: "&cToo few arguments."
+  too-many-args: "&cToo many arguments."
+  arena-exists: "&cAn arena with the name &e'%s' &balready exists."
+  arena-not-exist: "&cAn arena with the name &e'%s' &cdoesn't exist."
+  player-not-found: "&cPlayer not found."
+  already-running: "&cArena already running."
+  not-running: "&cArena not running."
+  too-few-players: "&cArena doesn't have enough players."
+  not-in-arena-self: "&cYou are not in an arena."
+  not-in-arena-other: "&cThat player is not in an arena."
+  already-in-arena-self: "&cYou are already in an arena."
+  already-in-arena-other: "&cThat player is already in an arena."
+  needs-player: "&cCommand &e'/%s' &cmust be executed by a player."
+  invalid-args: "&cInvalid arguments. Try &e'/%s help' &cfor help."
+  invalid-number: "&c'&e%s&c' is not a valid number."
+  # misc
+  bar: "&b===================="

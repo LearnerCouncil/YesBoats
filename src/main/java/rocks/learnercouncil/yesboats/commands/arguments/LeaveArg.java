@@ -23,33 +23,36 @@ public class LeaveArg implements CommandArgument {
 
     @Override
     public BaseComponent[] execute(CommandSender sender, Command cmd, String label, String[] args) {
-        if (!args[0].equalsIgnoreCase("leave")) return CommandResult.NONE;
-        if (!sender.hasPermission("yesboats.commands.yesboats.user")) return CommandResult.NO_PERMISSION;
+        if (!args[0].equalsIgnoreCase("leave")) return CommandResult.none();
+        if (!sender.hasPermission("yesboats.commands.yesboats.user")) return CommandResult.noPermission();
         boolean isAdmin = sender.hasPermission("yesboats.commands.yesboats.admin");
-        if (args.length > (isAdmin ? 2 : 1)) return TOO_MANY_ARGS;
+        if (args.length > (isAdmin ? 2 : 1)) return tooManyArgs();
 
         Optional<Arena> arenaOptional;
         if (args.length == 2) {
             String playerName = args[1];
             Player player = plugin.getServer().getPlayer(playerName);
-            if (player == null) return PLAYER_NOT_FOUND;
+            if (player == null) return playerNotFound();
             arenaOptional = Arena.get(player);
-            if (arenaOptional.isEmpty()) return CommandResult.NOT_IN_ARENA_OTHER;
+            if (arenaOptional.isEmpty()) return CommandResult.notInArenaOther();
             arenaOptional.get().remove(player);
             return leftOther(playerName);
         }
         arenaOptional = Arena.get((Player) sender);
-        if (arenaOptional.isEmpty()) return NOT_IN_ARENA_SELF;
+        if (arenaOptional.isEmpty()) return notInArenaSelf();
         arenaOptional.get().remove((Player) sender);
-        return LEFT;
+        return left();
     }
 
     @Override
     public List<String> tabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
-        if (args.length == 1)
-            return Collections.singletonList("leave");
-        if (args.length == 2 && args[0].equalsIgnoreCase("leave") && sender.hasPermission("yesboats.commands.yesboats.admin"))
-            return plugin.getServer().getOnlinePlayers().stream().map(HumanEntity::getName).collect(Collectors.toList());
+        if (args.length == 1) return Collections.singletonList("leave");
+        if (args.length == 2 && args[0].equalsIgnoreCase("leave") && sender.hasPermission(
+                "yesboats.commands.yesboats.admin")) return plugin.getServer()
+                .getOnlinePlayers()
+                .stream()
+                .map(HumanEntity::getName)
+                .collect(Collectors.toList());
         return Collections.emptyList();
     }
 }

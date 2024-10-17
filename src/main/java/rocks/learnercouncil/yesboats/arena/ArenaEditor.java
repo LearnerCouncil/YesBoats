@@ -26,6 +26,7 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
+import rocks.learnercouncil.yesboats.Messages;
 import rocks.learnercouncil.yesboats.YesBoats;
 
 import java.util.*;
@@ -83,56 +84,57 @@ public class ArenaEditor {
         editorItems.clear();
         Inventory inv = player.getInventory();
 
-        inv.setItem(0, getItem(Material.ENDER_CHEST, Items.REGENERATE_NAME, Items.REGENERATE_LORE));
+        inv.setItem(0, getItem(Material.ENDER_CHEST, Items.REGENERATE));
 
-        inv.setItem(1, getItem(Material.IRON_AXE, Items.SELECTOR_NAME, Items.SELECTOR_LORE));
+        inv.setItem(1, getItem(Material.IRON_AXE, Items.SELECTOR));
 
-        inv.setItem(2, getItem(Material.BARRIER, Items.DEATH_BARRIER_NAME, Items.DEATH_BARRIER_LORE));
+        inv.setItem(2, getItem(Material.BARRIER, Items.DEATH_BARRIER));
 
-        inv.setItem(3, getItem(Material.LIGHT_BLUE_BANNER, Items.CHECKPOINT_NAME, Items.CHECKPOINT_LORE));
+        inv.setItem(3, getItem(Material.LIGHT_BLUE_BANNER, Items.CHECKPOINT));
 
-        inv.setItem(27, getItem(Material.RED_CARPET, arena.minPlayers, Items.MIN_PLAYERS_NAME, Items.MIN_PLAYERS_LORE));
+        inv.setItem(27, getItem(Material.RED_CARPET, arena.minPlayers, Items.MIN_PLAYERS));
 
-        inv.setItem(28, getItem(Material.SPECTRAL_ARROW, arena.laps, Items.LAPS_NAME, Items.LAPS_LORE));
+        inv.setItem(28, getItem(Material.SPECTRAL_ARROW, arena.laps, Items.LAPS));
 
-        inv.setItem(29, getItem(Material.CLOCK,
-                Items.TIME_NAME.formatted(String.format("%d:%02d", arena.time / 60, arena.time % 60)),
-                Items.TIME_LORE
-        ));
+        inv.setItem(29,
+                getItem(Material.CLOCK,
+                        Items.TIME.formattedName(String.format("%d:%02d", arena.time / 60, arena.time % 60))
+                )
+        );
 
-        inv.setItem(4, getItem(Material.OAK_BOAT, Items.START_NAME, Items.START_LORE));
+        inv.setItem(4, getItem(Material.OAK_BOAT, Items.START));
 
-        inv.setItem(5, getItem(Material.ENDER_PEARL, Items.LOBBY_NAME, Items.LOBBY_LORE));
+        inv.setItem(5, getItem(Material.ENDER_PEARL, Items.LOBBY));
 
-        inv.setItem(6, getItem(Material.REDSTONE_BLOCK, Items.START_LINE_NAME, Items.START_LINE_LORE));
+        inv.setItem(6, getItem(Material.REDSTONE_BLOCK, Items.START_LINE));
 
-        inv.setItem(7, getItem(Material.REDSTONE_LAMP, Items.LIGHT_NAME, Items.LIGHT_LORE));
+        inv.setItem(7, getItem(Material.REDSTONE_LAMP, Items.LIGHT));
 
-        inv.setItem(16, getItem(Material.RED_CONCRETE, Items.CANCEL_NAME, Items.CANCEL_LORE));
+        inv.setItem(16, getItem(Material.RED_CONCRETE, Items.CANCEL));
 
-        inv.setItem(17, getItem(Material.LIME_CONCRETE, Items.SAVE_NAME, Items.SAVE_LORE));
+        inv.setItem(17, getItem(Material.LIME_CONCRETE, Items.SAVE));
 
-        inv.setItem(9, getItem(Material.FEATHER, Items.DEBUG_NAME, Items.DEBUG_LORE));
+        inv.setItem(9, getItem(Material.FEATHER, Items.DEBUG));
+
     }
 
-    private ItemStack getItem(Material material, String name, String... lore) {
-        return getItem(material, 1, name, lore);
+    private ItemStack getItem(Material material, Messages.Editor.Item item) {
+        return getItem(material, 1, item);
     }
 
     /**
      * Gets an {@link ItemStack} from a {@link Material}, name, and lore.
      *
      * @param material The material of the item.
-     * @param name     The name of the item.
-     * @param lore     The lore of the Item.
+     * @param itemData The data of the item.
      * @return The ItemStack
      */
-    private ItemStack getItem(Material material, int amount, String name, String... lore) {
+    private ItemStack getItem(Material material, int amount, Messages.Editor.Item itemData) {
         ItemStack item = new ItemStack(material, amount);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return item;
-        meta.setDisplayName(name);
-        meta.setLore(Arrays.asList(lore));
+        meta.setDisplayName(itemData.name());
+        meta.setLore(Arrays.asList(itemData.lore()));
         item.setItemMeta(meta);
         editorItems.add(item);
         return item;
@@ -545,18 +547,14 @@ public class ArenaEditor {
             if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
                 if (arena.time > 30) {
                     arena.time -= 30;
-                    meta.setDisplayName(Items.TIME_NAME.formatted(String.format("%d:%02d",
-                            arena.time / 60,
-                            arena.time % 60
-                    )));
+                    meta.setDisplayName(Items.TIME.name()
+                            .formatted(String.format("%d:%02d", arena.time / 60, arena.time % 60)));
                 }
             } else if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
                 if (arena.time < 3600) {
                     arena.time += 30;
-                    meta.setDisplayName(Items.TIME_NAME.formatted(String.format("%d:%02d",
-                            arena.time / 60,
-                            arena.time % 60
-                    )));
+                    meta.setDisplayName(Items.TIME.name()
+                            .formatted(String.format("%d:%02d", arena.time / 60, arena.time % 60)));
                 }
 
             }
@@ -607,7 +605,7 @@ public class ArenaEditor {
                 if (arena.lightLocations.contains(block.getLocation())) {
                     e.getPlayer()
                             .spigot()
-                            .sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(Editor.LIGHT_EXISTS));
+                            .sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(Editor.LIGHT_EXISTS));
                     return;
                 }
                 editor.oldLightMaterials.put(block, block.getType());
@@ -615,7 +613,7 @@ public class ArenaEditor {
                 ((Lightable) block.getBlockData()).setLit(true);
                 arena.lightLocations.add(block.getLocation());
                 e.getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR,
-                        new TextComponent(Editor.LIGHT_PLACED.formatted(arena.lightLocations.size()))
+                        TextComponent.fromLegacyText(Editor.LIGHT_PLACED.formatted(arena.lightLocations.size()))
                 );
                 return;
             }
@@ -623,15 +621,15 @@ public class ArenaEditor {
                 if (!editor.arena.lightLocations.contains(block.getLocation())) {
                     e.getPlayer()
                             .spigot()
-                            .sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(Editor.LIGHT_NOT_EXIST));
+                            .sendMessage(ChatMessageType.ACTION_BAR,
+                                    TextComponent.fromLegacyText(Editor.LIGHT_NOT_EXIST)
+                            );
                     return;
                 }
                 int lightIndex = editor.arena.lightLocations.indexOf(block.getLocation()) + 1;
-                e.getPlayer()
-                        .spigot()
-                        .sendMessage(ChatMessageType.ACTION_BAR,
-                                new TextComponent(Editor.LIGHT_REMOVED.formatted(lightIndex))
-                        );
+                e.getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR,
+                        TextComponent.fromLegacyText(Editor.LIGHT_REMOVED.formatted(lightIndex))
+                );
                 arena.lightLocations.remove(block.getLocation());
                 if (editor.oldLightMaterials.containsKey(block)) {
                     block.setType(editor.oldLightMaterials.get(block));
