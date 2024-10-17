@@ -1,5 +1,7 @@
 prefix: '&3[YesBoats]'
-finish-self: '&bYou have completed the race with a time of &e%s&b. That puts you in &e%s&b place.\nYou can now spectate the other players or type &e/yesboats leave&b to return to the lobby.'
+finish-self: |-
+  &bYou have completed the race with a time of &e%s&b. That puts you in &e%s&b place.
+  You can now spectate the other players or type &e/yesboats leave&b to return to the lobby.
 finish-others: '&b&l%s&r&b has completed the race in &e%s&b place.'
 all-finished: '&bAll Players have finished. Returning to lobby in 5 seconds.'
 editor:
@@ -95,7 +97,8 @@ editor:
         - '&2(Arena must be valid.)'
     debug:
       name: '&l&7Debug'
-      lore: '&fTurns on extra debugging capabilities.'
+      lore:
+        - '&fTurns on extra debugging capabilities.'
 commands:
   # Results
   created: "&bArena &e'%s' &bsuccessfully created. Now editing."

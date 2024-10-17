@@ -151,7 +151,6 @@ public class CommandResult {
         return message.create();
     }
 
-
     public static BaseComponent[] getHelpMenu(String label, CommandSender sender) {
         // @formatter:off
         return new HelpMenuBuilder(label, sender)
@@ -203,7 +202,7 @@ public class CommandResult {
                     .collect(Collectors.joining("\n"))).color(ChatColor.YELLOW).create();
 
             helpMenu.append("/" + label + " " + argument)
-                    .color(ChatColor.AQUA)
+                    .color(ChatColor.DARK_AQUA)
                     .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(argumentExample)))
                     .append(" - " + description + "\n")
                     .color(ChatColor.AQUA);

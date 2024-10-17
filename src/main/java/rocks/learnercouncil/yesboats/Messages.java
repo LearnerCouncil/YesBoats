@@ -13,7 +13,7 @@ public class Messages {
     public static String ALL_FINISHED;
 
     public static void initialize(ConfigFile config) {
-        PREFIX = config.get().getString("prefix");
+        PREFIX = path(config, "prefix");
         FINISH_SELF = prefixedPath(config, "finish-self");
         FINISH_OTHERS = prefixedPath(config, "finish-others");
         ALL_FINISHED = prefixedPath(config, "all-finished");
@@ -94,7 +94,8 @@ public class Messages {
         Commands.NEEDS_PLAYER = commandPath(config, "needs-player");
         Commands.INVALID_ARGS = commandPath(config, "invalid-args");
         Commands.INVALID_NUMBER = commandPath(config, "invalid-number");
-        Commands.BAR = commandPath(config, "bar");
+
+        Commands.BAR = path(config, "commands.bar");
 
         //endregion
     }
@@ -109,7 +110,10 @@ public class Messages {
         if (!config.get().isList(path)) return new String[]{ path };
         List<?> list = Objects.requireNonNull(config.get().getList(path, Collections.emptyList()));
         if (list.isEmpty()) return new String[0];
-        return list.stream().filter(e -> e instanceof String).toArray(String[]::new);
+        return list.stream()
+                .filter(e -> e instanceof String)
+                .map(s -> ChatColor.translateAlternateColorCodes('&', (String) s))
+                .toArray(String[]::new);
     }
 
 
