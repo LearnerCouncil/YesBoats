@@ -24,9 +24,9 @@ public class JoinArg implements CommandArgument {
     @Override
     public BaseComponent[] execute(CommandSender sender, Command cmd, String label, String[] args) {
         if (!args[0].equalsIgnoreCase("join")) return CommandResult.none();
-        if (!sender.hasPermission("yesboats.commands.yesboats.user")) return CommandResult.noPermission();
+        if (!sender.hasPermission(YesBoats.Permissions.USER_COMMANDS)) return CommandResult.noPermission();
         if (args.length < 2) return tooFewArgs();
-        boolean isAdmin = sender.hasPermission("yesboats.commands.yesboats.admin");
+        boolean isAdmin = sender.hasPermission(YesBoats.Permissions.ADMIN_COMMANDS);
         if (args.length > (isAdmin ? 3 : 2)) return tooManyArgs();
 
         Optional<Arena> arenaOptional = Arena.get(args[1]);
@@ -52,12 +52,12 @@ public class JoinArg implements CommandArgument {
         if (args.length == 1) return Collections.singletonList("join");
         if (args.length == 2 && args[0].equalsIgnoreCase("join"))
             return Arena.arenas.stream().map(a -> a.name).collect(Collectors.toList());
-        if (args.length == 3 && args[0].equalsIgnoreCase("join") && sender.hasPermission(
-                "yesboats.commands.yesboats.admin")) return plugin.getServer()
-                .getOnlinePlayers()
-                .stream()
-                .map(HumanEntity::getName)
-                .collect(Collectors.toList());
+        if (args.length == 3 && args[0].equalsIgnoreCase("join") && sender.hasPermission(YesBoats.Permissions.ADMIN_COMMANDS))
+            return plugin.getServer()
+                    .getOnlinePlayers()
+                    .stream()
+                    .map(HumanEntity::getName)
+                    .collect(Collectors.toList());
         return Collections.emptyList();
     }
 }

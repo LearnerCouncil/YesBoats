@@ -2,7 +2,10 @@ package rocks.learnercouncil.yesboats;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.bukkit.*;
+import org.bukkit.Color;
+import org.bukkit.FireworkEffect;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
@@ -18,7 +21,6 @@ import rocks.learnercouncil.yesboats.arena.DebugPath;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class YesBoatsPlayer {
     private final YesBoats plugin = YesBoats.getPlugin();
@@ -39,7 +41,7 @@ public class YesBoatsPlayer {
     public YesBoatsPlayer(Arena arena, Player player) {
         ScoreboardManager scoreboardManager = plugin.getServer().getScoreboardManager();
         if (scoreboardManager == null)
-            throw new NullPointerException("ScoreboardManager was assigned before the first world was loaded, and thus, is null.");
+            throw new NullPointerException("ScoreboardManager is null. There is no world loaded.");
         this.arena = arena;
         this.player = player;
         this.scoreboard = new ArenaScoreboard(player, scoreboardManager.getNewScoreboard());
@@ -53,8 +55,7 @@ public class YesBoatsPlayer {
     public void setSpectator(boolean spectator) {
         if (spectator) {
             this.spectator = true;
-            if (player.isInsideVehicle())
-                Objects.requireNonNull(player.getVehicle()).remove();
+            if (player.isInsideVehicle()) Objects.requireNonNull(player.getVehicle()).remove();
             player.setAllowFlight(true);
             arena.getPlayers().forEach((player, ybPlayer) -> {
                 if (!ybPlayer.isSpectator()) {
@@ -81,7 +82,9 @@ public class YesBoatsPlayer {
         Vector direction = currentPosition.clone().subtract(previousPosition).normalize();
         if (Double.isNaN(direction.getX())) direction = new Vector();
 
-        RayTraceResult rayTraceResult = boundingBox.rayTrace(previousPosition, direction, currentPosition.distance(previousPosition));
+        RayTraceResult rayTraceResult = boundingBox.rayTrace(previousPosition, direction,
+                                                             currentPosition.distance(previousPosition)
+        );
         return rayTraceResult != null;
     }
 
@@ -99,12 +102,12 @@ public class YesBoatsPlayer {
             if (isIntersecting(checkpointBoxes.get(nextNextCheckpoint))) {
                 debugPath.timestamp = System.currentTimeMillis();
                 DebugPath.debugPaths.add(debugPath);
-                plugin.getServer().getOnlinePlayers().stream().filter(p -> p.hasPermission("yesboats.admin")).forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] "
-                        + ChatColor.AQUA + "Player "
-                        + ChatColor.YELLOW + player.getName()
-                        + ChatColor.AQUA + " has skipped checkpoint "
-                        + ChatColor.YELLOW + "#" + nextCheckpoint
-                        + ChatColor.AQUA + "."));
+                plugin.getServer()
+                        .getOnlinePlayers()
+                        .stream()
+                        .filter(p -> p.hasPermission(YesBoats.Permissions.ADMIN_MESSAGES))
+                        .forEach(p -> p.sendMessage(
+                                Messages.SKIPPED_CHECKPOINT.formatted(player.getName(), nextCheckpoint)));
                 checkpoint = nextNextCheckpoint;
                 debugPath = new DebugPath(player, arena);
             }
@@ -123,10 +126,12 @@ public class YesBoatsPlayer {
 
     public void respawn(List<Location> checkpointSpawns) {
         if (player.getVehicle() == null) return;
-        if (!(player.getVehicle() instanceof Boat)) return;
-        Boat oldBoat = (Boat) player.getVehicle();
+        if (!(player.getVehicle() instanceof Boat oldBoat)) return;
 
-        List<Entity> passengers = oldBoat.getPassengers().stream().filter(e -> e.getType() != EntityType.PLAYER).collect(Collectors.toList());
+        List<Entity> passengers = oldBoat.getPassengers()
+                .stream()
+                .filter(e -> e.getType() != EntityType.PLAYER)
+                .toList();
         Boat newBoat = (Boat) player.getWorld().spawnEntity(checkpointSpawns.get(checkpoint), oldBoat.getType());
 
         canExitBoat = true;
@@ -154,20 +159,27 @@ public class YesBoatsPlayer {
         final int currentPlace = arena.getCurrentPlace();
         Firework firework = (Firework) player.getWorld().spawnEntity(player.getLocation(), EntityType.FIREWORK);
         FireworkMeta meta = firework.getFireworkMeta();
-        meta.addEffect(FireworkEffect.builder().withTrail().withColor(Color.AQUA).with(FireworkEffect.Type.BALL).build());
+        meta.addEffect(
+                FireworkEffect.builder().withTrail().withColor(Color.AQUA).with(FireworkEffect.Type.BALL).build());
         firework.setFireworkMeta(meta);
         firework.detonate();
 
         Duration duration = Duration.ofMillis(System.currentTimeMillis() - time);
         String formattedTime;
         if (duration.toHours() > 1)
-            formattedTime = String.format("%d:%02d:%02d.%03d", duration.toHours(), duration.toMinutesPart(), duration.toSecondsPart(), duration.toMillisPart());
-        else
-            formattedTime = String.format("%02d:%02d.%03d", duration.toMinutes(), duration.toSecondsPart(), duration.toMillisPart());
+            formattedTime = String.format("%d:%02d:%02d.%03d", duration.toHours(), duration.toMinutesPart(),
+                                          duration.toSecondsPart(), duration.toMillisPart()
+            );
+        else formattedTime = String.format("%02d:%02d.%03d", duration.toMinutes(), duration.toSecondsPart(),
+                                           duration.toMillisPart()
+        );
 
         player.sendMessage(Messages.FINISH_SELF.formatted(formattedTime, placeOrdinal(currentPlace)));
 
-        arena.getPlayers().keySet().forEach(p -> p.sendMessage(Messages.FINISH_OTHERS.formatted(player.getName(), placeOrdinal(currentPlace))));
+        arena.getPlayers()
+                .keySet()
+                .forEach(p -> p.sendMessage(
+                        Messages.FINISH_OTHERS.formatted(player.getName(), placeOrdinal(currentPlace))));
 
         arena.incrementCurrentPlace();
         if (arena.getCurrentPlace() > arena.getPlayers().size()) {

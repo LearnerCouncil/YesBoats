@@ -45,8 +45,7 @@ public final class YesBoats extends JavaPlugin {
         getCommand("yesboats").setTabCompleter(yb);
 
 
-        registerEvents(
-                new Arena.Events(),
+        registerEvents(new Arena.Events(),
                 new ArenaEditor.Events(),
                 new ArenaSign.Events(),
                 new InventoryManager.Events()
@@ -72,10 +71,16 @@ public final class YesBoats extends JavaPlugin {
         }
     }
 
-
     public static class Configs {
         public static ConfigFile messages;
         public static ConfigFile arena;
         public static ConfigFile main;
+    }
+
+    public static class Permissions {
+        public static String ADMIN_MESSAGES = "yesboats.admin";
+        public static String CREATE_SIGN = "yesboats.joinsign";
+        public static String USER_COMMANDS = "yesboats.commands.yesboats.user";
+        public static String ADMIN_COMMANDS = "yesboats.commands.yesboats.admin";
     }
 }

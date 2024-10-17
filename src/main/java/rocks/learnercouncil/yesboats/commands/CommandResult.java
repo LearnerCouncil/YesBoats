@@ -6,6 +6,7 @@ import net.md_5.bungee.api.chat.*;
 import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.command.CommandSender;
 import rocks.learnercouncil.yesboats.Messages;
+import rocks.learnercouncil.yesboats.YesBoats;
 import rocks.learnercouncil.yesboats.arena.DebugPath;
 
 import java.util.Arrays;
@@ -154,17 +155,17 @@ public class CommandResult {
     public static BaseComponent[] getHelpMenu(String label, CommandSender sender) {
         // @formatter:off
         return new HelpMenuBuilder(label, sender)
-                .withoutPermission("yesboats.commands.yesboats.admin", b -> b
+                .withoutPermission(YesBoats.Permissions.ADMIN_COMMANDS, b -> b
                         .add("join <arena>", "Joins the specified arena.", "join Racetrack")
                         .add("leave <arena>", "Leaves the specified arena.", "leave Racetrack")
-                ).withPermission("yesboats.commands.yesboats.admin", b -> b
-                        .add("join <arena> <player>", "Forces the specified player to join the specified arena.", "join Racetrack Herobrine")
-                        .add("leave <arena> <player>", "Forces the specified player to leave the specified arena.", "leave Racetrack Herobrine")
+                ).withPermission(YesBoats.Permissions.ADMIN_COMMANDS, b -> b
+                        .add("join <arena> [<player>]", "Forces the specified player to join the specified arena, or yourself if unspecified.", "join Racetrack Herobrine")
+                        .add("leave <arena> [<player>]", "Forces the specified player to leave the specified arena, or yourself if unspecified.", "leave Racetrack Herobrine")
                         .add("add <name>", "Creates an arena with the specified name, and enters that arena's editor.", "add Racetrack")
                         .add("remove <arena>", "Removes the specified arena.", "remove Racetrack")
                         .add("edit <arena>", "Enters the editor of the specified arena.", "edit Racetrack")
-                        .add("start [arena]", "Starts the specified arena, or the current arena if unspecified.", "start Racetrack", "start")
-                        .add("stop [arena]", "Stops the specified arena, or the current arena if unspecified.", "stop Racetrack", "stop")
+                        .add("start [<arena>]", "Starts the specified arena, or the current arena if unspecified.", "start Racetrack", "start")
+                        .add("stop [<arena>]", "Stops the specified arena, or the current arena if unspecified.", "stop Racetrack", "stop")
                 )
                 .create();
         // @formatter:on

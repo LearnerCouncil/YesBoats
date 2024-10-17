@@ -4,6 +4,7 @@ import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import rocks.learnercouncil.yesboats.YesBoats;
 import rocks.learnercouncil.yesboats.arena.Arena;
 import rocks.learnercouncil.yesboats.commands.CommandArgument;
 
@@ -18,7 +19,7 @@ public class StopArg implements CommandArgument {
     @Override
     public BaseComponent[] execute(CommandSender sender, Command cmd, String label, String[] args) {
         if (!args[0].equalsIgnoreCase("stop")) return none();
-        if (!sender.hasPermission("yesboats.commands.yesboats.admin")) return noPermission();
+        if (!sender.hasPermission(YesBoats.Permissions.ADMIN_COMMANDS)) return noPermission();
         if (args.length > 2) return tooManyArgs();
 
         Arena arena = null;

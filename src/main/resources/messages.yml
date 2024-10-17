@@ -4,6 +4,7 @@ finish-self: |-
   You can now spectate the other players or type &e/yesboats leave&b to return to the lobby.
 finish-others: '&b&l%s&r&b has completed the race in &e%s&b place.'
 all-finished: '&bAll Players have finished. Returning to lobby in 5 seconds.'
+skipped-checkpoint: '&bPlayer &e%s&b has skipped checkpoint &e%s#&b.'
 editor:
   no-box-selected: '&cThere is no bounding box selected'
   validation-failed: '&cArena validation failed. Validator found problems with the following fields: %s'

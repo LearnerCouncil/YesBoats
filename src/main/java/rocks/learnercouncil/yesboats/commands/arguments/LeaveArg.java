@@ -24,8 +24,8 @@ public class LeaveArg implements CommandArgument {
     @Override
     public BaseComponent[] execute(CommandSender sender, Command cmd, String label, String[] args) {
         if (!args[0].equalsIgnoreCase("leave")) return CommandResult.none();
-        if (!sender.hasPermission("yesboats.commands.yesboats.user")) return CommandResult.noPermission();
-        boolean isAdmin = sender.hasPermission("yesboats.commands.yesboats.admin");
+        if (!sender.hasPermission(YesBoats.Permissions.USER_COMMANDS)) return CommandResult.noPermission();
+        boolean isAdmin = sender.hasPermission(YesBoats.Permissions.ADMIN_COMMANDS);
         if (args.length > (isAdmin ? 2 : 1)) return tooManyArgs();
 
         Optional<Arena> arenaOptional;
@@ -47,12 +47,12 @@ public class LeaveArg implements CommandArgument {
     @Override
     public List<String> tabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
         if (args.length == 1) return Collections.singletonList("leave");
-        if (args.length == 2 && args[0].equalsIgnoreCase("leave") && sender.hasPermission(
-                "yesboats.commands.yesboats.admin")) return plugin.getServer()
-                .getOnlinePlayers()
-                .stream()
-                .map(HumanEntity::getName)
-                .collect(Collectors.toList());
+        if (args.length == 2 && args[0].equalsIgnoreCase("leave") && sender.hasPermission(YesBoats.Permissions.ADMIN_COMMANDS))
+            return plugin.getServer()
+                    .getOnlinePlayers()
+                    .stream()
+                    .map(HumanEntity::getName)
+                    .collect(Collectors.toList());
         return Collections.emptyList();
     }
 }

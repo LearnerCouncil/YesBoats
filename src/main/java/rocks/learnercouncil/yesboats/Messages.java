@@ -11,12 +11,14 @@ public class Messages {
     public static String FINISH_SELF;
     public static String FINISH_OTHERS;
     public static String ALL_FINISHED;
+    public static String SKIPPED_CHECKPOINT;
 
     public static void initialize(ConfigFile config) {
         PREFIX = path(config, "prefix");
         FINISH_SELF = prefixedPath(config, "finish-self");
         FINISH_OTHERS = prefixedPath(config, "finish-others");
         ALL_FINISHED = prefixedPath(config, "all-finished");
+        SKIPPED_CHECKPOINT = prefixedPath(config, "skipped-checkpoint");
 
         //region Editor...
         Editor.VALIDATOR_MIN_PLAYERS = validatorPath(config, "min-players");
@@ -132,7 +134,7 @@ public class Messages {
 
     private static Editor.Item itemPath(ConfigFile config, String name) {
         return new Editor.Item(path(config, "editor.items." + name + ".name"),
-                pathArray(config, "editor.items." + name + ".lore")
+                               pathArray(config, "editor.items." + name + ".lore")
         );
     }
 
