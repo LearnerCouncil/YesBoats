@@ -53,6 +53,7 @@ public class ArenaEditor {
         this.player = player;
         playerInv = player.getInventory().getContents();
         this.arena = arena;
+        if (this.arena.world == null) this.arena.world = player.getWorld();
         initializeInventory();
         startBoxDisplay();
         spawnStartBoats();
@@ -83,70 +84,96 @@ public class ArenaEditor {
         editorItems.clear();
         Inventory inv = player.getInventory();
 
-        inv.setItem(0, getItem(Material.ENDER_CHEST,
+        inv.setItem(0, getItem(
+                Material.ENDER_CHEST,
                 BOLD.toString() + DARK_AQUA + "Regenerate",
-                AQUA + "Click to regenerate all of the editor items."));
+                AQUA + "Click to regenerate all of the editor items."
+        ));
 
-        inv.setItem(1, getItem(Material.IRON_AXE,
+        inv.setItem(1, getItem(
+                Material.IRON_AXE,
                 BOLD.toString() + YELLOW + "Area Selector",
                 GOLD + "Left click a block to select the 1st corner",
                 GOLD + "Right click a block to select the 2nd corner",
-                GOLD + "Drop to remove selected bounding box"));
+                GOLD + "Drop to remove selected bounding box"
+        ));
 
-        inv.setItem(2, getItem(Material.BARRIER,
+        inv.setItem(2, getItem(
+                Material.BARRIER,
                 BOLD.toString() + RED + "Death Barrier",
                 DARK_RED + "Click to set the selected",
-                DARK_RED + "bounding box to a death barrier"));
+                DARK_RED + "bounding box to a death barrier"
+        ));
 
-        inv.setItem(3, getItem(Material.LIGHT_BLUE_BANNER,
+        inv.setItem(3, getItem(
+                Material.LIGHT_BLUE_BANNER,
                 BOLD.toString() + AQUA + "Checkpoint",
                 DARK_AQUA + "Click to set the selected",
-                DARK_AQUA + "bounding box to a checkpoint"));
+                DARK_AQUA + "bounding box to a checkpoint"
+        ));
 
         inv.setItem(27, getItem(Material.RED_CARPET, arena.minPlayers,
                 BOLD.toString() + RED + "Minimum Players",
                 YELLOW + "Left click to increase",
-                YELLOW + "Right click to decrease"));
+                YELLOW + "Right click to decrease"
+        ));
 
         inv.setItem(28, getItem(Material.SPECTRAL_ARROW, arena.laps,
                 BOLD.toString() + YELLOW + "Laps",
                 GOLD + "Left click to increase",
-                GOLD + "Right click to decrease"));
+                GOLD + "Right click to decrease"
+        ));
 
-        inv.setItem(29, getItem(Material.CLOCK,
+        inv.setItem(29, getItem(
+                Material.CLOCK,
                 BOLD.toString() + YELLOW + "Time: " + (arena.time / 60) + ":" + ((arena.time % 60) == 0 ? "00" : "30"),
                 GOLD + "Left click to increase by 30 seconds",
-                GOLD + "Right click to decrease by 30 seconds"));
+                GOLD + "Right click to decrease by 30 seconds"
+        ));
 
-        inv.setItem(4, getItem(Material.OAK_BOAT,
+        inv.setItem(4, getItem(
+                Material.OAK_BOAT,
                 BOLD.toString() + YELLOW + "Add start location",
-                GOLD + "Place to add a start location"));
+                GOLD + "Place to add a start location"
+        ));
 
-        inv.setItem(5, getItem(Material.ENDER_PEARL,
+        inv.setItem(5, getItem(
+                Material.ENDER_PEARL,
                 BOLD.toString() + YELLOW + "Set lobby Location",
-                GOLD + "Click to set the Lobby Location"));
+                GOLD + "Click to set the Lobby Location"
+        ));
 
-        inv.setItem(6, getItem(Material.REDSTONE_BLOCK,
+        inv.setItem(6, getItem(
+                Material.REDSTONE_BLOCK,
                 BOLD.toString() + RED + "Start Line Activator.",
-                YELLOW + "Click a block to set that block as the start line activator"));
+                YELLOW + "Click a block to set that block as the start line activator"
+        ));
 
-        inv.setItem(7, getItem(Material.REDSTONE_LAMP,
+        inv.setItem(7, getItem(
+                Material.REDSTONE_LAMP,
                 BOLD.toString() + YELLOW + "Add Light Location",
                 GOLD + "Click a block to add a light there,",
-                GOLD + "Lights are turned on in the order they were placed"));
+                GOLD + "Lights are turned on in the order they were placed"
+        ));
 
-        inv.setItem(16, getItem(Material.RED_CONCRETE,
+        inv.setItem(16, getItem(
+                Material.RED_CONCRETE,
                 BOLD.toString() + DARK_RED + "Cancel",
                 RED + "Stops editing without saving. ",
-                RED + "(Cannot be undone)"));
+                RED + "(Cannot be undone)"
+        ));
 
-        inv.setItem(17, getItem(Material.LIME_CONCRETE,
+        inv.setItem(17, getItem(
+                Material.LIME_CONCRETE,
                 BOLD.toString() + GREEN + "Save",
                 DARK_GREEN + "Stops editing, saving changes.",
-                DARK_GREEN + "(Arena must be valid)"));
-        inv.setItem(9, getItem(Material.FEATHER,
+                DARK_GREEN + "(Arena must be valid)"
+        ));
+        inv.setItem(9, getItem(
+                Material.FEATHER,
                 BOLD.toString() + GRAY + "Debug",
-                WHITE + "Turns on extra debugging capabilities."));
+                WHITE + "Turns on extra debugging capabilities."
+        ));
     }
 
     private ItemStack getItem(Material material, String name, String... lore) {
@@ -263,7 +290,11 @@ public class ArenaEditor {
 
     private boolean boxRaycast(BoundingBox box) {
         if (box == null) return false;
-        RayTraceResult rayTraceResult = box.rayTrace(player.getEyeLocation().toVector(), player.getEyeLocation().getDirection(), 10);
+        RayTraceResult rayTraceResult = box.rayTrace(
+                player.getEyeLocation().toVector(),
+                player.getEyeLocation().getDirection(),
+                10
+        );
         return rayTraceResult != null;
     }
 
@@ -308,8 +339,11 @@ public class ArenaEditor {
 
     public void restore(boolean save) {
         if (save) {
-            if (!validate().isEmpty()) {
-                player.sendMessage(DARK_AQUA + "[YesBoats] " + RED + "Arena validation failed. Validator found problems with the following fields: " + validate());
+            List<String> errors = validate();
+            if (!errors.isEmpty()) {
+                player.sendMessage(DARK_AQUA + "[YesBoats] " + RED +
+                        "Arena validation failed. Validator found the following problems: \n" +
+                        String.join("\n", errors));
                 return;
             }
             Optional<Arena> arenaOptional = Arena.get(arena.name);
@@ -336,21 +370,37 @@ public class ArenaEditor {
         startBoats.clear();
     }
 
-    private String validate() {
-        StringBuilder result = new StringBuilder();
-        if (arena.minPlayers < 1) result.append("minPlayers, ");
-        if (arena.laps < 1) result.append("laps, ");
-        if (arena.time < 30 || arena.time > 3600) result.append("time, ");
-        if (arena.lobbyLocation == null) result.append("lobbyLocation, ");
-        if (arena.world == null) result.append("world, ");
-        if (arena.startLineActivator == null) result.append("startLineActivator, ");
-        if (arena.startLocations == null || arena.startLocations.isEmpty()) result.append("startLocations, ");
-        if (arena.lightLocations == null || arena.lightLocations.isEmpty()) result.append("lightLocations, ");
-        if (arena.checkpointBoxes == null || arena.checkpointBoxes.isEmpty()) result.append("checkpointBoxes, ");
+    private List<String> validate() {
+        List<String> errors = new ArrayList<>();
+        if (arena.minPlayers < 1) errors.add("The Minimum Players must be at least 1. (Found " + arena);
+        if (arena.laps < 1) errors.add("The Lap count must be at least 1. (Found " + arena.laps + ".)");
+        if (arena.time < 30)
+            errors.add("The Time limit must be at least 0:30. (Found " +
+                    (arena.time / 60) + ":" + (arena.time % 60 == 0 ? "00" : "30") +
+                    ".)");
+        if (arena.time > 3600)
+            errors.add("The Time limit must be at most 60:00. (Found " +
+                    (arena.time / 60) + ":" + (arena.time % 60 == 0 ? "00" : "30") +
+                    ".)");
+        if (arena.lobbyLocation == null) errors.add("The arena must have a Lobby Location set.");
+        if (arena.world == null) errors.add("The arena must exist in a World.");
+        if (arena.startLineActivator == null) errors.add("The arena must have a Start Line Activator set.");
+        if (arena.startLocations == null || arena.startLocations.isEmpty())
+            errors.add("The arena must have at least 1 Start Location set. (Found 0)");
+        if (arena.lightLocations == null || arena.lightLocations.isEmpty())
+            errors.add("The arena must have at least 1 Light Location set. (Found 0)");
+        if (arena.checkpointBoxes == null || arena.checkpointBoxes.size() < 2)
+            errors.add("The arena must have at least 2 Checkpoints set. (Found " +
+                    (arena.checkpointBoxes == null ? 0 : arena.checkpointBoxes.size()) +
+                    ".)");
         else if (arena.checkpointSpawns == null || arena.checkpointSpawns.size() != arena.checkpointBoxes.size()) {
-            result.append("checkpointSpawns, ");
+            errors.add("Each checkpoint in the arena must have a corresponding spawn point. (Checkpoints found: " +
+                    arena.checkpointBoxes.size() +
+                    ", Spawns found: " +
+                    (arena.checkpointSpawns == null ? 0 : arena.checkpointSpawns.size())
+            );
         }
-        return result.length() < 2 ? result.toString() : result.substring(0, result.length() - 2);
+        return errors;
     }
 
     private enum BoundingBoxType {
@@ -503,7 +553,14 @@ public class ArenaEditor {
             } else {
                 Location playerLocation = player.getLocation();
                 float yaw = (float) (Math.round(playerLocation.getYaw() / 22.5) * 22.5);
-                arena.checkpointSpawns.add(new Location(player.getWorld(), playerLocation.getBlockX(), playerLocation.getBlockY(), playerLocation.getBlockZ(), yaw, 0));
+                arena.checkpointSpawns.add(new Location(
+                        player.getWorld(),
+                        playerLocation.getBlockX(),
+                        playerLocation.getBlockY(),
+                        playerLocation.getBlockZ(),
+                        yaw,
+                        0
+                ));
                 player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA + " Spawnpoint for checkpoint #" + arena.checkpointBoxes.size() + " set. (" +
                         playerLocation.getBlockX() + ", " +
                         playerLocation.getBlockY() + ", " +
@@ -614,22 +671,34 @@ public class ArenaEditor {
 
             if (action == Action.RIGHT_CLICK_BLOCK) {
                 if (arena.lightLocations.contains(block.getLocation())) {
-                    e.getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(RED + "A Light already exists there!"));
+                    e.getPlayer().spigot().sendMessage(
+                            ChatMessageType.ACTION_BAR,
+                            new TextComponent(RED + "A Light already exists there!")
+                    );
                     return;
                 }
                 editor.oldLightMaterials.put(block, block.getType());
                 block.setType(Material.REDSTONE_LAMP);
                 ((Lightable) block.getBlockData()).setLit(true);
                 arena.lightLocations.add(block.getLocation());
-                e.getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(YELLOW + "Light #" + arena.lightLocations.size() + " placed."));
+                e.getPlayer().spigot().sendMessage(
+                        ChatMessageType.ACTION_BAR,
+                        new TextComponent(YELLOW + "Light #" + arena.lightLocations.size() + " placed.")
+                );
                 return;
             }
             if (action == Action.LEFT_CLICK_BLOCK) {
                 if (!editor.arena.lightLocations.contains(block.getLocation())) {
-                    e.getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(RED + "A Light doesn't exist there!"));
+                    e.getPlayer().spigot().sendMessage(
+                            ChatMessageType.ACTION_BAR,
+                            new TextComponent(RED + "A Light doesn't exist there!")
+                    );
                     return;
                 }
-                e.getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(GOLD + "Light #" + (editor.arena.lightLocations.indexOf(block.getLocation()) + 1) + " removed."));
+                e.getPlayer().spigot().sendMessage(
+                        ChatMessageType.ACTION_BAR,
+                        new TextComponent(GOLD + "Light #" + (editor.arena.lightLocations.indexOf(block.getLocation()) + 1) + " removed.")
+                );
                 arena.lightLocations.remove(block.getLocation());
                 if (editor.oldLightMaterials.containsKey(block)) {
                     block.setType(editor.oldLightMaterials.get(block));
