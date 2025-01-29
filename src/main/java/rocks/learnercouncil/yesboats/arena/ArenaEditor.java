@@ -159,7 +159,7 @@ public class ArenaEditor {
         inv.setItem(16, getItem(
                 Material.RED_CONCRETE,
                 BOLD.toString() + DARK_RED + "Cancel",
-                RED + "Stops editing without saving. ",
+                RED + "Stops editing without saving changes.",
                 RED + "(Cannot be undone)"
         ));
 
@@ -215,11 +215,13 @@ public class ArenaEditor {
      * Adds a bounding box of the specified type to the {@link Arena}.
      *
      * @param type The {@link BoundingBoxType}.
+     * @return whether the bounding box was added.
      */
-    private void addBoundingBox(BoundingBoxType type) {
+    private boolean addBoundingBox(BoundingBoxType type) {
+        System.out.println("Selected Box: " + selectedBox);
         if (selectedBox == null) {
             player.sendMessage(DARK_AQUA + "[YesBoats] " + RED + "There is no bounding box selected");
-            return;
+            return false;
         }
         BoundingBoxType selectedType;
         if (arena.checkpointBoxes.contains(selectedBox))
@@ -233,7 +235,10 @@ public class ArenaEditor {
         boxCorner1 = boxCorner2 = null;
         createdBox = null;
 
-        if (selectedType == type) return;
+        if (selectedType == type) {
+            player.sendMessage(DARK_AQUA + "[YesBoats] " + RED + "The selected bounding box is already of type '" + type + "'.");
+            return false;
+        }
         switch (type) {
             case CHECKPOINT:
                 if (selectedType == BoundingBoxType.DEATH_BARRIER) arena.deathBarriers.remove(selectedBox);
@@ -254,6 +259,7 @@ public class ArenaEditor {
                 if (selectedType == BoundingBoxType.DEATH_BARRIER) arena.deathBarriers.remove(selectedBox);
                 break;
         }
+        return true;
     }
 
     /**
@@ -382,22 +388,23 @@ public class ArenaEditor {
             errors.add("The Time limit must be at most 60:00. (Found " +
                     (arena.time / 60) + ":" + (arena.time % 60 == 0 ? "00" : "30") +
                     ".)");
-        if (arena.lobbyLocation == null) errors.add("The arena must have a Lobby Location set.");
+        if (arena.lobbyLocation == null) errors.add("The Lobby Location must be set.");
         if (arena.world == null) errors.add("The arena must exist in a World.");
-        if (arena.startLineActivator == null) errors.add("The arena must have a Start Line Activator set.");
+        if (arena.startLineActivator == null) errors.add("You must set a Start Line Activator.");
         if (arena.startLocations == null || arena.startLocations.isEmpty())
-            errors.add("The arena must have at least 1 Start Location set. (Found 0)");
+            errors.add("You must set at least 1 Start Location. (Found 0)");
         if (arena.lightLocations == null || arena.lightLocations.isEmpty())
-            errors.add("The arena must have at least 1 Light Location set. (Found 0)");
+            errors.add("You must set at least 1 Light Location. (Found 0)");
         if (arena.checkpointBoxes == null || arena.checkpointBoxes.size() < 2)
-            errors.add("The arena must have at least 2 Checkpoints set. (Found " +
+            errors.add("You must add at least 2 Checkpoints. (Found " +
                     (arena.checkpointBoxes == null ? 0 : arena.checkpointBoxes.size()) +
                     ".)");
         else if (arena.checkpointSpawns == null || arena.checkpointSpawns.size() != arena.checkpointBoxes.size()) {
-            errors.add("Each checkpoint in the arena must have a corresponding spawn point. (Checkpoints found: " +
+            errors.add("Each checkpoint must have a corresponding spawn point. (Found " +
                     arena.checkpointBoxes.size() +
-                    ", Spawns found: " +
-                    (arena.checkpointSpawns == null ? 0 : arena.checkpointSpawns.size())
+                    " Checkpoints and " +
+                    (arena.checkpointSpawns == null ? 0 : arena.checkpointSpawns.size()) +
+                    " Spawns.)"
             );
         }
         return errors;
@@ -540,16 +547,19 @@ public class ArenaEditor {
 
         private void handleDeathBarrier(Action action, Player player, ArenaEditor editor) {
             if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
-            editor.addBoundingBox(BoundingBoxType.DEATH_BARRIER);
-            player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + "Death barrier added.");
+            boolean added = editor.addBoundingBox(BoundingBoxType.DEATH_BARRIER);
+            if (added)
+                player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + "Death barrier added.");
         }
 
         private void handleCheckpoint(Action action, Player player, ArenaEditor editor, Arena arena) {
             if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
             if (!settingCheckpoint.contains(player)) {
-                editor.addBoundingBox(BoundingBoxType.CHECKPOINT);
-                player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA + " Bounding box for checkpoint #" + arena.checkpointBoxes.size() + " set. Click again to set the spawnpoint.");
-                settingCheckpoint.add(player);
+                boolean added = editor.addBoundingBox(BoundingBoxType.CHECKPOINT);
+                if (added) {
+                    player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA + " Bounding box for checkpoint #" + arena.checkpointBoxes.size() + " set. Click again to set the spawnpoint.");
+                    settingCheckpoint.add(player);
+                }
             } else {
                 Location playerLocation = player.getLocation();
                 float yaw = (float) (Math.round(playerLocation.getYaw() / 22.5) * 22.5);
