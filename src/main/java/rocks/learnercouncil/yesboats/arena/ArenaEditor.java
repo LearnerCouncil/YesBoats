@@ -33,6 +33,8 @@ import java.util.*;
 
 import static rocks.learnercouncil.yesboats.Messages.Editor;
 import static rocks.learnercouncil.yesboats.Messages.Editor.Items;
+import static rocks.learnercouncil.yesboats.Messages.Editor.Validator;
+import static rocks.learnercouncil.yesboats.Messages.formattedTime;
 
 public class ArenaEditor {
 
@@ -97,11 +99,7 @@ public class ArenaEditor {
 
         inv.setItem(28, getItem(Material.SPECTRAL_ARROW, arena.laps, Items.LAPS));
 
-        inv.setItem(29,
-                getItem(Material.CLOCK,
-                        Items.TIME.formattedName(String.format("%d:%02d", arena.time / 60, arena.time % 60))
-                )
-        );
+        inv.setItem(29, getItem(Material.CLOCK, Items.TIME.formattedName(formattedTime(arena.time))));
 
         inv.setItem(4, getItem(Material.OAK_BOAT, Items.START));
 
@@ -283,9 +281,7 @@ public class ArenaEditor {
         if (save) {
             List<String> errors = validate();
             if (!errors.isEmpty()) {
-                player.sendMessage(DARK_AQUA + "[YesBoats] " + RED +
-                        "Arena validation failed. Validator found the following problems: \n" +
-                        String.join("\n", errors));
+                player.sendMessage(Editor.VALIDATION_FAILED.formatted(String.join("\n", errors)));
                 return;
             }
             Optional<Arena> arenaOptional = Arena.get(arena.name);
@@ -313,34 +309,26 @@ public class ArenaEditor {
 
     private List<String> validate() {
         List<String> errors = new ArrayList<>();
-        if (arena.minPlayers < 1) errors.add("The Minimum Players must be at least 1. (Found " + arena);
-        if (arena.laps < 1) errors.add("The Lap count must be at least 1. (Found " + arena.laps + ".)");
+        if (arena.minPlayers < 1) errors.add(Validator.MIN_PLAYERS_TOO_LOW.formatted(arena.minPlayers));
+        if (arena.laps < 1) errors.add(Validator.LAPS_TOO_LOW.formatted(arena.laps));
         if (arena.time < 30)
-            errors.add("The Time limit must be at least 0:30. (Found " +
-                    (arena.time / 60) + ":" + (arena.time % 60 == 0 ? "00" : "30") +
-                    ".)");
+            errors.add(Validator.TIME_TOO_LOW.formatted(formattedTime(arena.time)));
         if (arena.time > 3600)
-            errors.add("The Time limit must be at most 60:00. (Found " +
-                    (arena.time / 60) + ":" + (arena.time % 60 == 0 ? "00" : "30") +
-                    ".)");
-        if (arena.lobbyLocation == null) errors.add("The Lobby Location must be set.");
-        if (arena.world == null) errors.add("The arena must exist in a World.");
-        if (arena.startLineActivator == null) errors.add("You must set a Start Line Activator.");
+            errors.add(Validator.TIME_TOO_HIGH);
+        if (arena.lobbyLocation == null) errors.add(Validator.NO_LOBBY_LOCATION);
+        if (arena.world == null) errors.add(Validator.NO_WORLD);
+        if (arena.startLineActivator == null) errors.add(Validator.NO_START_LINE_ACTIVATOR);
         if (arena.startLocations == null || arena.startLocations.isEmpty())
-            errors.add("You must set at least 1 Start Location. (Found 0)");
+            errors.add(Validator.NO_START_LOCATIONS);
         if (arena.lightLocations == null || arena.lightLocations.isEmpty())
-            errors.add("You must set at least 1 Light Location. (Found 0)");
+            errors.add(Validator.NO_LIGHT_LOCATIONS);
         if (arena.checkpointBoxes == null || arena.checkpointBoxes.size() < 2)
-            errors.add("You must add at least 2 Checkpoints. (Found " +
-                    (arena.checkpointBoxes == null ? 0 : arena.checkpointBoxes.size()) +
-                    ".)");
+            errors.add(Validator.CHECKPOINTS_TOO_LOW.formatted(arena.checkpointBoxes == null ? 0 : arena.checkpointBoxes.size()));
         else if (arena.checkpointSpawns == null || arena.checkpointSpawns.size() != arena.checkpointBoxes.size()) {
-            errors.add("Each checkpoint must have a corresponding spawn point. (Found " +
-                    arena.checkpointBoxes.size() +
-                    " Checkpoints and " +
-                    (arena.checkpointSpawns == null ? 0 : arena.checkpointSpawns.size()) +
-                    " Spawns.)"
-            );
+            errors.add(Validator.CHECKPOINT_SPAWNS_INCONSISTENT.formatted(
+                    arena.checkpointBoxes.size(),
+                    (arena.checkpointSpawns == null ? 0 : arena.checkpointSpawns.size())
+            ));
         }
         return errors;
     }
@@ -463,8 +451,10 @@ public class ArenaEditor {
                 Location location = e.getClickedBlock().getLocation();
                 editor.setBoxCorner1(location.toVector());
                 player.spigot()
-                        .sendMessage(ChatMessageType.ACTION_BAR,
-                                new TextComponent(Editor.POSITION_1_SET.formatted(location.getBlockX(),
+                        .sendMessage(
+                                ChatMessageType.ACTION_BAR,
+                                new TextComponent(Editor.POSITION_1_SET.formatted(
+                                        location.getBlockX(),
                                         location.getBlockY(),
                                         location.getBlockZ()
                                 ))
@@ -475,8 +465,10 @@ public class ArenaEditor {
                 Location location = e.getClickedBlock().getLocation();
                 editor.setBoxCorner2(location.toVector());
                 player.spigot()
-                        .sendMessage(ChatMessageType.ACTION_BAR,
-                                new TextComponent(Editor.POSITION_2_SET.formatted(location.getBlockX(),
+                        .sendMessage(
+                                ChatMessageType.ACTION_BAR,
+                                new TextComponent(Editor.POSITION_2_SET.formatted(
+                                        location.getBlockX(),
                                         location.getBlockY(),
                                         location.getBlockZ()
                                 ))
@@ -510,7 +502,8 @@ public class ArenaEditor {
                         yaw,
                         0
                 ));
-                player.sendMessage(Editor.CHECKPOINT_SPAWN_SET.formatted(arena.checkpointBoxes.size(),
+                player.sendMessage(Editor.CHECKPOINT_SPAWN_SET.formatted(
+                        arena.checkpointBoxes.size(),
                         playerLocation.getBlockX(),
                         playerLocation.getBlockY(),
                         playerLocation.getBlockZ()
@@ -568,13 +561,13 @@ public class ArenaEditor {
                 if (arena.time > 30) {
                     arena.time -= 30;
                     meta.setDisplayName(Items.TIME.name()
-                            .formatted(String.format("%d:%02d", arena.time / 60, arena.time % 60)));
+                            .formatted(formattedTime(arena.time)));
                 }
             } else if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
                 if (arena.time < 3600) {
                     arena.time += 30;
                     meta.setDisplayName(Items.TIME.name()
-                            .formatted(String.format("%d:%02d", arena.time / 60, arena.time % 60)));
+                            .formatted(formattedTime(arena.time)));
                 }
 
             }
@@ -600,7 +593,8 @@ public class ArenaEditor {
 
         private void handleLobbyLocation(Player player, Arena arena) {
             arena.lobbyLocation = player.getLocation();
-            player.sendMessage(Editor.LOBBY_LOCATION_SET.formatted(player.getLocation().getBlockX(),
+            player.sendMessage(Editor.LOBBY_LOCATION_SET.formatted(
+                    player.getLocation().getBlockX(),
                     player.getLocation().getBlockY(),
                     player.getLocation().getBlockZ()
             ));
@@ -611,7 +605,8 @@ public class ArenaEditor {
             if (e.getClickedBlock() == null) return;
             Location blockLocation = e.getClickedBlock().getLocation();
             arena.startLineActivator = blockLocation;
-            player.sendMessage(Editor.START_LINE_SET.formatted(blockLocation.getBlockX(),
+            player.sendMessage(Editor.START_LINE_SET.formatted(
+                    blockLocation.getBlockX(),
                     blockLocation.getBlockY(),
                     blockLocation.getBlockZ()
             ));
@@ -632,7 +627,8 @@ public class ArenaEditor {
                 block.setType(Material.REDSTONE_LAMP);
                 ((Lightable) block.getBlockData()).setLit(true);
                 arena.lightLocations.add(block.getLocation());
-                e.getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR,
+                e.getPlayer().spigot().sendMessage(
+                        ChatMessageType.ACTION_BAR,
                         TextComponent.fromLegacyText(Editor.LIGHT_PLACED.formatted(arena.lightLocations.size()))
                 );
                 return;
@@ -641,13 +637,15 @@ public class ArenaEditor {
                 if (!editor.arena.lightLocations.contains(block.getLocation())) {
                     e.getPlayer()
                             .spigot()
-                            .sendMessage(ChatMessageType.ACTION_BAR,
+                            .sendMessage(
+                                    ChatMessageType.ACTION_BAR,
                                     TextComponent.fromLegacyText(Editor.LIGHT_NOT_EXIST)
                             );
                     return;
                 }
                 int lightIndex = editor.arena.lightLocations.indexOf(block.getLocation()) + 1;
-                e.getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR,
+                e.getPlayer().spigot().sendMessage(
+                        ChatMessageType.ACTION_BAR,
                         TextComponent.fromLegacyText(Editor.LIGHT_REMOVED.formatted(lightIndex))
                 );
                 arena.lightLocations.remove(block.getLocation());

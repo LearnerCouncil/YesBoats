@@ -21,16 +21,17 @@ public class Messages {
         SKIPPED_CHECKPOINT = prefixedPath(config, "skipped-checkpoint");
 
         //region Editor...
-        Editor.VALIDATOR_MIN_PLAYERS = validatorPath(config, "min-players");
-        Editor.VALIDATOR_LAPS = validatorPath(config, "laps");
-        Editor.VALIDATOR_TIME = validatorPath(config, "time");
-        Editor.VALIDATOR_LOBBY_LOCATION = validatorPath(config, "lobby-location");
-        Editor.VALIDATOR_WORLD = validatorPath(config, "world");
-        Editor.VALIDATOR_START_LINE_ACTIVATOR = validatorPath(config, "start-line-activator");
-        Editor.VALIDATOR_START_LOCATIONS = validatorPath(config, "start-locations");
-        Editor.VALIDATOR_LIGHT_LOCATIONS = validatorPath(config, "light-locations");
-        Editor.VALIDATOR_CHECKPOINT_BOXES = validatorPath(config, "checkpoint-boxes");
-        Editor.VALIDATOR_CHECKPOINT_SPAWNS = validatorPath(config, "checkpoint-spawns");
+        Editor.Validator.MIN_PLAYERS_TOO_LOW = validatorPath(config, "min-players-too-low");
+        Editor.Validator.LAPS_TOO_LOW = validatorPath(config, "laps-too-low");
+        Editor.Validator.TIME_TOO_LOW = validatorPath(config, "time-too-low");
+        Editor.Validator.TIME_TOO_HIGH = validatorPath(config, "time-too-high");
+        Editor.Validator.NO_LOBBY_LOCATION = validatorPath(config, "no-lobby-location");
+        Editor.Validator.NO_WORLD = validatorPath(config, "no-world");
+        Editor.Validator.NO_START_LINE_ACTIVATOR = validatorPath(config, "no-start-line-activator");
+        Editor.Validator.NO_START_LOCATIONS = validatorPath(config, "no-start-locations");
+        Editor.Validator.NO_LIGHT_LOCATIONS = validatorPath(config, "no-light-locations");
+        Editor.Validator.CHECKPOINTS_TOO_LOW = validatorPath(config, "checkpoints-too-low");
+        Editor.Validator.CHECKPOINT_SPAWNS_INCONSISTENT = validatorPath(config, "checkpoint-spawns-inconsistent");
 
         Editor.NO_BOX_SELECTED = editorPath(config, "no-box-selected", true);
         Editor.VALIDATION_FAILED = editorPath(config, "validation-failed", true);
@@ -133,13 +134,18 @@ public class Messages {
     }
 
     private static Editor.Item itemPath(ConfigFile config, String name) {
-        return new Editor.Item(path(config, "editor.items." + name + ".name"),
-                               pathArray(config, "editor.items." + name + ".lore")
+        return new Editor.Item(
+                path(config, "editor.items." + name + ".name"),
+                pathArray(config, "editor.items." + name + ".lore")
         );
     }
 
     private static String commandPath(ConfigFile config, String path) {
         return prefixedPath(config, "commands." + path);
+    }
+
+    public static String formattedTime(int seconds) {
+        return String.format("%d:%02d", seconds / 60, seconds % 60);
     }
 
     public static class Commands {
@@ -178,16 +184,6 @@ public class Messages {
     public static class Editor {
         public static String NO_BOX_SELECTED;
         public static String VALIDATION_FAILED;
-        public static String VALIDATOR_MIN_PLAYERS;
-        public static String VALIDATOR_LAPS;
-        public static String VALIDATOR_TIME;
-        public static String VALIDATOR_LOBBY_LOCATION;
-        public static String VALIDATOR_WORLD;
-        public static String VALIDATOR_START_LINE_ACTIVATOR;
-        public static String VALIDATOR_START_LOCATIONS;
-        public static String VALIDATOR_LIGHT_LOCATIONS;
-        public static String VALIDATOR_CHECKPOINT_BOXES;
-        public static String VALIDATOR_CHECKPOINT_SPAWNS;
         public static String SAVED;
         public static String CANCELED;
         public static String POSITION_1_SET;
@@ -224,6 +220,20 @@ public class Messages {
             public static Item CANCEL;
             public static Item SAVE;
             public static Item DEBUG;
+        }
+
+        public static class Validator {
+            public static String MIN_PLAYERS_TOO_LOW;
+            public static String LAPS_TOO_LOW;
+            public static String TIME_TOO_LOW;
+            public static String TIME_TOO_HIGH;
+            public static String NO_LOBBY_LOCATION;
+            public static String NO_WORLD;
+            public static String NO_START_LINE_ACTIVATOR;
+            public static String NO_START_LOCATIONS;
+            public static String NO_LIGHT_LOCATIONS;
+            public static String CHECKPOINTS_TOO_LOW;
+            public static String CHECKPOINT_SPAWNS_INCONSISTENT;
         }
     }
 }

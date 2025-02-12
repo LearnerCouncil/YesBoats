@@ -7,18 +7,19 @@ all-finished: '&bAll Players have finished. Returning to lobby in 5 seconds.'
 skipped-checkpoint: '&bPlayer &e%s&b has skipped checkpoint &e%s#&b.'
 editor:
   no-box-selected: '&cThere is no bounding box selected'
-  validation-failed: '&cArena validation failed. Validator found problems with the following fields: %s'
+  validation-failed: '&cArena validation failed. Validator found the following problems: %s'
   validator:
-    min-players: '&e- &bMinimum Players'
-    laps: '&e- &bLaps'
-    time: '&e- &bTime'
-    lobby-location: '&e- &bLobby Location'
-    world: '&e- &bWorld'
-    start-line-activator: '&e- &bStart Line Activator'
-    start-locations: '&e- &bStart Locations'
-    light-locations: '&e- &bLight Locations'
-    checkpoint-boxes: '&e- &bCheckpoint Boxes'
-    checkpoint-spawns: '&e- &Checkpoint Spawns'
+    min-players-too-low: "&e- &cThe Minimum Players must be at least 1. (Found %s.)"
+    laps-too-low: "The Lap count must be at least 1. (Found %s.)"
+    time-too-low: "The Time limit must be at least 0:30. (Found %s.)"
+    time-too-high: "The Time limit must be at least most 60:00. (Found %s.)"
+    no-lobby-location: "The Lobby Location must be set."
+    no-world: "The arena must exist in a World."
+    no-start-line-activator: "You must set a Start Line Activator."
+    no-start-locations: "You must set at least 1 Start Location. (None found.)"
+    no-light-locations: "You must set at least 1 Light Location. (None found.)"
+    checkpoints-too-few: "You must add at least 2 Checkpoints. (Found %s.)"
+    checkpoint-spawns-inconsistent: "Each checkpoint must have a corresponding spawn point. (Found %s Checkpoints and %s Spawns.)"
   saved: '&bArena Saved; exiting editor.'
   canceled: '&bDiscarding changes; exiting editor.'
   position-1-set: '&bPosition 1 set. (%d, %d, %d)'
