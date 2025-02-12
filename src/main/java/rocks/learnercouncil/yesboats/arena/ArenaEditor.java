@@ -156,7 +156,6 @@ public class ArenaEditor {
      * @return whether the bounding box was added.
      */
     private boolean addBoundingBox(BoundingBoxType type) {
-        System.out.println("Selected Box: " + selectedBox);
         if (selectedBox == null) {
             player.sendMessage(Editor.NO_BOX_SELECTED);
             return false;
@@ -281,7 +280,7 @@ public class ArenaEditor {
         if (save) {
             List<String> errors = validate();
             if (!errors.isEmpty()) {
-                player.sendMessage(Editor.VALIDATION_FAILED.formatted(String.join("\n", errors)));
+                player.sendMessage(Editor.VALIDATION_FAILED.formatted("\n" + String.join("\n", errors)));
                 return;
             }
             Optional<Arena> arenaOptional = Arena.get(arena.name);
