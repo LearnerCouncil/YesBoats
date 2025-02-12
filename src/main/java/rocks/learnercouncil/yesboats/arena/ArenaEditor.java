@@ -55,6 +55,7 @@ public class ArenaEditor {
         this.player = player;
         playerInv = player.getInventory().getContents();
         this.arena = arena;
+        if (this.arena.world == null) this.arena.world = player.getWorld();
         initializeInventory();
         startBoxDisplay();
         spawnStartBoats();
@@ -154,11 +155,13 @@ public class ArenaEditor {
      * Adds a bounding box of the specified type to the {@link Arena}.
      *
      * @param type The {@link BoundingBoxType}.
+     * @return whether the bounding box was added.
      */
-    private void addBoundingBox(BoundingBoxType type) {
+    private boolean addBoundingBox(BoundingBoxType type) {
+        System.out.println("Selected Box: " + selectedBox);
         if (selectedBox == null) {
             player.sendMessage(Editor.NO_BOX_SELECTED);
-            return;
+            return false;
         }
         BoundingBoxType selectedType;
         if (arena.checkpointBoxes.contains(selectedBox)) selectedType = BoundingBoxType.CHECKPOINT;
@@ -169,7 +172,10 @@ public class ArenaEditor {
         boxCorner1 = boxCorner2 = null;
         createdBox = null;
 
-        if (selectedType == type) return;
+        if (selectedType == type) {
+            player.sendMessage(DARK_AQUA + "[YesBoats] " + RED + "The selected bounding box is already of type '" + type + "'.");
+            return false;
+        }
         switch (type) {
             case CHECKPOINT:
                 if (selectedType == BoundingBoxType.DEATH_BARRIER) arena.deathBarriers.remove(selectedBox);
@@ -190,6 +196,7 @@ public class ArenaEditor {
                 if (selectedType == BoundingBoxType.DEATH_BARRIER) arena.deathBarriers.remove(selectedBox);
                 break;
         }
+        return true;
     }
 
     /**
@@ -225,7 +232,8 @@ public class ArenaEditor {
 
     private boolean boxRaycast(BoundingBox box) {
         if (box == null) return false;
-        RayTraceResult rayTraceResult = box.rayTrace(player.getEyeLocation().toVector(),
+        RayTraceResult rayTraceResult = box.rayTrace(
+                player.getEyeLocation().toVector(),
                 player.getEyeLocation().getDirection(),
                 10
         );
@@ -273,8 +281,11 @@ public class ArenaEditor {
 
     public void restore(boolean save) {
         if (save) {
-            if (!validate().isEmpty()) {
-                player.sendMessage(Editor.VALIDATION_FAILED.formatted(validate()));
+            List<String> errors = validate();
+            if (!errors.isEmpty()) {
+                player.sendMessage(DARK_AQUA + "[YesBoats] " + RED +
+                        "Arena validation failed. Validator found the following problems: \n" +
+                        String.join("\n", errors));
                 return;
             }
             Optional<Arena> arenaOptional = Arena.get(arena.name);
@@ -300,33 +311,38 @@ public class ArenaEditor {
         startBoats.clear();
     }
 
-    private String validate() {
-        StringBuilder result = new StringBuilder();
-        if (arena.minPlayers < 1) result.append("\n\t").append(Editor.VALIDATOR_MIN_PLAYERS);
-
-        if (arena.laps < 1) result.append("\n\t").append(Editor.VALIDATOR_LAPS);
-
-        if (arena.time < 30 || arena.time > 3600) result.append("\n\t").append(Editor.VALIDATOR_TIME);
-
-        if (arena.lobbyLocation == null) result.append("\n\t").append(Editor.VALIDATOR_TIME);
-
-        if (arena.world == null) result.append("\n\t").append(Editor.VALIDATOR_WORLD);
-
-        if (arena.startLineActivator == null) result.append("\n\t").append(Editor.VALIDATOR_START_LINE_ACTIVATOR);
-
+    private List<String> validate() {
+        List<String> errors = new ArrayList<>();
+        if (arena.minPlayers < 1) errors.add("The Minimum Players must be at least 1. (Found " + arena);
+        if (arena.laps < 1) errors.add("The Lap count must be at least 1. (Found " + arena.laps + ".)");
+        if (arena.time < 30)
+            errors.add("The Time limit must be at least 0:30. (Found " +
+                    (arena.time / 60) + ":" + (arena.time % 60 == 0 ? "00" : "30") +
+                    ".)");
+        if (arena.time > 3600)
+            errors.add("The Time limit must be at most 60:00. (Found " +
+                    (arena.time / 60) + ":" + (arena.time % 60 == 0 ? "00" : "30") +
+                    ".)");
+        if (arena.lobbyLocation == null) errors.add("The Lobby Location must be set.");
+        if (arena.world == null) errors.add("The arena must exist in a World.");
+        if (arena.startLineActivator == null) errors.add("You must set a Start Line Activator.");
         if (arena.startLocations == null || arena.startLocations.isEmpty())
-            result.append("\n\t").append(Editor.VALIDATOR_START_LOCATIONS);
-
+            errors.add("You must set at least 1 Start Location. (Found 0)");
         if (arena.lightLocations == null || arena.lightLocations.isEmpty())
-            result.append("\n\t").append(Editor.VALIDATOR_LIGHT_LOCATIONS);
-
-        if (arena.checkpointBoxes == null || arena.checkpointBoxes.isEmpty())
-            result.append("\n\t").append(Editor.VALIDATOR_CHECKPOINT_BOXES);
-
-        else if (arena.checkpointSpawns == null || arena.checkpointSpawns.size() != arena.checkpointBoxes.size())
-            result.append("\n\t").append(Editor.VALIDATOR_CHECKPOINT_SPAWNS);
-
-        return result.toString();
+            errors.add("You must set at least 1 Light Location. (Found 0)");
+        if (arena.checkpointBoxes == null || arena.checkpointBoxes.size() < 2)
+            errors.add("You must add at least 2 Checkpoints. (Found " +
+                    (arena.checkpointBoxes == null ? 0 : arena.checkpointBoxes.size()) +
+                    ".)");
+        else if (arena.checkpointSpawns == null || arena.checkpointSpawns.size() != arena.checkpointBoxes.size()) {
+            errors.add("Each checkpoint must have a corresponding spawn point. (Found " +
+                    arena.checkpointBoxes.size() +
+                    " Checkpoints and " +
+                    (arena.checkpointSpawns == null ? 0 : arena.checkpointSpawns.size()) +
+                    " Spawns.)"
+            );
+        }
+        return errors;
     }
 
     private enum BoundingBoxType {
@@ -470,20 +486,24 @@ public class ArenaEditor {
 
         private void handleDeathBarrier(Action action, Player player, ArenaEditor editor) {
             if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
-            editor.addBoundingBox(BoundingBoxType.DEATH_BARRIER);
-            player.sendMessage(Editor.DEATH_BARRIER_ADDED);
+            boolean added = editor.addBoundingBox(BoundingBoxType.DEATH_BARRIER);
+            if (added)
+                player.sendMessage(Editor.DEATH_BARRIER_ADDED);
         }
 
         private void handleCheckpoint(Action action, Player player, ArenaEditor editor, Arena arena) {
             if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
             if (!settingCheckpoint.contains(player)) {
-                editor.addBoundingBox(BoundingBoxType.CHECKPOINT);
-                player.sendMessage(Editor.CHECKPOINT_BOX_SET.formatted(arena.checkpointBoxes.size()));
-                settingCheckpoint.add(player);
+                boolean added = editor.addBoundingBox(BoundingBoxType.CHECKPOINT);
+                if (added) {
+                    player.sendMessage(Editor.CHECKPOINT_BOX_SET.formatted(arena.checkpointBoxes.size()));
+                    settingCheckpoint.add(player);
+                }
             } else {
                 Location playerLocation = player.getLocation();
                 float yaw = (float) (Math.round(playerLocation.getYaw() / 22.5) * 22.5);
-                arena.checkpointSpawns.add(new Location(player.getWorld(),
+                arena.checkpointSpawns.add(new Location(
+                        player.getWorld(),
                         playerLocation.getBlockX(),
                         playerLocation.getBlockY(),
                         playerLocation.getBlockZ(),
