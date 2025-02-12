@@ -4,24 +4,24 @@ finish-self: |-
   You can now spectate the other players or type &e/yesboats leave&b to return to the lobby.
 finish-others: '&b&l%s&r&b has completed the race in &e%s&b place.'
 all-finished: '&bAll Players have finished. Returning to lobby in 5 seconds.'
-skipped-checkpoint: '&bPlayer &e%s&b has skipped checkpoint &e%s#&b.'
+skipped-checkpoint: '&bPlayer &e%s&b has skipped checkpoint &e#%s&b.'
 on: 'On'
 off: 'Off'
 editor:
-  no-box-selected: '&cThere is no bounding box selected'
+  no-box-selected: '&cThere is no bounding box selected.'
   validation-failed: '&cArena validation failed. Validator found the following problems: %s'
   validator:
-    min-players-too-low: "&e- &cThe Minimum Players must be at least 1. (Found %s.)"
-    laps-too-low: "&e- &cThe Lap count must be at least 1. (Found %s.)"
-    time-too-low: "&e- &cThe Time limit must be at least 0:30. (Found %s.)"
-    time-too-high: "&e- &cThe Time limit must be at least most 60:00. (Found %s.)"
-    no-lobby-location: "&e- &cThe Lobby Location must be set."
-    no-world: "&e- &cThe arena must exist in a World."
-    no-start-line-activator: "&e- &cYou must set a Start Line Activator."
-    no-start-locations: "&e- &cYou must set at least 1 Start Location. (None found.)"
-    no-light-locations: "&e- &cYou must set at least 1 Light Location. (None found.)"
-    checkpoints-too-few: "&e- &cYou must add at least 2 Checkpoints. (Found %s.)"
-    checkpoint-spawns-inconsistent: "Each checkpoint must have a corresponding spawn point. (Found %s Checkpoints and %s Spawns.)"
+    min-players-too-low: '&e- &cThe Minimum Players must be at least 1. (Found %s.)'
+    laps-too-low: '&e- &cThe Lap count must be at least 1. (Found %s.)'
+    time-too-low: '&e- &cThe Time limit must be at least 0:30. (Found %s.)'
+    time-too-high: '&e- &cThe Time limit must be at least most 60:00. (Found %s.)'
+    no-lobby-location: '&e- &cThe Lobby Location must be set.'
+    no-world: '&e- &cThe arena must exist in a World.'
+    no-start-line-activator: '&e- &cYou must set a Start Line Activator.'
+    no-start-locations: '&e- &cYou must set at least 1 Start Location. (None found.)'
+    no-light-locations: '&e- &cYou must set at least 1 Light Location. (None found.)'
+    checkpoints-too-few: '&e- &cYou must add at least 2 Checkpoints. (Found %s.)'
+    checkpoint-spawns-inconsistent: 'ach checkpoint must have a corresponding spawn point. (Found %s Checkpoints and %s Spawns.)'
   saved: '&bArena Saved; exiting editor.'
   canceled: '&bDiscarding changes; exiting editor.'
   position-1-set: '&bPosition 1 set. (%d, %d, %d)'
