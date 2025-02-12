@@ -39,6 +39,7 @@ public class Messages {
         Editor.CANCELED = editorPath(config, "canceled", true);
         Editor.POSITION_1_SET = editorPath(config, "position-1-set", false);
         Editor.POSITION_2_SET = editorPath(config, "position-2-set", false);
+        Editor.SAME_BOUNDING_BOX_TYPE = editorPath(config, "same-bounding-box-type", false);
         Editor.DEATH_BARRIER_ADDED = editorPath(config, "death-barrier-added", true);
         Editor.CHECKPOINT_BOX_SET = editorPath(config, "checkpoint-box-set", true);
         Editor.CHECKPOINT_SPAWN_SET = editorPath(config, "checkpoint-spawn-set", true);
@@ -188,6 +189,7 @@ public class Messages {
         public static String CANCELED;
         public static String POSITION_1_SET;
         public static String POSITION_2_SET;
+        public static String SAME_BOUNDING_BOX_TYPE;
         public static String DEATH_BARRIER_ADDED;
         public static String CHECKPOINT_BOX_SET;
         public static String CHECKPOINT_SPAWN_SET;

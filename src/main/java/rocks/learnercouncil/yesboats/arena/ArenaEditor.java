@@ -171,7 +171,7 @@ public class ArenaEditor {
         createdBox = null;
 
         if (selectedType == type) {
-            player.sendMessage(DARK_AQUA + "[YesBoats] " + RED + "The selected bounding box is already of type '" + type + "'.");
+            player.sendMessage();
             return false;
         }
         switch (type) {

@@ -10,20 +10,21 @@ editor:
   validation-failed: '&cArena validation failed. Validator found the following problems: %s'
   validator:
     min-players-too-low: "&e- &cThe Minimum Players must be at least 1. (Found %s.)"
-    laps-too-low: "The Lap count must be at least 1. (Found %s.)"
-    time-too-low: "The Time limit must be at least 0:30. (Found %s.)"
-    time-too-high: "The Time limit must be at least most 60:00. (Found %s.)"
-    no-lobby-location: "The Lobby Location must be set."
-    no-world: "The arena must exist in a World."
-    no-start-line-activator: "You must set a Start Line Activator."
-    no-start-locations: "You must set at least 1 Start Location. (None found.)"
-    no-light-locations: "You must set at least 1 Light Location. (None found.)"
-    checkpoints-too-few: "You must add at least 2 Checkpoints. (Found %s.)"
+    laps-too-low: "&e- &cThe Lap count must be at least 1. (Found %s.)"
+    time-too-low: "&e- &cThe Time limit must be at least 0:30. (Found %s.)"
+    time-too-high: "&e- &cThe Time limit must be at least most 60:00. (Found %s.)"
+    no-lobby-location: "&e- &cThe Lobby Location must be set."
+    no-world: "&e- &cThe arena must exist in a World."
+    no-start-line-activator: "&e- &cYou must set a Start Line Activator."
+    no-start-locations: "&e- &cYou must set at least 1 Start Location. (None found.)"
+    no-light-locations: "&e- &cYou must set at least 1 Light Location. (None found.)"
+    checkpoints-too-few: "&e- &cYou must add at least 2 Checkpoints. (Found %s.)"
     checkpoint-spawns-inconsistent: "Each checkpoint must have a corresponding spawn point. (Found %s Checkpoints and %s Spawns.)"
   saved: '&bArena Saved; exiting editor.'
   canceled: '&bDiscarding changes; exiting editor.'
   position-1-set: '&bPosition 1 set. (%d, %d, %d)'
   position-2-set: '&bPosition 2 set. (%d, %d, %d)'
+  same-bounding-box-type: "&cThe selected bounding box is already of type '%s'."
   death-barrier-added: '&bDeath barrier added.'
   checkpoint-box-set: '&bBounding box for checkpoint #%d set. Click again to set the spawnpoint.'
   checkpoint-spawn-set: '&bSpawnpoint for checkpoint #%d set. (%d, %d, %d)'
