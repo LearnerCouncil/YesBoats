@@ -1,0 +1,134 @@
+prefix: '&3[YesBoats]'
+finish-self: |-
+  &bYou have completed the race with a time of &e%s&b. That puts you in &e%s&b place.
+  You can now spectate the other players or type &e/yesboats leave&b to return to the lobby.
+finish-others: '&b&l%s&r&b has completed the race in &e%s&b place.'
+all-finished: '&bAll Players have finished. Returning to lobby in 5 seconds.'
+skipped-checkpoint: '&bPlayer &e%s&b has skipped checkpoint &e%s#&b.'
+editor:
+  no-box-selected: '&cThere is no bounding box selected'
+  validation-failed: '&cArena validation failed. Validator found problems with the following fields: %s'
+  validator:
+    min-players: '&e- &bMinimum Players'
+    laps: '&e- &bLaps'
+    time: '&e- &bTime'
+    lobby-location: '&e- &bLobby Location'
+    world: '&e- &bWorld'
+    start-line-activator: '&e- &bStart Line Activator'
+    start-locations: '&e- &bStart Locations'
+    light-locations: '&e- &bLight Locations'
+    checkpoint-boxes: '&e- &bCheckpoint Boxes'
+    checkpoint-spawns: '&e- &Checkpoint Spawns'
+  saved: '&bArena Saved; exiting editor.'
+  canceled: '&bDiscarding changes; exiting editor.'
+  position-1-set: '&bPosition 1 set. (%d, %d, %d)'
+  position-2-set: '&bPosition 2 set. (%d, %d, %d)'
+  death-barrier-added: '&bDeath barrier added.'
+  checkpoint-box-set: '&bBounding box for checkpoint #%d set. Click again to set the spawnpoint.'
+  checkpoint-spawn-set: '&bSpawnpoint for checkpoint #%d set. (%d, %d, %d)'
+  lobby-set: '&bLobby location set. (%d, %d, %d)'
+  start-line-set: '&bStart line activator set. (%d, %d, %d)'
+  light-exists: '&cA Light already exists there!'
+  light-not-exist: "&cA Light doesn't exist there!"
+  light-placed: '&eLight #%d placed.'
+  light-removed: '&eLight #%d removed.'
+  debug-toggled: '&3Toggled extended debug features: &2%s'
+  items:
+    regenerate:
+      name: '&l&3Regenerate'
+      lore:
+        - '&bClick to regenerate all of the editor items.'
+    selector:
+      name: '&l&eArea Selector'
+      lore:
+        - '&6Left click a block to select the 1st corner.'
+        - '&6Right click a block to select the 2nd corner.'
+        - '&6Drop to remove selected bounding box.'
+    death-barrier:
+      name: '&l&cDeath Barrier'
+      lore:
+        - '&4Click to set the selected'
+        - '&4bounding box to a death barrier.'
+    checkpoint:
+      name: '&l&bCheckpoint'
+      lore:
+        - '&3Click to set the selected'
+        - '&3bounding box to a checkpoint.'
+    min-players:
+      name: '&l&cMinimum Players'
+      lore:
+        - '&eLeft click to increase.'
+        - '&eRight click to decrease.'
+    laps:
+      name: '&l&eLaps'
+      lore:
+        - '&6Left click to increase.'
+        - '&6Right click to decrease.'
+    time:
+      name: '&l&eTime: &l&6%s'
+      lore:
+        - '&6Left click to increase by 30 seconds.'
+        - '&6Right click to decrease by 30 seconds.'
+    start:
+      name: '&l&eAdd start location'
+      lore:
+        - '&6Place to add a start location.'
+    lobby:
+      name: '&l&eSet lobby Location'
+      lore:
+        - '&6Click to set the lobby location.'
+    start-line:
+      name: '&l&cStart Line Activator.'
+      lore:
+        - '&eClick a block to set that block as the start line activator.'
+    light:
+      name: '&l&eAdd Light Location'
+      lore:
+        - '&6Click a block to add a light there,'
+        - '&6Lights are turned on in the order they were placed'
+    cancel:
+      name: '&l&4Cancel'
+      lore:
+        - '&cStops editing without saving.'
+        - '&c(Cannot be undone.)'
+    save:
+      name: '&l&aSave'
+      lore:
+        - '&2Stops editing, saving changes.'
+        - '&2(Arena must be valid.)'
+    debug:
+      name: '&l&7Debug'
+      lore:
+        - '&fTurns on extra debugging capabilities.'
+commands:
+  # Results
+  created: "&bArena &e'%s' &bsuccessfully created. Now editing."
+  removed: "&bArena &e'%s' &bsuccessfully removed."
+  joined: "&bJoined the game."
+  left: "&bLeft the game."
+  editing: "&bNow editing arena &e'%s'&b."
+  started: "&bStarted the game."
+  stopped: "&bStopped the game."
+  displaying-path: "&bNow displaying debug path."
+  clearing-path: "&bClearing displayed debug paths."
+  joined-other: "&bAdded &e%s &bto the game."
+  left-other: "&bRemoved &e%s &bfrom the game."
+  # Errors
+  no-permission: "&cYou don't have permission to execute this command."
+  too-few-args: "&cToo few arguments."
+  too-many-args: "&cToo many arguments."
+  arena-exists: "&cAn arena with the name &e'%s' &balready exists."
+  arena-not-exist: "&cAn arena with the name &e'%s' &cdoesn't exist."
+  player-not-found: "&cPlayer not found."
+  already-running: "&cArena already running."
+  not-running: "&cArena not running."
+  too-few-players: "&cArena doesn't have enough players."
+  not-in-arena-self: "&cYou are not in an arena."
+  not-in-arena-other: "&cThat player is not in an arena."
+  already-in-arena-self: "&cYou are already in an arena."
+  already-in-arena-other: "&cThat player is already in an arena."
+  needs-player: "&cCommand &e'/%s' &cmust be executed by a player."
+  invalid-args: "&cInvalid arguments. Try &e'/%s help' &cfor help."
+  invalid-number: "&c'&e%s&c' is not a valid number."
+  # misc
+  bar: "&b===================="

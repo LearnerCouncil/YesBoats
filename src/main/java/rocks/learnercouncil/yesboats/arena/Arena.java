@@ -65,7 +65,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         this.name = name;
     }
 
-    @SuppressWarnings({"unused", "unchecked"})
+    @SuppressWarnings({ "unused", "unchecked" })
     public Arena(Map<String, Object> m) {
         name = (String) m.get("name");
 

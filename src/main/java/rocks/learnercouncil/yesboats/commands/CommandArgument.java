@@ -16,7 +16,7 @@ public interface CommandArgument {
     static BaseComponent[] parseCommand(CommandSender sender, Command cmd, String label, String[] args, CommandArgument[] arguments) {
         if (args.length < 1) {
             YesBoats.getPlugin().getServer().dispatchCommand(sender, label + " help");
-            return CommandResult.NONE;
+            return CommandResult.none();
         }
         for (CommandArgument a : arguments) {
             final BaseComponent[] result = a.execute(sender, cmd, label, args);
