@@ -12,6 +12,8 @@ public class Messages {
     public static String FINISH_OTHERS;
     public static String ALL_FINISHED;
     public static String SKIPPED_CHECKPOINT;
+    public static String ON;
+    public static String OFF;
 
     public static void initialize(ConfigFile config) {
         PREFIX = path(config, "prefix");
@@ -19,7 +21,8 @@ public class Messages {
         FINISH_OTHERS = prefixedPath(config, "finish-others");
         ALL_FINISHED = prefixedPath(config, "all-finished");
         SKIPPED_CHECKPOINT = prefixedPath(config, "skipped-checkpoint");
-
+        ON = path(config, "on");
+        OFF = path(config, "off");
         //region Editor...
         Editor.Validator.MIN_PLAYERS_TOO_LOW = validatorPath(config, "min-players-too-low");
         Editor.Validator.LAPS_TOO_LOW = validatorPath(config, "laps-too-low");

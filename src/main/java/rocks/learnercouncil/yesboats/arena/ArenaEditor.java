@@ -660,7 +660,7 @@ public class ArenaEditor {
 
         private void handleDebugToggle(Arena arena, Player player) {
             arena.debug = !arena.debug;
-            player.sendMessage(Editor.DEBUG_TOGGLED.formatted(arena.debug ? "On" : "Off"));
+            player.sendMessage(Editor.DEBUG_TOGGLED.formatted(arena.debug ? Messages.ON : Messages.OFF));
         }
     }
 }
