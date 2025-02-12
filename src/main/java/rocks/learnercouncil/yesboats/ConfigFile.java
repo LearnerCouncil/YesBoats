@@ -20,10 +20,10 @@ public class ConfigFile {
     public ConfigFile(YesBoats plugin, String name) {
         this.plugin = plugin;
         this.name = name;
-        saveDefaultConfig();
+        saveDefault();
     }
 
-    public void reloadConfig() {
+    public void reload() {
         if (file == null)
             file = new File(plugin.getDataFolder(), name);
         config = YamlConfiguration.loadConfiguration(file);
@@ -35,13 +35,13 @@ public class ConfigFile {
         }
     }
 
-    public FileConfiguration getConfig() {
+    public FileConfiguration get() {
         if (config == null)
-            reloadConfig();
+            reload();
         return config;
     }
 
-    public void saveConfig() {
+    public void save() {
         if (config == null || file == null)
             return;
         try {
@@ -51,7 +51,7 @@ public class ConfigFile {
         }
     }
 
-    private void saveDefaultConfig() {
+    private void saveDefault() {
         if (file == null)
             file = new File(plugin.getDataFolder(), name);
         if (!file.exists())

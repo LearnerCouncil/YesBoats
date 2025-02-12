@@ -13,8 +13,8 @@ import static rocks.learnercouncil.yesboats.commands.CommandResult.*;
 public class HelpArg implements CommandArgument {
     @Override
     public BaseComponent[] execute(CommandSender sender, Command cmd, String label, String[] args) {
-        if (!args[0].equalsIgnoreCase("help")) return NONE;
-        if (args.length > 1) return TOO_MANY_ARGS;
+        if (!args[0].equalsIgnoreCase("help")) return none();
+        if (args.length > 1) return tooManyArgs();
 
         return getHelpMenu(label, sender);
     }

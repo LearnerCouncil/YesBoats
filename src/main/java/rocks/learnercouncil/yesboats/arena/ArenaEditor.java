@@ -26,11 +26,15 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
+import rocks.learnercouncil.yesboats.Messages;
 import rocks.learnercouncil.yesboats.YesBoats;
 
 import java.util.*;
 
-import static org.bukkit.ChatColor.*;
+import static rocks.learnercouncil.yesboats.Messages.Editor;
+import static rocks.learnercouncil.yesboats.Messages.Editor.Items;
+import static rocks.learnercouncil.yesboats.Messages.Editor.Validator;
+import static rocks.learnercouncil.yesboats.Messages.formattedTime;
 
 public class ArenaEditor {
 
@@ -61,8 +65,7 @@ public class ArenaEditor {
 
     protected void spawnStartBoats() {
         startBoats.forEach(boat -> {
-            if (boat.isInsideVehicle())
-                Objects.requireNonNull(boat.getVehicle()).remove();
+            if (boat.isInsideVehicle()) Objects.requireNonNull(boat.getVehicle()).remove();
             boat.remove();
         });
         startBoats.clear();
@@ -84,116 +87,53 @@ public class ArenaEditor {
         editorItems.clear();
         Inventory inv = player.getInventory();
 
-        inv.setItem(0, getItem(
-                Material.ENDER_CHEST,
-                BOLD.toString() + DARK_AQUA + "Regenerate",
-                AQUA + "Click to regenerate all of the editor items."
-        ));
+        inv.setItem(0, getItem(Material.ENDER_CHEST, Items.REGENERATE));
 
-        inv.setItem(1, getItem(
-                Material.IRON_AXE,
-                BOLD.toString() + YELLOW + "Area Selector",
-                GOLD + "Left click a block to select the 1st corner",
-                GOLD + "Right click a block to select the 2nd corner",
-                GOLD + "Drop to remove selected bounding box"
-        ));
+        inv.setItem(1, getItem(Material.IRON_AXE, Items.SELECTOR));
 
-        inv.setItem(2, getItem(
-                Material.BARRIER,
-                BOLD.toString() + RED + "Death Barrier",
-                DARK_RED + "Click to set the selected",
-                DARK_RED + "bounding box to a death barrier"
-        ));
+        inv.setItem(2, getItem(Material.BARRIER, Items.DEATH_BARRIER));
 
-        inv.setItem(3, getItem(
-                Material.LIGHT_BLUE_BANNER,
-                BOLD.toString() + AQUA + "Checkpoint",
-                DARK_AQUA + "Click to set the selected",
-                DARK_AQUA + "bounding box to a checkpoint"
-        ));
+        inv.setItem(3, getItem(Material.LIGHT_BLUE_BANNER, Items.CHECKPOINT));
 
-        inv.setItem(27, getItem(Material.RED_CARPET, arena.minPlayers,
-                BOLD.toString() + RED + "Minimum Players",
-                YELLOW + "Left click to increase",
-                YELLOW + "Right click to decrease"
-        ));
+        inv.setItem(27, getItem(Material.RED_CARPET, arena.minPlayers, Items.MIN_PLAYERS));
 
-        inv.setItem(28, getItem(Material.SPECTRAL_ARROW, arena.laps,
-                BOLD.toString() + YELLOW + "Laps",
-                GOLD + "Left click to increase",
-                GOLD + "Right click to decrease"
-        ));
+        inv.setItem(28, getItem(Material.SPECTRAL_ARROW, arena.laps, Items.LAPS));
 
-        inv.setItem(29, getItem(
-                Material.CLOCK,
-                BOLD.toString() + YELLOW + "Time: " + (arena.time / 60) + ":" + ((arena.time % 60) == 0 ? "00" : "30"),
-                GOLD + "Left click to increase by 30 seconds",
-                GOLD + "Right click to decrease by 30 seconds"
-        ));
+        inv.setItem(29, getItem(Material.CLOCK, Items.TIME.formattedName(formattedTime(arena.time))));
 
-        inv.setItem(4, getItem(
-                Material.OAK_BOAT,
-                BOLD.toString() + YELLOW + "Add start location",
-                GOLD + "Place to add a start location"
-        ));
+        inv.setItem(4, getItem(Material.OAK_BOAT, Items.START));
 
-        inv.setItem(5, getItem(
-                Material.ENDER_PEARL,
-                BOLD.toString() + YELLOW + "Set lobby Location",
-                GOLD + "Click to set the Lobby Location"
-        ));
+        inv.setItem(5, getItem(Material.ENDER_PEARL, Items.LOBBY));
 
-        inv.setItem(6, getItem(
-                Material.REDSTONE_BLOCK,
-                BOLD.toString() + RED + "Start Line Activator.",
-                YELLOW + "Click a block to set that block as the start line activator"
-        ));
+        inv.setItem(6, getItem(Material.REDSTONE_BLOCK, Items.START_LINE));
 
-        inv.setItem(7, getItem(
-                Material.REDSTONE_LAMP,
-                BOLD.toString() + YELLOW + "Add Light Location",
-                GOLD + "Click a block to add a light there,",
-                GOLD + "Lights are turned on in the order they were placed"
-        ));
+        inv.setItem(7, getItem(Material.REDSTONE_LAMP, Items.LIGHT));
 
-        inv.setItem(16, getItem(
-                Material.RED_CONCRETE,
-                BOLD.toString() + DARK_RED + "Cancel",
-                RED + "Stops editing without saving changes.",
-                RED + "(Cannot be undone)"
-        ));
+        inv.setItem(16, getItem(Material.RED_CONCRETE, Items.CANCEL));
 
-        inv.setItem(17, getItem(
-                Material.LIME_CONCRETE,
-                BOLD.toString() + GREEN + "Save",
-                DARK_GREEN + "Stops editing, saving changes.",
-                DARK_GREEN + "(Arena must be valid)"
-        ));
-        inv.setItem(9, getItem(
-                Material.FEATHER,
-                BOLD.toString() + GRAY + "Debug",
-                WHITE + "Turns on extra debugging capabilities."
-        ));
+        inv.setItem(17, getItem(Material.LIME_CONCRETE, Items.SAVE));
+
+        inv.setItem(9, getItem(Material.FEATHER, Items.DEBUG));
+
     }
 
-    private ItemStack getItem(Material material, String name, String... lore) {
-        return getItem(material, 1, name, lore);
+    private ItemStack getItem(Material material, Messages.Editor.Item item) {
+        return getItem(material, 1, item);
     }
 
     /**
      * Gets an {@link ItemStack} from a {@link Material}, name, and lore.
      *
      * @param material The material of the item.
-     * @param name     The name of the item.
-     * @param lore     The lore of the Item.
+     * @param itemData The data of the item.
      * @return The ItemStack
      */
-    private ItemStack getItem(Material material, int amount, String name, String... lore) {
+    private ItemStack getItem(Material material, int amount, Messages.Editor.Item itemData) {
         ItemStack item = new ItemStack(material, amount);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return item;
-        meta.setDisplayName(name);
-        meta.setLore(Arrays.asList(lore));
+        meta.setDisplayName(itemData.name());
+        meta.setLore(Arrays.asList(itemData.lore()));
         item.setItemMeta(meta);
         editorItems.add(item);
         return item;
@@ -201,14 +141,12 @@ public class ArenaEditor {
 
     private void setBoxCorner1(Vector boxCorner1) {
         this.boxCorner1 = boxCorner1;
-        if (boxCorner2 != null)
-            createdBox = BoundingBox.of(this.boxCorner1, this.boxCorner2);
+        if (boxCorner2 != null) createdBox = BoundingBox.of(this.boxCorner1, this.boxCorner2);
     }
 
     private void setBoxCorner2(Vector boxCorner2) {
         this.boxCorner2 = boxCorner2;
-        if (boxCorner1 != null)
-            createdBox = BoundingBox.of(this.boxCorner1, this.boxCorner2);
+        if (boxCorner1 != null) createdBox = BoundingBox.of(this.boxCorner1, this.boxCorner2);
     }
 
     /**
@@ -220,23 +158,20 @@ public class ArenaEditor {
     private boolean addBoundingBox(BoundingBoxType type) {
         System.out.println("Selected Box: " + selectedBox);
         if (selectedBox == null) {
-            player.sendMessage(DARK_AQUA + "[YesBoats] " + RED + "There is no bounding box selected");
+            player.sendMessage(Editor.NO_BOX_SELECTED);
             return false;
         }
         BoundingBoxType selectedType;
-        if (arena.checkpointBoxes.contains(selectedBox))
-            selectedType = BoundingBoxType.CHECKPOINT;
-        else if (arena.deathBarriers.contains(selectedBox))
-            selectedType = BoundingBoxType.DEATH_BARRIER;
-        else
-            selectedType = BoundingBoxType.REMOVE;
+        if (arena.checkpointBoxes.contains(selectedBox)) selectedType = BoundingBoxType.CHECKPOINT;
+        else if (arena.deathBarriers.contains(selectedBox)) selectedType = BoundingBoxType.DEATH_BARRIER;
+        else selectedType = BoundingBoxType.REMOVE;
 
 
         boxCorner1 = boxCorner2 = null;
         createdBox = null;
 
         if (selectedType == type) {
-            player.sendMessage(DARK_AQUA + "[YesBoats] " + RED + "The selected bounding box is already of type '" + type + "'.");
+            player.sendMessage();
             return false;
         }
         switch (type) {
@@ -286,8 +221,7 @@ public class ArenaEditor {
                 }
                 if (clearSelection) selectedBox = null;
 
-                if (createdBox != null)
-                    displayBoundingBox(createdBox, new Particle.DustOptions(Color.WHITE, 1));
+                if (createdBox != null) displayBoundingBox(createdBox, new Particle.DustOptions(Color.WHITE, 1));
                 arena.deathBarriers.forEach(b -> displayBoundingBox(b, new Particle.DustOptions(Color.RED, 1)));
                 arena.checkpointBoxes.forEach(b -> displayBoundingBox(b, new Particle.DustOptions(Color.AQUA, 1)));
             }
@@ -347,18 +281,16 @@ public class ArenaEditor {
         if (save) {
             List<String> errors = validate();
             if (!errors.isEmpty()) {
-                player.sendMessage(DARK_AQUA + "[YesBoats] " + RED +
-                        "Arena validation failed. Validator found the following problems: \n" +
-                        String.join("\n", errors));
+                player.sendMessage(Editor.VALIDATION_FAILED.formatted(String.join("\n", errors)));
                 return;
             }
             Optional<Arena> arenaOptional = Arena.get(arena.name);
             arenaOptional.ifPresent(Arena.arenas::remove);
             Arena.arenas.add(arena);
-            player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + "Arena saved; exiting editor.");
+            player.sendMessage(Editor.SAVED);
         } else {
             oldLightMaterials.forEach(Block::setType);
-            player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + "Discarding changes; exiting editor.");
+            player.sendMessage(Editor.CANCELED);
         }
         player.getInventory().setContents(playerInv);
         player.setItemOnCursor(null);
@@ -369,8 +301,7 @@ public class ArenaEditor {
         selectedBox = null;
         createdBox = null;
         for (Boat boat : startBoats) {
-            if (boat.isInsideVehicle())
-                Objects.requireNonNull(boat.getVehicle()).remove();
+            if (boat.isInsideVehicle()) Objects.requireNonNull(boat.getVehicle()).remove();
             boat.remove();
         }
         startBoats.clear();
@@ -378,34 +309,26 @@ public class ArenaEditor {
 
     private List<String> validate() {
         List<String> errors = new ArrayList<>();
-        if (arena.minPlayers < 1) errors.add("The Minimum Players must be at least 1. (Found " + arena);
-        if (arena.laps < 1) errors.add("The Lap count must be at least 1. (Found " + arena.laps + ".)");
+        if (arena.minPlayers < 1) errors.add(Validator.MIN_PLAYERS_TOO_LOW.formatted(arena.minPlayers));
+        if (arena.laps < 1) errors.add(Validator.LAPS_TOO_LOW.formatted(arena.laps));
         if (arena.time < 30)
-            errors.add("The Time limit must be at least 0:30. (Found " +
-                    (arena.time / 60) + ":" + (arena.time % 60 == 0 ? "00" : "30") +
-                    ".)");
+            errors.add(Validator.TIME_TOO_LOW.formatted(formattedTime(arena.time)));
         if (arena.time > 3600)
-            errors.add("The Time limit must be at most 60:00. (Found " +
-                    (arena.time / 60) + ":" + (arena.time % 60 == 0 ? "00" : "30") +
-                    ".)");
-        if (arena.lobbyLocation == null) errors.add("The Lobby Location must be set.");
-        if (arena.world == null) errors.add("The arena must exist in a World.");
-        if (arena.startLineActivator == null) errors.add("You must set a Start Line Activator.");
+            errors.add(Validator.TIME_TOO_HIGH);
+        if (arena.lobbyLocation == null) errors.add(Validator.NO_LOBBY_LOCATION);
+        if (arena.world == null) errors.add(Validator.NO_WORLD);
+        if (arena.startLineActivator == null) errors.add(Validator.NO_START_LINE_ACTIVATOR);
         if (arena.startLocations == null || arena.startLocations.isEmpty())
-            errors.add("You must set at least 1 Start Location. (Found 0)");
+            errors.add(Validator.NO_START_LOCATIONS);
         if (arena.lightLocations == null || arena.lightLocations.isEmpty())
-            errors.add("You must set at least 1 Light Location. (Found 0)");
+            errors.add(Validator.NO_LIGHT_LOCATIONS);
         if (arena.checkpointBoxes == null || arena.checkpointBoxes.size() < 2)
-            errors.add("You must add at least 2 Checkpoints. (Found " +
-                    (arena.checkpointBoxes == null ? 0 : arena.checkpointBoxes.size()) +
-                    ".)");
+            errors.add(Validator.CHECKPOINTS_TOO_LOW.formatted(arena.checkpointBoxes == null ? 0 : arena.checkpointBoxes.size()));
         else if (arena.checkpointSpawns == null || arena.checkpointSpawns.size() != arena.checkpointBoxes.size()) {
-            errors.add("Each checkpoint must have a corresponding spawn point. (Found " +
-                    arena.checkpointBoxes.size() +
-                    " Checkpoints and " +
-                    (arena.checkpointSpawns == null ? 0 : arena.checkpointSpawns.size()) +
-                    " Spawns.)"
-            );
+            errors.add(Validator.CHECKPOINT_SPAWNS_INCONSISTENT.formatted(
+                    arena.checkpointBoxes.size(),
+                    (arena.checkpointSpawns == null ? 0 : arena.checkpointSpawns.size())
+            ));
         }
         return errors;
     }
@@ -427,8 +350,7 @@ public class ArenaEditor {
             ArenaEditor editor = editors.get((Player) event.getAttacker());
             if (editor.startBoats.contains((Boat) event.getVehicle())) {
                 Boat boat = (Boat) event.getVehicle();
-                if (boat.isInsideVehicle())
-                    Objects.requireNonNull(boat.getVehicle()).remove();
+                if (boat.isInsideVehicle()) Objects.requireNonNull(boat.getVehicle()).remove();
                 editor.arena.startLocations.remove(boat.getLocation());
             }
         }
@@ -436,8 +358,7 @@ public class ArenaEditor {
         @EventHandler
         public void onVehicleEnter(VehicleEnterEvent event) {
             if (!(event.getEntered() instanceof Player)) return;
-            if (editors.containsKey((Player) event.getEntered()))
-                event.setCancelled(true);
+            if (editors.containsKey((Player) event.getEntered())) event.setCancelled(true);
         }
 
         @EventHandler
@@ -529,19 +450,29 @@ public class ArenaEditor {
                 //noinspection ConstantConditions
                 Location location = e.getClickedBlock().getLocation();
                 editor.setBoxCorner1(location.toVector());
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(AQUA + "Position 1 set. (" +
-                        location.getBlockX() + ", " +
-                        location.getBlockY() + ", " +
-                        location.getBlockZ() + ")"));
+                player.spigot()
+                        .sendMessage(
+                                ChatMessageType.ACTION_BAR,
+                                new TextComponent(Editor.POSITION_1_SET.formatted(
+                                        location.getBlockX(),
+                                        location.getBlockY(),
+                                        location.getBlockZ()
+                                ))
+                        );
             }
             if (action == Action.RIGHT_CLICK_BLOCK) {
                 //noinspection ConstantConditions
                 Location location = e.getClickedBlock().getLocation();
                 editor.setBoxCorner2(location.toVector());
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(AQUA + "Position 2 set. (" +
-                        location.getBlockX() + ", " +
-                        location.getBlockY() + ", " +
-                        location.getBlockZ() + ")"));
+                player.spigot()
+                        .sendMessage(
+                                ChatMessageType.ACTION_BAR,
+                                new TextComponent(Editor.POSITION_2_SET.formatted(
+                                        location.getBlockX(),
+                                        location.getBlockY(),
+                                        location.getBlockZ()
+                                ))
+                        );
             }
         }
 
@@ -549,7 +480,7 @@ public class ArenaEditor {
             if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
             boolean added = editor.addBoundingBox(BoundingBoxType.DEATH_BARRIER);
             if (added)
-                player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + "Death barrier added.");
+                player.sendMessage(Editor.DEATH_BARRIER_ADDED);
         }
 
         private void handleCheckpoint(Action action, Player player, ArenaEditor editor, Arena arena) {
@@ -557,7 +488,7 @@ public class ArenaEditor {
             if (!settingCheckpoint.contains(player)) {
                 boolean added = editor.addBoundingBox(BoundingBoxType.CHECKPOINT);
                 if (added) {
-                    player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA + " Bounding box for checkpoint #" + arena.checkpointBoxes.size() + " set. Click again to set the spawnpoint.");
+                    player.sendMessage(Editor.CHECKPOINT_BOX_SET.formatted(arena.checkpointBoxes.size()));
                     settingCheckpoint.add(player);
                 }
             } else {
@@ -571,10 +502,12 @@ public class ArenaEditor {
                         yaw,
                         0
                 ));
-                player.sendMessage(DARK_AQUA + "[YesBoats]" + AQUA + " Spawnpoint for checkpoint #" + arena.checkpointBoxes.size() + " set. (" +
-                        playerLocation.getBlockX() + ", " +
-                        playerLocation.getBlockY() + ", " +
-                        playerLocation.getBlockZ() + ")");
+                player.sendMessage(Editor.CHECKPOINT_SPAWN_SET.formatted(
+                        arena.checkpointBoxes.size(),
+                        playerLocation.getBlockX(),
+                        playerLocation.getBlockY(),
+                        playerLocation.getBlockZ()
+                ));
                 settingCheckpoint.remove(player);
             }
         }
@@ -627,12 +560,14 @@ public class ArenaEditor {
             if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
                 if (arena.time > 30) {
                     arena.time -= 30;
-                    meta.setDisplayName(BOLD.toString() + GOLD + "Time: " + (arena.time / 60) + ":" + (arena.time % 60 == 0 ? "00" : "30"));
+                    meta.setDisplayName(Items.TIME.name()
+                            .formatted(formattedTime(arena.time)));
                 }
             } else if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
                 if (arena.time < 3600) {
                     arena.time += 30;
-                    meta.setDisplayName(BOLD.toString() + GOLD + "Time: " + (arena.time / 60) + ":" + (arena.time % 60 == 0 ? "00" : "30"));
+                    meta.setDisplayName(Items.TIME.name()
+                            .formatted(formattedTime(arena.time)));
                 }
 
             }
@@ -658,10 +593,11 @@ public class ArenaEditor {
 
         private void handleLobbyLocation(Player player, Arena arena) {
             arena.lobbyLocation = player.getLocation();
-            player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + " Set lobby location. (" +
-                    player.getLocation().getBlockX() + ", " +
-                    player.getLocation().getBlockY() + ", " +
-                    player.getLocation().getBlockZ() + ")");
+            player.sendMessage(Editor.LOBBY_LOCATION_SET.formatted(
+                    player.getLocation().getBlockX(),
+                    player.getLocation().getBlockY(),
+                    player.getLocation().getBlockZ()
+            ));
         }
 
         private void handleStartLineActivator(PlayerInteractEvent e, Action action, Player player, Arena arena) {
@@ -669,10 +605,11 @@ public class ArenaEditor {
             if (e.getClickedBlock() == null) return;
             Location blockLocation = e.getClickedBlock().getLocation();
             arena.startLineActivator = blockLocation;
-            player.sendMessage(DARK_AQUA + "[YesBoats] " + AQUA + " Set start line activator. (" +
-                    blockLocation.getBlockX() + ", " +
-                    blockLocation.getBlockY() + ", " +
-                    blockLocation.getBlockZ() + ")");
+            player.sendMessage(Editor.START_LINE_SET.formatted(
+                    blockLocation.getBlockX(),
+                    blockLocation.getBlockY(),
+                    blockLocation.getBlockZ()
+            ));
         }
 
         private void handleLightLocations(PlayerInteractEvent e, Action action, ArenaEditor editor, Arena arena) {
@@ -681,10 +618,9 @@ public class ArenaEditor {
 
             if (action == Action.RIGHT_CLICK_BLOCK) {
                 if (arena.lightLocations.contains(block.getLocation())) {
-                    e.getPlayer().spigot().sendMessage(
-                            ChatMessageType.ACTION_BAR,
-                            new TextComponent(RED + "A Light already exists there!")
-                    );
+                    e.getPlayer()
+                            .spigot()
+                            .sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(Editor.LIGHT_EXISTS));
                     return;
                 }
                 editor.oldLightMaterials.put(block, block.getType());
@@ -693,21 +629,24 @@ public class ArenaEditor {
                 arena.lightLocations.add(block.getLocation());
                 e.getPlayer().spigot().sendMessage(
                         ChatMessageType.ACTION_BAR,
-                        new TextComponent(YELLOW + "Light #" + arena.lightLocations.size() + " placed.")
+                        TextComponent.fromLegacyText(Editor.LIGHT_PLACED.formatted(arena.lightLocations.size()))
                 );
                 return;
             }
             if (action == Action.LEFT_CLICK_BLOCK) {
                 if (!editor.arena.lightLocations.contains(block.getLocation())) {
-                    e.getPlayer().spigot().sendMessage(
-                            ChatMessageType.ACTION_BAR,
-                            new TextComponent(RED + "A Light doesn't exist there!")
-                    );
+                    e.getPlayer()
+                            .spigot()
+                            .sendMessage(
+                                    ChatMessageType.ACTION_BAR,
+                                    TextComponent.fromLegacyText(Editor.LIGHT_NOT_EXIST)
+                            );
                     return;
                 }
+                int lightIndex = editor.arena.lightLocations.indexOf(block.getLocation()) + 1;
                 e.getPlayer().spigot().sendMessage(
                         ChatMessageType.ACTION_BAR,
-                        new TextComponent(GOLD + "Light #" + (editor.arena.lightLocations.indexOf(block.getLocation()) + 1) + " removed.")
+                        TextComponent.fromLegacyText(Editor.LIGHT_REMOVED.formatted(lightIndex))
                 );
                 arena.lightLocations.remove(block.getLocation());
                 if (editor.oldLightMaterials.containsKey(block)) {
@@ -721,7 +660,7 @@ public class ArenaEditor {
 
         private void handleDebugToggle(Arena arena, Player player) {
             arena.debug = !arena.debug;
-            player.sendMessage(DARK_AQUA + "Toggled extended debug features: " + YELLOW + (arena.debug ? "On" : "Off"));
+            player.sendMessage(Editor.DEBUG_TOGGLED.formatted(arena.debug ? Messages.ON : Messages.OFF));
         }
     }
 }
