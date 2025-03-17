@@ -7,6 +7,11 @@ all-finished: '&bAll Players have finished. Returning to lobby in 5 seconds.'
 skipped-checkpoint: '&bPlayer &e%s&b has skipped checkpoint &e#%s&b.'
 on: 'On'
 off: 'Off'
+placeholders:
+  status-waiting: "Waiting..."
+  status-starting: "Starting..."
+  status-running: "Running..."
+  arena-not-found: "Arena not found!"
 editor:
   no-box-selected: '&cThere is no bounding box selected.'
   validation-failed: '&cArena validation failed. Validator found the following problems:%s'
