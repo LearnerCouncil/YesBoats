@@ -53,8 +53,16 @@ Join signs can be created by placing a sign with the text detailed in the below 
 
 If everything is set up correctly, you can join an arena by clicking a Join Sign or doing `/yesboats join <arena>`, where `<arena>` is the arena's name. This will bring you into the arena and place you in a boat at the first available Start Location. During this time, you can click the boat items in your inventory to change the wood type of your boat. 
 
-After the Minimum Players threshold is reached, the queue timer will begin. This will count down from 30 seconds (configurable in `config.yml`) to allow time for additional players to join. After the queue time is over, the players will be released and the countdown will begin. Once the countdown is up the Start Line Activator is removed, lowering the barrier and allowing the players to start.
+### PlaceholderAPI
 
-Once a player finishes the race, they will be told their final time, their position in the race will be announced, and they will become a "spectator"; able to fly around and watch the other players. Once all players have finished, the game will end, and all players will be teleported to the arena's Lobby Location.
+This plugin is also compatible with PlaceholderAPI, allowing access to certain aspects of an arena through placeholders.  
+The placeholders, and what they resolve to, are as follows (replacing `<arena>` with the name of your arena):
 
-Additionally, any player can leave the game at any time by doing `/yesboats leave`.
+- `%yesboats_<arena>_name%` - The name of the arena.
+- `%yesboats_<arena>_status%` - The status of the arena. (One of 'Waiting...', 'Starting...', or 'Running...')
+- `%yesboats_<arena>_players%` - The amount of players currently in the arena.
+- `%yesboats_<arena>_minplayers%` - The minimum amount of players required for the arena to start.
+- `%yesboats_<arena>_maxplayers%` - The maximum amount of players that can fit in the arena.
+
+Further information on how to use placeholders can be found on
+the [PlaceholderAPI Wiki](https://wiki.placeholderapi.com/).
