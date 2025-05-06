@@ -33,12 +33,18 @@ public final class YesBoats extends JavaPlugin {
             Arena.arenas.addAll((List<Arena>) arenas);
         }
 
+        // initialize message config
         Configs.messages = new ConfigFile(this, "messages.yml");
         Messages.initialize(Configs.messages);
 
         // initialize regular config
         Configs.main = new ConfigFile(this, "config.yml");
         Arena.queueTime = Configs.main.get().getInt("queue-time");
+
+        // initialize placeholders
+        if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            new PlaceholderManager().register();
+        }
 
         TabExecutor yb = new YesBoatsCmd();
         getCommand("yesboats").setExecutor(yb);

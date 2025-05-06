@@ -58,3 +58,17 @@ After the Minimum Players threshold is reached, the queue timer will begin. This
 Once a player finishes the race, they will be told their final time, their position in the race will be announced, and they will become a "spectator"; able to fly around and watch the other players. Once all players have finished, the game will end, and all players will be teleported to the arena's Lobby Location.
 
 Additionally, any player can leave the game at any time by doing `/yesboats leave`.
+
+### PlaceholderAPI
+
+This plugin is also compatible with PlaceholderAPI, allowing access to certain aspects of an arena through placeholders.  
+The placeholders, and what they resolve to, are as follows (replacing `<arena>` with the name of your arena):
+
+- `%yesboats_<arena>_name%` - The name of the arena.
+- `%yesboats_<arena>_status%` - The status of the arena. (One of 'Waiting...', 'Starting...', or 'Running...')
+- `%yesboats_<arena>_players%` - The amount of players currently in the arena.
+- `%yesboats_<arena>_minplayers%` - The minimum amount of players required for the arena to start.
+- `%yesboats_<arena>_maxplayers%` - The maximum amount of players that can fit in the arena.
+
+Further information on how to use placeholders can be found on
+the [PlaceholderAPI Wiki](https://wiki.placeholderapi.com/).

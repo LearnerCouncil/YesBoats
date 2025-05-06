@@ -23,6 +23,14 @@ public class Messages {
         SKIPPED_CHECKPOINT = prefixedPath(config, "skipped-checkpoint");
         ON = path(config, "on");
         OFF = path(config, "off");
+
+        //region Placeholders...
+        Placeholders.STATUS_WAITING = path(config, "placeholders.status-waiting");
+        Placeholders.STATUS_STARTING = path(config, "placeholders.status-starting");
+        Placeholders.STATUS_RUNNING = path(config, "placeholders.status-running");
+        Placeholders.ARENA_NOT_FOUND = path(config, "placeholders.arena-not-found");
+        //endregion
+
         //region Editor...
         Editor.Validator.MIN_PLAYERS_TOO_LOW = validatorPath(config, "min-players-too-low");
         Editor.Validator.LAPS_TOO_LOW = validatorPath(config, "laps-too-low");
@@ -150,6 +158,13 @@ public class Messages {
 
     public static String formattedTime(int seconds) {
         return String.format("%d:%02d", seconds / 60, seconds % 60);
+    }
+
+    public static class Placeholders {
+        public static String STATUS_WAITING;
+        public static String STATUS_STARTING;
+        public static String STATUS_RUNNING;
+        public static String ARENA_NOT_FOUND;
     }
 
     public static class Commands {

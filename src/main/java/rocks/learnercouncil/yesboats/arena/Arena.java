@@ -43,7 +43,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     private final @Getter Set<Player> spectators = new HashSet<>();
     private final Set<ArmorStand> queueStands = new HashSet<>();
     public BukkitTask queueTimer;
-    protected int minPlayers = 1;
+    protected @Getter int minPlayers = 1;
     protected int laps = 1;
     protected int time = 300;
     protected Location lobbyLocation;
@@ -122,6 +122,10 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         return copy;
     }
 
+    public int getMaxPlayers() {
+        return startLocations.size();
+    }
+
     public void incrementCurrentPlace() {
         currentPlace++;
     }
@@ -189,7 +193,10 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     }
 
     private Optional<Location> getStartLocation() {
-        return startLocations.stream().filter(l -> !queueStands.stream().map(Entity::getLocation).collect(Collectors.toList()).contains(l)).findFirst();
+        return startLocations.stream().filter(l -> !queueStands.stream()
+                .map(Entity::getLocation)
+                .collect(Collectors.toList())
+                .contains(l)).findFirst();
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -270,7 +277,8 @@ public class Arena implements ConfigurationSerializable, Cloneable {
     private void decrementTimer() {
         if (timeLeft <= 0) {
             stopGame();
-            players.keySet().forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] " + ChatColor.AQUA + "The timer has run out. Returning to the lobby."));
+            players.keySet()
+                    .forEach(p -> p.sendMessage(ChatColor.DARK_AQUA + "[YesBoats] " + ChatColor.AQUA + "The timer has run out. Returning to the lobby."));
         }
         timeLeft--;
     }
@@ -311,7 +319,7 @@ public class Arena implements ConfigurationSerializable, Cloneable {
         if (state == State.RUNNING) mainLoop.cancel();
         if (state == State.IN_QUEUE) queueTimer.cancel();
         state = State.WAITING;
-//        players.values().forEach(p -> p.setSpectator(false));
+        //        players.values().forEach(p -> p.setSpectator(false));
         Set<Player> playersCopy = new HashSet<>(players.keySet());
         for (Player p : playersCopy) remove(p);
         startLineActivator.getBlock().setType(Material.REDSTONE_BLOCK);
@@ -394,7 +402,11 @@ public class Arena implements ConfigurationSerializable, Cloneable {
             Vehicle boat = event.getVehicle();
             if (boat.getPassengers().isEmpty() || boat.getPassengers().stream().noneMatch(p -> p instanceof Player))
                 return;
-            Player player = (Player) boat.getPassengers().stream().filter(p -> p instanceof Player).findAny().orElseThrow(() -> new NullPointerException("Boat is empty."));
+            Player player = (Player) boat.getPassengers()
+                    .stream()
+                    .filter(p -> p instanceof Player)
+                    .findAny()
+                    .orElseThrow(() -> new NullPointerException("Boat is empty."));
             if (!Arena.get(player).isPresent()) return;
             Arena arena = Arena.get(player).get();
             if (arena.players.get(player).canExitBoat) return;
