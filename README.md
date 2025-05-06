@@ -53,6 +53,12 @@ Join signs can be created by placing a sign with the text detailed in the below 
 
 If everything is set up correctly, you can join an arena by clicking a Join Sign or doing `/yesboats join <arena>`, where `<arena>` is the arena's name. This will bring you into the arena and place you in a boat at the first available Start Location. During this time, you can click the boat items in your inventory to change the wood type of your boat. 
 
+After the Minimum Players threshold is reached, the queue timer will begin. This will count down from 30 seconds (configurable in `config.yml`) to allow time for additional players to join. After the queue time is over, the players will be released and the countdown will begin. Once the countdown is up the Start Line Activator is removed, lowering the barrier and allowing the players to start.
+
+Once a player finishes the race, they will be told their final time, their position in the race will be announced, and they will become a "spectator"; able to fly around and watch the other players. Once all players have finished, the game will end, and all players will be teleported to the arena's Lobby Location.
+
+Additionally, any player can leave the game at any time by doing `/yesboats leave`.
+
 ### PlaceholderAPI
 
 This plugin is also compatible with PlaceholderAPI, allowing access to certain aspects of an arena through placeholders.  
