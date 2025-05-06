@@ -23,12 +23,12 @@ public class Messages {
         SKIPPED_CHECKPOINT = prefixedPath(config, "skipped-checkpoint");
         ON = path(config, "on");
         OFF = path(config, "off");
-        
+
         //region Placeholders...
-        Placeholders.STATUS_WAITING = prefixedPath(config, "placeholders.status-waiting");
-        Placeholders.STATUS_STARTING = prefixedPath(config, "placeholders.status-starting");
-        Placeholders.STATUS_RUNNING = prefixedPath(config, "placeholders.status-running");
-        Placeholders.ARENA_NOT_FOUND = prefixedPath(config, "placeholders.arena-not-found");
+        Placeholders.STATUS_WAITING = path(config, "placeholders.status-waiting");
+        Placeholders.STATUS_STARTING = path(config, "placeholders.status-starting");
+        Placeholders.STATUS_RUNNING = path(config, "placeholders.status-running");
+        Placeholders.ARENA_NOT_FOUND = path(config, "placeholders.arena-not-found");
         //endregion
 
         //region Editor...

@@ -36,7 +36,7 @@ public class PlaceholderManager extends PlaceholderExpansion {
     @Override
     public @Nullable String onRequest(OfflinePlayer player, @NotNull String params) {
         String[] parts = params.split("_");
-        if (parts.length != 2) return "";
+        if (parts.length != 2) return null;
         Optional<Arena> arenaOptional = Arena.get(parts[0]);
         if (arenaOptional.isPresent()) {
             Arena arena = arenaOptional.get();
@@ -61,7 +61,7 @@ public class PlaceholderManager extends PlaceholderExpansion {
                     return String.valueOf(arena.getPlayers().size());
                 }
                 default -> {
-                    return "";
+                    return null;
                 }
             }
         } else {
