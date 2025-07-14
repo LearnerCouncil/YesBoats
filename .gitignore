@@ -122,3 +122,4 @@ run/
 .classpath
 .settings
 
+.envrc
