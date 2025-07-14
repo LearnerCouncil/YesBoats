@@ -2,7 +2,7 @@
 .idea/
 
 # Nix
-result
+result*
 .direnv
 
 *.iml
