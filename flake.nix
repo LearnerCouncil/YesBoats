@@ -41,6 +41,9 @@
                   maven,
                   jdk17_headless,
                 }:
+                let
+                  jdk' = jdk17_headless;
+                in
                 maven.buildMavenPackage rec {
                   pname = "YesBoats";
                   version =
@@ -49,16 +52,17 @@
 
                   src = ./.;
 
-                  mvnHash = "sha256-wLsyvNLluSDCMynIW4R8Ym4Drtv728y0VaD+e/8UhrU=";
+                  buildOffline = true;
+                  mvnHash = "sha256-V641/XNFF8PdimmceSyp4JC0K6JzvMEsqw/v24kUw3E=";
 
-                  mvnJdk = jdk17_headless;
+                  mvnJdk = jdk';
                   nativeBuildInputs = [
-                    jdk17_headless
+                    jdk'
                   ];
 
                   installPhase = ''
-                    mkdir -p $out/share/${pname}
-                    install -Dm644 target/${pname}-${version}.jar $out/share/${pname}
+                    mkdir -p $out/plugins/
+                    install -Dm644 target/${pname}-${version}.jar $out/plugins/
                   '';
 
                   meta = {
