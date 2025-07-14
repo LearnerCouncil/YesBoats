@@ -42,13 +42,19 @@
                   jdk17_headless,
                 }:
                 let
+                  getPomVersion =
+                    { pname, pom }:
+                    with builtins;
+                    elemAt (match ".*${pname}</artifactId>[[:s:]]*<version>([[:d:]]{1,2}\.[[:d:]]{1,2}\.[[:d:]]{1,2})</version>.*" (readFile pom)) 0;
+
                   jdk' = jdk17_headless;
                 in
                 maven.buildMavenPackage rec {
                   pname = "YesBoats";
-                  version =
-                    with builtins;
-                    elemAt (match ".*${pname}</artifactId>[[:s:]]*<version>([[:d:]]{1,2}\.[[:d:]]{1,2}\.[[:d:]]{1,2}).*" (readFile ./pom.xml)) 0;
+                  version = getPomVersion {
+                    inherit pname;
+                    pom = ./pom.xml;
+                  };
 
                   src = ./.;
 
