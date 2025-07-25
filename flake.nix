@@ -7,6 +7,10 @@
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
     };
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -21,16 +25,40 @@
           "aarch64-darwin"
         ];
 
+        imports = [ inputs.treefmt-nix.flakeModule ];
+
         perSystem =
           { config, pkgs, ... }:
           {
-            formatter = pkgs.nixfmt-tree;
+            devShells = {
+              default = pkgs.mkShell {
+                packages = with pkgs; [
+                  maven
+                  jdk17
+                  config.treefmt.build.wrapper
+                ];
+              };
+              treefmt = config.treefmt.build.devShell;
+            };
 
-            devShells.default = pkgs.mkShell {
-              packages = with pkgs; [
-                maven
-                jdk17
-              ];
+            treefmt = {
+              programs = {
+                statix = {
+                  enable = true;
+                  disabled-lints = [
+                    "empty_pattern"
+                    "repeated_keys"
+                  ];
+                };
+                nixfmt.enable = true;
+                xmllint = {
+                  enable = true;
+                  # Make wrapper for xmllint to set indent width
+                  package = pkgs.writeShellScriptBin "xmllint" ''
+                    XMLLINT_INDENT="    " ${pkgs.libxml2}/bin/xmllint $@
+                  '';
+                };
+              };
             };
 
             packages = {
