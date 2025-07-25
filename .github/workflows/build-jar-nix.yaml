@@ -1,0 +1,27 @@
+name: Build Plugin Jar With Nix
+
+on: [pull_request, release]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Build Jar
+        run: nix build .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: YesBoats.jar
+          path: ./result/plugins/YesBoats-*.jar
+
+      - name: Add to Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          path: ./result/plugins/YesBoats-*.jar
